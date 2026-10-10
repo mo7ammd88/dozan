@@ -336,6 +336,10 @@ a.btn{text-decoration:none;color:inherit;display:inline-block}
       <label>الصوت البشري</label>
       <div class="seg" id="voiceSeg"><button data-v="m" aria-pressed="true">رجالي</button><button data-v="f" aria-pressed="false">نسائي</button></div>
     </div>
+    <div style="grid-column:1/-1">
+      <label for="coachModel">نموذج المدرب الذكي</label>
+      <select id="coachModel"><option value="sonnet">Sonnet 5.5 · سريع واقتصادي (تقرير بنحو 4 إلى 8 سنت)</option><option value="opus">Opus 5.5 · الأعمق تحليلاً (تقرير بنحو 15 إلى 30 سنت)</option></select>
+    </div>
     <div id="keyRow" hidden style="grid-column:1/-1">
       <label for="apiKey">مفتاح Anthropic API لتشغيل المدرب الذكي هنا (اختياري، يُحفظ في هذا الجهاز فقط)</label>
       <div style="display:flex;gap:8px"><input id="apiKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…" class="field"><button class="btn" id="saveKey">حفظ</button></div>
@@ -598,6 +602,10 @@ a.btn{text-decoration:none;color:inherit;display:inline-block}
           <p class="notice" id="aiAvail" hidden></p>
           <textarea id="copyArea" readonly hidden rows="5"></textarea>
           <div class="report" id="aiOut"></div>
+          <div id="aiFollow" hidden style="display:grid;gap:8px">
+            <div class="chat" id="aiThread"></div>
+            <div class="composer"><textarea id="aiQ" placeholder="اسأل المدرب عن أي نقطة في هذا التقرير…"></textarea><button class="btn primary" id="aiAsk">اسأل</button></div>
+          </div>
         </div>
       </div>
     </div>
@@ -632,6 +640,17 @@ a.btn{text-decoration:none;color:inherit;display:inline-block}
   <!-- COACH -->
   <section class="view" id="v-coach" hidden>
     <h2>اسأل المدرب</h2>
+    <div class="card" id="profileCard">
+      <div class="maqam-head"><h3>ملفك كمتدرب</h3><span class="small muted" id="profSaved"></span></div>
+      <p class="small muted">يقرأه المدرب مع كل تقرير، مع ملخص تطورك من تسجيلاتك المحفوظة.</p>
+      <div class="formrow">
+        <div><label for="pLevel">مستواك</label><select id="pLevel"><option value="">اختر</option><option>مبتدئ</option><option>متوسط</option><option>متقدم</option></select></div>
+        <div><label for="pFocus">تركيزك</label><select id="pFocus"><option value="">اختر</option><option>الغناء</option><option>العود</option><option>الغناء والعود معاً</option></select></div>
+      </div>
+      <div><label for="pStyle" class="small muted">اللون الذي تحب تأديته</label><input id="pStyle" class="field" style="direction:rtl;width:100%" placeholder="مثال: الطرب الخليجي، القصائد، الموشحات"></div>
+      <div><label for="pGoals" class="small muted">أهدافك</label><textarea id="pGoals" placeholder="مثال: أضبط الأرباع، وأغني أغاني محمد عبده كاملة على العود"></textarea></div>
+      <div class="btns"><button class="btn primary" id="pSave">احفظ الملف</button></div>
+    </div>
     <p class="small muted">مدرب متخصص في المقامات والعود والغناء الشرقي. يعرف المقام المختار وآخر تحليل لتسجيلك.</p>
     <div class="suggest" id="suggest"></div>
     <div class="chat" id="chat"></div>
@@ -657,6 +676,77 @@ a.btn{text-decoration:none;color:inherit;display:inline-block}
   <button role="tab" data-v="path" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M5 20V6l7-3 7 3v14M9 20v-6h6v6"/></svg>المنهج</button>
 </div></nav>
 
+<script type="text/plain" id="coachKB">أنت «دوزان»: مدرّب خبير في الغناء العربي والعزف على العود، تعمل كما يعمل أستاذ متمرّس في معهد موسيقي عربي يجلس مع طالبه بعد كل تسجيل. هذا مرجعك الثابت؛ التزم به في كل رد.
+
+# أولاً: طريقة عملك
+- ما بين يديك قياسات آلية دقيقة لتسجيل المتدرب (تتبّع طبقة الصوت كل 12 ملّي ثانية ومقارنتها بدرجات المقام بالسنت)، وقد تصلك صورة منحنى الطبقة، وملف المتدرب وتاريخه. أنت لا تسمع الصوت نفسه، فلا تحكم على جمال الخامة أو مخارج الحروف أو الإحساس، واذكر ذلك مرة واحدة فقط عند الحاجة.
+- كن محدداً: كل ملاحظة تستند إلى رقم أو وقت أو جملة بعينها («في الجملة الثالثة عند 0:14 نزلت السيكاه 38 سنت»). لا نصائح عامة تصلح لأي متدرب.
+- رتّب حسب الأثر: أهم مشكلة أو اثنتان فقط تستحقان التركيز الآن. لا تُغرق المتدرب بعشر ملاحظات متساوية.
+- كل علاج يجب أن يكون تمريناً قابلاً للتنفيذ اليوم، بمدة وعدد تكرار وعلامة نجاح رقمية، ويستخدم أدوات التطبيق بأسمائها: القرار المستمر، مؤشر الطبقة المباشر، «أي درجة؟»، «أذن الربع تون»، المترونوم، الإيقاعات، تمرين النقر، تمرين الصمت، «أعد المحاولة وقارن»، «قارن أداءك بالأصل».
+- ابنِ على التاريخ: إن وُجدت أهداف سابقة أو اتجاهات لدرجة معينة فقل هل تحقق الهدف وبالأرقام. لا تكرر نفس النصيحة إن كانت قد نجحت؛ انتقل للمشكلة التالية.
+- كن صريحاً بلا مجاملة ولا قسوة. إن كان الأداء ممتازاً فقل ذلك واقترح التحدي التالي. إن كانت البيانات لا تكفي (تسجيل قصير، نغمات قليلة على درجة) فقل إن الحكم مؤجل.
+- لا تكتب كلمات أي أغنية.
+
+# ثانياً: قراءة القياسات
+- السنت: 100 سنت = نصف تون، 50 = ربع تون. الانحراف الموجب = أعلى من الدرجة (حاد)، السالب = أخفض.
+- مستويات الدقة لنغمة مستقرة: حتى ±10 سنت ممتاز، 10 إلى 20 جيد، 20 إلى 35 يحتاج ضبطاً، أكثر من 35 خطأ واضح يُسمع، أكثر من 60 غالباً درجة أخرى أو مقام آخر.
+- انحراف ثابت الاتجاه على درجة واحدة في كل مراتها = خريطة سمعية خاطئة لتلك الدرجة (الأذن «تحفظ» موضعاً خاطئاً). علاجه سمعي: مقارنة، ومرجع ثابت، وغناء بطيء.
+- تشتت كبير (انحراف معياري عالٍ) مع متوسط قريب من الصفر = ضعف تحكم ودعم، لا خطأ أذن. علاجه نغمات طويلة مدعومة.
+- تحسّن السيكاه أو أي درجة ربع تون أهم من تحسّن درجات النصف والتون، لأنها هوية المقام.
+- «الدخول على النغمة» البطيء (أكثر من 150 مث) في الغناء = زحلقة من تحت؛ مقبولة أحياناً كزخرفة، لكن إن تكررت على كل النغمات فهي عادة تُضعف الضبط.
+- الثبات داخل النغمة: حتى ±12 سنت جيد للصوت مع الاهتزاز الطبيعي. الاهتزاز الصحي في الغناء العربي معدله تقريباً 5 إلى 7 هرتز وسعته معتدلة؛ الاهتزاز العريض جداً أو البطيء جداً يشوّش الدرجة.
+- الإيقاع: تشتت بدايات النغمات حول النبض حتى ±30 مث جيد، أكثر من 50 يُسمع عدم انتظام.
+- المقام المكتشف تلقائياً قد يلتبس بين مقامين يختلفان بربع تون في درجة واحدة (بياتي/كرد، راست/نهاوند، بياتي/نهاوند حين ترتفع السيكاه). إن كان المرشحان متقاربين فاشرح الدرجة الفاصلة.
+
+# ثالثاً: التلوين المقبول مقابل الخطأ
+الضبط العربي ليس جامداً، وبعض الدرجات «تتحرك» بحسب السياق والمدرسة (المصرية، الشامية، العراقية، الخليجية):
+- البياتي: السيكاه فيه تُؤدّى عند كثيرين أخفض قليلاً من سيكاه الراست. انخفاض 10 إلى 20 سنت فيها ليس خطأً بالضرورة؛ الارتفاع نحو البوسليك خطأ.
+- الحجاز: الدرجة الثالثة (حجاز/فا دييز) تميل للارتفاع في الصعود، والثانية (كرد) قد تنخفض قليلاً؛ اتساع المسافة الوسطى هو روح الجنس، أما تضييقها فخطأ.
+- الصبا: الدرجة الثانية منخفضة قليلاً عادة، والرابعة (حجاز/صول بيمول) قريبة جداً من الثالثة؛ رفع الرابعة أشيع أخطاء المتدربين.
+- السيكاه والهزام: القرار نفسه ربع تون، وأي انزياح فيه يغيّر لون المقام كله.
+- القاعدة: انحراف صغير ثابت في درجة معروفة بالتلوين = أسلوب، اذكره كملاحظة. انحراف كبير أو متقلب أو يجعل الدرجة تنتمي لمقام آخر = خطأ.
+
+# رابعاً: المقامات (سير، غماز، قفلة، أخطاء شائعة، تمرين)
+- الراست (على الراست/دو): جنس راست + راست على النوى صعوداً، ونهاوند على النوى نزولاً (العجم بدل الأوج). الغماز النوى. السير: حول القرار، صعود للنوى والاستقرار عليها، ثم نزول وقفلة واضحة على الراست. تحويلات شائعة: بياتي، حجاز على النوى (السوزناك). الأخطاء الشائعة: سيكاه منخفضة نحو الكرد أو مرتفعة نحو البوسليك؛ نسيان العجم في النزول. تمرين: «راست-دوكاه-سيكاه-دوكاه-راست» ببطء على القرار المستمر.
+- البياتي (على الدوكاه/ري): بياتي + نهاوند على النوى. الغماز النوى. السير: يبدأ غالباً من القرار أو من النوى نزولاً، يتجول في الجنس الأول، يرتكز على النوى، ويقفل على الدوكاه، وكثيراً ما تُلمس درجة الحجاز قرب القفلة. تحويلات شائعة: صبا، حجاز، راست. الأخطاء: سيكاه مرتفعة تقلبه نهاوند؛ دوكاه غير ثابتة. تمرين: «دوكاه-سيكاه-دوكاه» متكرراً، ثم «جهاركاه-سيكاه-دوكاه».
+- السيكاه (على السيكاه/مي نصف بيمول): سيكاه + راست على النوى. الغماز النوى. السير: دوران حول القرار ربع التون، صعود للنوى، عودة بطيئة للقرار. قريبه الهزام (سيكاه + حجاز على النوى). الأخطاء: قرار يتأرجح بين الكرد والبوسليك. تمرين: إمساك القرار مع القرار المستمر دقيقة كاملة حتى يختفي الضرب.
+- الحجاز (على الدوكاه): حجاز + نهاوند (أو راست) على النوى. الغماز النوى. السير: يُبرز المسافة الواسعة بين الثانية والثالثة، يرتكز على النوى ثم يقفل على الدوكاه. الأخطاء: تضييق المسافة الواسعة؛ الثالثة منخفضة. تمرين: «كرد-حجاز» عشر مرات ببطء ثم «دوكاه-كرد-حجاز-نوى».
+- الصبا (على الدوكاه): صبا + حجاز على الجهاركاه. لا يرجع لجواب القرار (الثامنة شهناز). السير: يتمسك بالدرجة الرابعة المنخفضة ويتحرك ببطء داخل الجنس الأول ويقفل على الدوكاه. الأخطاء: رفع الرابعة؛ معاملته كبياتي. تمرين: الدرجات الأربع الأولى فقط حتى تثبت.
+- النهاوند (على الراست): نهاوند + حجاز على النوى صعوداً، كرد على النوى نزولاً (العجم بدل الماهور). الغماز النوى. الأخطاء: ماهور غير واضح في الصعود؛ خلط الصعود والنزول.
+- العجم (على عجم عشيران/سي بيمول): عجم + عجم على الجهاركاه. قريب من السلم الكبير. جيد لتأسيس الثبات قبل الأرباع.
+- الكرد (على الدوكاه): كرد + نهاوند على النوى. الثانية على نصف تون فقط من القرار. الأخطاء: رفع الثانية نحو السيكاه فيصير بياتي. تمرين: مقارنة الكرد بالبياتي بالتناوب.
+
+# خامساً: تشخيص وعلاج (غناء)
+- خطأ أذن ثابت على درجة: (1) اسمع الدرجة الصحيحة بالعود 3 مرات، (2) غنِّ القرار ثم الدرجة ببطء مع القرار المستمر، 8 عدّات لكل نغمة، (3) راقب مؤشر الطبقة حتى يبقى في الأخضر 3 ثوانٍ، (4) كرر 10 مرات، (5) سجّل جملة قصيرة وقارن. علامة النجاح: الانحراف المتوسط للدرجة أقل من ±15 سنت.
+- تشتت وعدم ثبات: نغمات طويلة على «آ» بصوت متوسط القوة 8 إلى 12 ثانية لكل درجة من الجنس الأول، مع شهيق هادئ عميق ودعم من البطن؛ ثم نفس النغمات بصوت أخفض. علامة النجاح: ثبات أفضل من ±12 سنت.
+- هبوط في آخر الجمل: نفاد النفس أو ارتخاء الدعم. قصّر الجمل وخطط أماكن النفس، وتمرّن على إنهاء الجملة بنفس القوة.
+- ارتفاع في النغمات العالية: شد في الحنجرة والفك. خفّف القوة، أرخِ الفك، واصعد بالتدريج نصف تون كل يوم.
+- زحلقة دائمة من تحت: ابدأ النغمة بحرف «م» مغلق ثم افتح، أو تخيّل النغمة قبل إصدارها؛ تمرين قفزات من القرار للغماز مباشرة.
+- انهيار ربع التون لنصف تون أو تون: «أذن الربع تون» حتى 85% ثم غناء الجنس كاملاً ببطء مع المؤشر.
+- العُرب والزخارف: تُبنى ببطء ثم تسريع؛ ابدأ بزخرفة من ثلاث نغمات بالمترونوم على 60 ثم ارفع 5 كل يوم، والدقة قبل السرعة.
+- القفلة: الجملة الأخيرة يجب أن تستقر على القرار ثابتة لثانية على الأقل؛ إن لم تنتهِ على القرار فاذكر ذلك.
+- الغماز: المقام المؤدى جيداً يعطي الغماز وزناً واضحاً (توقف أو ارتكاز). إن كان نصيب الغماز من الوقت ضئيلاً فالسير ضعيف.
+- صحة الصوت: تسخين 5 دقائق قبل الغناء (همهمة، زفير على «س» و«ز»)، ماء، لا صراخ، توقف عند الألم أو البحة.
+
+# سادساً: تشخيص وعلاج (عود)
+- العود بلا دساتين: الضبط كله في موضع الإصبع. الإصبع نحو صدر العود (جهة الفتحة والفرس) يرفع النغمة، ونحو رأس العود (المفاتيح) يخفضها.
+- انحراف ثابت على درجة: الإصبع يقع دائماً في موضع خاطئ. علّم الموضع بالأذن: قارن الدرجة بوتر مطلق مساوٍ لها أو بجوابها، واعزفها ببطء مع القرار المستمر ومؤشر الطبقة.
+- انحراف متقلب: ضغط غير ثابت، أو إصبع ينزلق، أو الأظفر طويل. اضغط بطرف الإصبع قريباً من موضعه، وثبّته قبل ضربة الريشة.
+- كل النغمات منحرفة بنفس المقدار: الأرجح أن العود غير مدوزن أو أن تردد الدوزان في التطبيق لا يطابق عودك. تحقق من «دوزان العود» ومن تردد A4 في الضبط.
+- رنين قصير جداً: ضغط ضعيف، أو ضربة ريشة سطحية، أو كتم غير مقصود بإصبع آخر.
+- الإيقاع على العود: ريشة نازلة على الضربات القوية وطالعة على الضعيفة، رسغ مرتخٍ، والمترونوم بطيء ثم يرتفع. انتظام ±30 مث هدف أول.
+- النغمة الطويلة على العود: تُطال بالرش (الريشة المتكررة السريعة) بانتظام لا بالقوة.
+- انتقال الأوضاع: النغمات العالية على الأوتار الرفيعة تحتاج مواضع أدق، لأن المسافات بين الدرجات تصغر.
+
+# سابعاً: تصميم التدريب
+- جلسة يومية 20 إلى 30 دقيقة أفضل من جلسة طويلة متقطعة: 5 تسخين، 10 إلى 15 للمشكلة الأولى، 5 تطبيق في جملة حقيقية، ثم تسجيل قصير للقياس.
+- تركيز واحد في الجلسة. لا ينتقل المتدرب للهدف التالي قبل تحقيق علامة النجاح مرتين في يومين مختلفين.
+- التدرج: عجم/نهاوند للثبات، ثم الراست والبياتي للأرباع، ثم الحجاز والصبا والكرد، ثم السيكاه، ثم التحويلات والتقاسيم.
+- الهدف القادم يُصاغ رقمياً: «انحراف السيكاه أقل من ±15 سنت في 3 تسجيلات متتالية»، «تقييم 80 في البياتي»، «ثبات ±10 سنت على النوى».
+
+# ثامناً: قراءة صورة المنحنى (إن أُرسلت)
+المحور الأفقي هو الزمن بالثواني، والخطوط الأفقية درجات المقام بأسمائها، والقرار هو الخط النحاسي. النقاط الخضراء ضمن ±25 سنت، والبرتقالية بين 25 و50، والحمراء أبعد. الدوائر المرقّمة هي مواضع النشاز في القياسات. من الصورة تستطيع رؤية شكل الجمل: الزحلقات بين الدرجات، والاهتزاز، وهبوط آخر الجمل، وكثافة الزخارف، والقفزات. استخدمها لتأكيد ما في الأرقام، ولا تخترع منها أرقاماً جديدة.
+</script>
 <script>
 (function(){
 "use strict";
@@ -1393,6 +1483,22 @@ async function analyze(data,sr,maqamId,mode,auto,onProg,grid,pre){
   if(grid&&ons.length>=4){const offs=[];ons.forEach(t=>{const k=Math.round((t-grid.offset)/grid.step);if(k<0)return;const d=t-(grid.offset+k*grid.step);if(Math.abs(d)<=grid.step*0.4)offs.push(d*1000);});
     if(offs.length>=4){const mean=offs.reduce((a,b)=>a+b,0)/offs.length;const sd=Math.sqrt(offs.reduce((a,b)=>a+(b-mean)**2,0)/offs.length);
       const rel=offs.map(o=>o-mean);timing={iqa:grid.name,bpm:grid.bpm,n:offs.length,mean,sd,within40:rel.filter(o=>Math.abs(o)<=40).length/offs.length};}}
+  // phrases (split by silences of 0.3 s or more): where each starts and lands, local fit, loudness
+  const phr=[];{let st=null,last=null;for(const f of frames){if(f.v){if(st==null)st=f.t;last=f.t;}else if(st!=null&&f.t-last>=0.3){phr.push([st,last]);st=null;}}if(st!=null)phr.push([st,last]);}
+  const db=x=>20*Math.log10(Math.max(1e-6,x));
+  const phrases=phr.filter(([a,b])=>b-a>=0.4).map(([a,b],k)=>{const ns=N.filter(n=>n.start>=a-0.05&&n.start<=b+0.01);const fr=frames.filter(f=>f.v&&f.t>=a&&f.t<=b);
+    const madP=fr.length?fr.reduce((s,f)=>s+Math.abs(f.dev),0)/fr.length:0;const outP=fr.length?fr.filter(f=>Math.abs(f.dev)>60).length/fr.length:0;
+    let alt=null;if(outP>0.15&&fr.length>40){const hh=new Float32Array(240);fr.forEach(f=>{hh[Math.round(mod(f.c,1200)/5)%240]++;});const dm=detectMaqam(hh,fr.length,null)[0];if(dm&&dm.id!==m.id)alt=dm.name;}
+    const hi=ns.length?ns.reduce((x,n)=>n.deg.c+n.oct*1200>x.deg.c+x.oct*1200?n:x,ns[0]):null,lo=ns.length?ns.reduce((x,n)=>n.deg.c+n.oct*1200<x.deg.c+x.oct*1200?n:x,ns[0]):null;
+    const lastN=ns[ns.length-1];
+    return {n:k+1,start_s:+a.toFixed(1),dur_s:+(b-a).toFixed(1),notes:ns.length,first:ns[0]?ns[0].name:null,ends_on:lastN?lastN.name:null,ends_on_tonic:lastN?lastN.pc===0:null,
+      final_note_ms:lastN?Math.round(lastN.dur*1000):null,highest:hi?hi.name:null,lowest:lo?lo.name:null,mean_abs_dev:Math.round(madP),outside_pct:Math.round(outP*100),
+      loud_db:+db(fr.reduce((s,f)=>s+f.rms,0)/Math.max(1,fr.length)).toFixed(1),possible_modulation:alt};});
+  const lastPh=phrases[phrases.length-1];
+  const qafla=lastPh?{final_note:lastPh.ends_on,on_tonic:lastPh.ends_on_tonic,held_ms:lastPh.final_note_ms}:null;
+  const loudRange=phrases.length>1?+(Math.max(...phrases.map(p=>p.loud_db))-Math.min(...phrases.map(p=>p.loud_db))).toFixed(1):null;
+  const sustainCv=(()=>{const v=N.filter(n=>n.dur>=0.4).map(n=>{const r=n.fr.slice(Math.floor(n.fr.length*0.2)).map(f=>f.rms);const mu=r.reduce((a,b)=>a+b,0)/r.length;return mu?Math.sqrt(r.reduce((a,b)=>a+(b-mu)**2,0)/r.length)/mu:0;}).sort((a,b)=>a-b);return v.length?+v[v.length>>1].toFixed(2):null;})();
+  const ornaments=notes.filter(n=>n.fr.length>=3&&n.fr.length<minFr).length;
   // instrument: a plucked oud note decays quickly after a sharp attack; a sung note is sustained
   let instrument=null;{const dec=[],att=[];N.filter(n=>n.dur>=0.3).forEach(n=>{const r=n.fr.map(f=>f.rms);const L=r.length;const head=r.slice(0,Math.max(2,Math.floor(L*0.3)));const pk=Math.max(...head);const pi=r.indexOf(pk);
       const tail=r.slice(Math.floor(L*0.65));const tv=tail.reduce((a,b)=>a+b,0)/Math.max(1,tail.length);dec.push(pk>0?tv/pk:1);att.push(pi);});
@@ -1405,7 +1511,7 @@ async function analyze(data,sr,maqamId,mode,auto,onProg,grid,pre){
   issues=issues.sort((a,b)=>(b.kind==="pitch"?Math.abs(b.dev)*b.dur:b.ms/8*b.dur)-(a.kind==="pitch"?Math.abs(a.dev)*a.dur:a.ms/8*a.dur)).slice(0,12).sort((a,b)=>a.t-b.t);
   const score=Math.round(100*(0.5*within25+0.2*Math.max(0,1-mad/50)+0.15*(stab==null?0.5:Math.max(0,1-stab/40))+0.15*(1-outside)));
   const dur=frames.length?frames[frames.length-1].t:0;
-  return {raw,maqam:m,autoMaq,issues,mode,modeAuto:modeIn==="auto",instrument,frames,notes:N,hopS,score,within25,outside,mad,stab,degs,tonicAbs,tonicOffset,auto,
+  return {raw,phrases,qafla,loudRange,sustainCv,ornaments,maqam:m,autoMaq,issues,mode,modeAuto:modeIn==="auto",instrument,frames,notes:N,hopS,score,within25,outside,mad,stab,degs,tonicAbs,tonicOffset,auto,
     rangeLow:low-tonicAbs,rangeHigh:high-tonicAbs,voicedRatio:vf.length/frames.length,dur,cands:cands.slice(0,4),
     vib:{present:vibOk.length>0,share:vib.length?vibOk.length/vib.length:0,rate:vibOk.length?vibOk.reduce((a,v)=>a+v.rate,0)/vibOk.length:null,ext:vibOk.length?vibOk.reduce((a,v)=>a+v.ext,0)/vibOk.length:null},
     timing,onsets:ons.length,scoop,ioiCv,notesPerSec:N.length/Math.max(1,dur),avgNoteMs:N.length?N.reduce((a,n)=>a+n.dur,0)/N.length*1000:0};
@@ -1947,7 +2053,8 @@ async function runAnalysis(data,sr,isExample,grid,opts){
   renderResults(R,false);
   const base=rec.parent?(LIBCACHE.find(x=>x.id===rec.parent)||await DB.get(rec.parent).catch(()=>null)):prevOf(rec);
   renderCompare(rec,base);renderLib();
-  if(opts.existing&&rec.report){$("#aiOut").innerHTML=md(rec.report);$("#aiOut").append(el("p",{class:"small muted",text:"تقرير محفوظ من "+fmtDate(rec.reportT||rec.t)+". اضغط «حلّل أدائي» لتقرير جديد."}));}
+  $("#aiFollow").hidden=true;$("#aiThread").innerHTML="";S.reportThread=null;
+  if(opts.existing&&rec.report){S.reportThread={prompt:reportPrompt(R,""),report:rec.report,turns:[]};$("#aiFollow").hidden=false;(rec.reportChat||[]).forEach(x=>{$("#aiThread").append(el("div",{class:"msg u",text:x.q}));const a=el("div",{class:"msg a"});a.innerHTML=md(x.a);$("#aiThread").append(a);S.reportThread.turns.push({role:"user",content:x.q},{role:"assistant",content:x.a});});$("#aiOut").innerHTML=md(rec.report);$("#aiOut").append(el("p",{class:"small muted",text:"تقرير محفوظ من "+fmtDate(rec.reportT||rec.t)+". اضغط «حلّل أدائي» لتقرير جديد."}));}
   if(isNew){setStatus("اكتمل التحليل وحُفظ التسجيل. النتائج بالأسفل.");
     const h=store.get("history",[]);h.push({d:Date.now(),m:R.maqam.id,s:R.score,acc:Math.round(R.within25*100)});store.set("history",h.slice(-50));renderPath();
     setTimeout(()=>$("#results").scrollIntoView({behavior:"smooth",block:"start"}),60);
@@ -2074,20 +2181,48 @@ function analysisSummary(R){
     rhythm_interonset_cv:R.ioiCv==null?null:+R.ioiCv.toFixed(2),
     timing_vs_iqa:R.timing?{iqa:R.timing.iqa,bpm:R.timing.bpm,onsets_measured:R.timing.n,pct_within_40ms:Math.round(R.timing.within40*100),consistency_sd_ms:Math.round(R.timing.sd),mean_offset_ms_approx:Math.round(R.timing.mean),note:"المتوسط تقريبي لأن تأخير ميكروفون الجهاز غير مقاس؛ الثبات هو المؤشر الموثوق"}:null,
     last_tap_training:S.lastTiming||null,
+    phrases:(R.phrases||[]).slice(0,16),
+    qafla_final_cadence:R.qafla||null,
+    ghammaz_share_pct:(()=>{const g=R.degs.find(d=>d.role==="الغماز");return g?Math.round(g.share*100):null;})(),
+    degree_time_ranking:R.degs.filter(d=>d.notes).sort((a,b)=>b.share-a.share).slice(0,5).map(d=>d.name+" "+Math.round(d.share*100)+"%"),
+    dynamics:{phrase_loudness_range_db:R.loudRange,sustain_steadiness_cv:R.sustainCv,note:"cv: تذبذب القوة داخل النغمة الطويلة؛ أقل من 0.15 ثابت"},
+    fast_ornament_notes:R.ornaments,
     note_sequence_first_40:R.notes.slice(0,40).map(n=>n.name+"("+Math.round(n.dur*1000)+"ms,"+sgn(n.dev)+"c)").join(" ")
   };
 }
+const COACH_KB=(document.getElementById("coachKB")||{textContent:""}).textContent;
+const MODELS={sonnet:{id:"claude-sonnet-5-5",name:"Sonnet 5.5",inP:2,outP:10,effort:"high",tier:"default"},opus:{id:"claude-opus-5-5",name:"Opus 5.5",inP:4,outP:20,effort:"high",tier:"complex"}};
+const coachModel=()=>MODELS[store.get("coachModel","sonnet")]||MODELS.sonnet;
+function studentProfile(){
+  const p=store.get("profile",{});const recs=[...LIBCACHE].sort((a,b)=>a.t-b.t);const avg=a=>a.reduce((x,y)=>x+y,0)/Math.max(1,a.length);
+  const byMaq={};recs.forEach(r=>{(byMaq[r.maqamName]=byMaq[r.maqamName]||[]).push(r);});
+  const degT={};recs.forEach(r=>(r.degs||[]).forEach(d=>{if(d.n>=2)(degT[d.name]=degT[d.name]||[]).push(d.dev);}));
+  return {level:p.level||"غير محدد",focus:p.focus||"",preferred_style:p.style||"",goals:p.goals||"",
+    total_recordings:recs.length,days_practiced:new Set(recs.map(r=>new Date(r.t).toDateString())).size,
+    first_recording:recs[0]?new Date(recs[0].t).toISOString().slice(0,10):null,
+    maqam_history:Object.entries(byMaq).map(([k,a])=>({maqam:k,attempts:a.length,first_score:a[0].m.score,last_score:a[a.length-1].m.score,best:Math.max(...a.map(r=>r.m.score)),last_date:new Date(a[a.length-1].t).toISOString().slice(0,10)})),
+    degree_trends_cents:Object.entries(degT).filter(([k,v])=>v.length>=2).map(([k,v])=>({degree:k,first:v[0],recent_avg:Math.round(avg(v.slice(-3))),samples:v.length})),
+    previous_coach_targets:recs.filter(r=>r.goal).slice(-3).map(r=>({date:new Date(r.t).toISOString().slice(0,10),maqam:r.maqamName,target:r.goal})),
+    rhythm_training_recent:store.get("timing",[]).slice(-5).map(x=>({mode:x.m,score:x.s,bpm:x.bpm}))};
+}
+function plotImageB64(){try{const cv=$("#plot");if(!cv||!cv.width||$("#results").hidden)return null;const maxW=1100;const sc=Math.min(1,maxW/cv.width);
+  const o=document.createElement("canvas");o.width=Math.round(cv.width*sc);o.height=Math.round(cv.height*sc);const g=o.getContext("2d");g.fillStyle=cssVar("--surface-2")||"#fff";g.fillRect(0,0,o.width,o.height);g.drawImage(cv,0,0,o.width,o.height);
+  return o.toDataURL("image/png").split(",")[1];}catch(e){return null;}}
 const COACH_ROLE="أنت «دوزان»، مدرّب محترف ومتعمق في الموسيقى العربية: المقامات والأجناس وسير المقام، والعزف على العود (الريشة، الدوزان، مواضع الأصابع بلا دساتين)، والغناء الشرقي (الضبط، العُرَب، النفس، التطريب). تكتب بالعربية الفصحى المبسطة، مباشراً وعملياً بلا مجاملة ولا مبالغة، وتعطي أرقاماً ومعايير قابلة للقياس عندما تفيد. إذا لم تكن متأكداً من معلومة تاريخية أو نسبة لحن لمؤلف فقل ذلك صراحة بدل التخمين.";
 const inClaude=!!window.claude;
 const apiKey=()=>store.get("apikey","");
 const aiReady=()=>!!sample||!!apiKey();
-async function ask(input,{onText,signal,onThinking,maxTokens}={}){
-  if(sample)return await sample(input,{signal,cache:false,onText});
+async function ask(input,{onText,signal,onThinking,maxTokens,system,images}={}){
+  const M=coachModel();
+  if(sample){let inp=input;if(system){inp=typeof input==="string"?system+"\n\n"+input:[{role:"user",content:system},...input];}return await sample(inp,{signal,cache:false,onText,modelTier:M.tier});}
   const key=apiKey();if(!key)throw {code:"no_key"};
   const msgs=[];(typeof input==="string"?[{role:"user",content:input}]:input).forEach(t=>{const l=msgs[msgs.length-1];if(l&&l.role===t.role)l.content+="\n\n"+t.content;else msgs.push({role:t.role,content:t.content});});
   let text="",stop=null,inTok=0,outTok=0;
   try{
-    const body=JSON.stringify({model:"claude-sonnet-5-5",max_tokens:maxTokens||16000,stream:true,output_config:{effort:"medium"},messages:msgs});
+    if(images&&images.length){const l=msgs[msgs.length-1];l.content=[...images.map(b=>({type:"image",source:{type:"base64",media_type:"image/png",data:b}})),{type:"text",text:l.content}];}
+    const bodyObj={model:M.id,max_tokens:maxTokens||20000,stream:true,output_config:{effort:M.effort},messages:msgs};
+    if(system)bodyObj.system=[{type:"text",text:system,cache_control:{type:"ephemeral"}}];
+    const body=JSON.stringify(bodyObj);
     const base={"content-type":"application/json","anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"};
     let res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",signal,headers:Object.assign({"authorization":"Bearer "+key},base),body});
     if(res.status===401)res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",signal,headers:Object.assign({"x-api-key":key},base),body});
@@ -2097,13 +2232,13 @@ async function ask(input,{onText,signal,onThinking,maxTokens}={}){
       for(const ln of lines){if(!ln.startsWith("data:"))continue;let j;try{j=JSON.parse(ln.slice(5));}catch(e){continue;}
         if(j.type==="content_block_start"&&j.content_block&&j.content_block.type==="thinking"&&onThinking)onThinking();
         if(j.type==="content_block_delta"&&j.delta&&j.delta.type==="text_delta"){text+=j.delta.text;onText&&onText({text,delta:j.delta.text});}
-        else if(j.type==="message_start"&&j.message&&j.message.usage)inTok=(j.message.usage.input_tokens||0)+(j.message.usage.cache_read_input_tokens||0);
+        else if(j.type==="message_start"&&j.message&&j.message.usage){const u=j.message.usage;inTok=(u.input_tokens||0)+1.25*(u.cache_creation_input_tokens||0)+0.1*(u.cache_read_input_tokens||0);}
         else if(j.type==="message_delta"){if(j.delta)stop=j.delta.stop_reason;if(j.usage&&j.usage.output_tokens)outTok=j.usage.output_tokens;}
         else if(j.type==="error")throw {code:"upstream_error",message:j.error&&j.error.message,text};}}
   }catch(e){if(e&&e.name==="AbortError")throw {code:"cancelled",text};if(e&&e.code)throw Object.assign(e,{text:e.text||text||undefined});throw {code:"upstream_error",message:"شبكة: "+((e&&e.message)||"تعذّر الوصول إلى api.anthropic.com"),text:text||undefined};}
   if(!text)throw {code:"empty_completion",message:"وصل الرد بلا نص (stop_reason: "+(stop||"؟")+")"};
-  const cost=inTok*2/1e6+outTok*10/1e6;const mk=new Date().toISOString().slice(0,7);const sp=store.get("spend",{});sp[mk]=(sp[mk]||0)+cost;store.set("spend",sp);
-  return {text,truncated:stop==="max_tokens",cost,month:sp[mk]};
+  const cost=inTok*M.inP/1e6+outTok*M.outP/1e6;const mk=new Date().toISOString().slice(0,7);const sp=store.get("spend",{});sp[mk]=(sp[mk]||0)+cost;store.set("spend",sp);
+  return {text,truncated:stop==="max_tokens",cost,month:sp[mk],model:M.name};
 }
 function updateAiAvail(){
   const ok=aiReady();$("#aiBtn").disabled=!ok;$("#chatSend").disabled=!ok;
@@ -2125,7 +2260,23 @@ $("#saveKey").addEventListener("click",async()=>{const v=cleanKey($("#apiKey").v
   catch(e){st.textContent="المفتاح محفوظ لكن الاختبار فشل: "+(sampleErr(e)||"")+(e&&e.message?" ["+e.message+"]":"")+" · طول المفتاح "+v.length+" حرفاً، يبدأ بـ "+v.slice(0,10)+"…";}});
 function sampleErr(e){const c=e&&e.code;return c==="not_granted"?"لم يُسمح للصفحة باستخدام Claude.":c==="rate_limited"?"طلبات كثيرة الآن. حاول بعد قليل.":c==="session_expired"?"انتهت الجلسة. سجّل الدخول مجدداً.":c==="bad_key"?"مفتاح API غير صحيح أو لا يملك صلاحية. راجعه في «الضبط».":c==="no_key"?"أضف مفتاح API من «الضبط».":c==="cancelled"?"":c==="empty_completion"?"وصل رد المدرب فارغاً. حاول مرة أخرى.":"تعذّر الاتصال بالمدرب. حاول مرة أخرى.";}
 const sampleErrFull=e=>{const b=sampleErr(e);return b&&e&&e.message&&!sample?b+" ["+e.message+"]":b;};
-function reportPrompt(R,note){return COACH_ROLE+"\n\nأمامك قياسات استُخرجت آلياً من تسجيل "+(R.mode==="oud"?"عزف على العود":"غناء")+" في مقام "+R.maqam.name+". طريقة القياس: تتبّع طبقة الصوت بخوارزمية YIN كل 12 ملّي ثانية، ثم مقارنة كل لحظة بأقرب درجة في المقام بالسنت (100 سنت = نصف تون، 50 = ربع تون). الانحراف الموجب يعني أعلى من الدرجة (حاد)، والسالب أخفض.\n\nمعلومات المقام: الدرجات بالسنت من القرار: "+R.maqam.steps.join("، ")+(R.maqam.desc?" (وفي النزول: "+Object.entries(R.maqam.desc).map(([i,c])=>"الدرجة "+(+i+1)+" = "+c).join("، ")+")":"")+". الأجناس: "+R.maqam.ajnas.map(j=>j[0]).join(" + ")+". الغماز: "+noteName(R.maqam.tonic+R.maqam.steps[R.maqam.gh])+".\n\nقواعد صارمة:\n- اعتمد على هذه الأرقام فقط. لا تحكم على جمال الخامة أو مخارج الحروف أو التعبير لأنها غير مقاسة، واذكر ذلك في سطر واحد.\n- اذكر الرقم مع كل ملاحظة.\n- ميّز بين الخطأ والتلوين المقبول في الأداء العربي (مثل خفض سيكاه البياتي قليلاً، أو رفع الحجاز في الصعود). الانحراف الثابت في اتجاه واحد على نفس الدرجة غالباً خطأ في الأذن، والتذبذب الكبير غالباً ضعف في التحكم.\n- الدرجات التي لم تُؤدَّ لا تحكم عليها.\n- إذا كان المقام مكتشفاً تلقائياً والمرشحان الأولان متقاربان، اذكر ذلك ووضّح أي درجة تفرق بينهما وكيف يتأكد المتدرب.\n"+(R.mode==="oud"?"- هذا عزف على العود وليس غناء: لا تتحدث إطلاقاً عن الصوت أو النفس أو الحنجرة أو العُرب الصوتية. العود بلا دساتين، فاربط أخطاء الضبط بموضع الأصابع على الوتر (نحو رأس العود يُخفض، نحو الصدر يرفع)، وبدوزان الأوتار، والإيقاع وانتظام الضرب بالريشة، والرنين بقوة الضغط.\n":"- اربط ضعف الثبات بالنفس والدعم، والدخول البطيء على النغمة بالتمهيد (الزحلقة).\n")+(S.lastIsExample?"- هذا تسجيل تجريبي مولّد آلياً وليس أداء المستخدم؛ نبّه لذلك في أول سطر.\n":"")+"\nالصيغة (Markdown بالعربية، 250 إلى 450 كلمة):\n## الخلاصة\nسطران وتقييم من 10.\n## نقاط القوة\n## نقاط الضعف\nمرتبة حسب الأهمية.\n## مواضع النشاز وتعديلها\nلكل موضع في pitch_problem_spots (اذكر رقمه ووقته بالثواني): ماذا حدث بالضبط، وكيف يعدّله عملياً في تلك النغمة تحديداً. اجمع المواضع المتكررة على نفس الدرجة في سطر واحد.\n"+(S.baseline&&!S.lastIsExample?"## مقارنة بمحاولتك السابقة\nقارن الأرقام بـ previous_attempt_same_maqam: ما الذي تحسن وما الذي لم يتحسن، بالأرقام، وهل التمرين السابق نجح.\n":"")+"## خطة التدريب خطوة بخطوة\n5 خطوات مرقمة. كل خطوة: التمرين بالتحديد (اذكر أدوات التطبيق عند الحاجة: القرار المستمر، مؤشر الطبقة، تمرين أي درجة، أذن الربع تون، المترونوم، الإيقاعات، تمرين النقر على النبض، تمرين الصمت)، المدة اليومية، وعلامة نجاح رقمية.\n## هدف التسجيل القادم\nرقم واحد أو رقمان تريد أن تراهما.\n\n"+(note?"ملاحظة المتدرب: "+note+"\n\n":"")+"القياسات:\n"+JSON.stringify(analysisSummary(R));}
+function reportPrompt(R,note){
+  const m=R.maqam;const prev=S.baseline&&!S.lastIsExample;
+  return "مهمتك: تقرير تدريبي على تسجيل "+(R.mode==="oud"?"عزف على العود (ليس غناء)":"غناء")+" في مقام "+m.name+(R.autoMaq?" (اكتُشف المقام تلقائياً)":"")+".\n"+
+  "درجات المقام بالسنت من القرار: "+m.steps.join("، ")+(m.desc?" (وفي النزول: "+Object.entries(m.desc).map(([i,c])=>"الدرجة "+(+i+1)+" = "+c).join("، ")+")":"")+". الأجناس: "+m.ajnas.map(j=>j[0]).join(" + ")+". الغماز: "+noteName(m.tonic+m.steps[m.gh])+".\n"+
+  (S.lastIsExample?"تنبيه: هذا تسجيل تجريبي مولّد آلياً وليس أداء المتدرب؛ قل ذلك في أول سطر.\n":"")+
+  "الصورة المرفقة (إن وجدت) هي منحنى الطبقة لهذا التسجيل.\n\n"+
+  "اكتب بالعربية بصيغة Markdown، بين 350 و700 كلمة، بهذه الأقسام:\n"+
+  "## الخلاصة\nتقييم من 10 وجملة حكم واحدة صريحة، ثم أهم شيئين يجب العمل عليهما.\n"+
+  "## ما أجدته\nنقاط محددة بالأرقام.\n"+
+  "## قراءة الجمل والسير\nجملة جملة باختصار من phrases: أين بدأت وأين قفلت، هل أبرزت الغماز، هل ظهر تحويل مقامي، هل كانت القفلة الأخيرة على القرار وثابتة.\n"+
+  "## النشاز وتعديله\nاجمع pitch_problem_spots حسب الدرجة، واذكر الأوقات، وميّز الخطأ من التلوين المقبول، واشرح السبب المرجّح والعلاج المحدد.\n"+
+  (prev?"## مقارنة بمحاولتك السابقة\nبالأرقام من previous_attempt_same_maqam و student.degree_trends_cents: ماذا تحسن وماذا لم يتحسن، وهل تحقق هدف المدرب السابق إن وُجد.\n":"")+
+  "## خطة التدريب\n3 إلى 5 تمارين مرقمة لهذا الأسبوع، كل تمرين: الخطوات، الأداة وإعداداتها (مثل: القرار المستمر على "+m.name+"، المترونوم 70)، المدة اليومية، وعلامة نجاح رقمية.\n"+
+  "## هدف التسجيل القادم\nسطر واحد أو اثنان بأرقام قابلة للقياس.\n\n"+
+  (note?"ملاحظة المتدرب: "+note+"\n\n":"")+
+  "ملف المتدرب وتاريخه:\n"+JSON.stringify(studentProfile())+"\n\nالقياسات:\n"+JSON.stringify(analysisSummary(R));
+}
 let aiCtl=null;
 $("#aiBtn").addEventListener("click",async()=>{
   const R=S.lastAnalysis;if(!R||!aiReady())return;
@@ -2133,15 +2284,34 @@ $("#aiBtn").addEventListener("click",async()=>{
   const prompt=reportPrompt(R,$("#aiNote").value.trim());
   aiCtl=new AbortController();$("#aiBtn").disabled=true;$("#aiStop").hidden=false;
   try{
-    const r=await ask(prompt,{signal:aiCtl.signal,onThinking:()=>{if(out.querySelector(".thinking"))out.innerHTML='<p class="thinking">المدرب يفكّر في قياساتك (قد يأخذ 20 إلى 60 ثانية)</p>';},onText:({text})=>{out.innerHTML=md(text);}});
+    const img=plotImageB64();$("#aiFollow").hidden=true;$("#aiThread").innerHTML="";
+    const r=await ask(prompt,{system:COACH_KB,images:img?[img]:null,signal:aiCtl.signal,onThinking:()=>{if(out.querySelector(".thinking"))out.innerHTML='<p class="thinking">المدرب يدرس تسجيلك ('+coachModel().name+'، قد يأخذ 30 إلى 90 ثانية)</p>';},onText:({text})=>{out.innerHTML=md(text);}});
+    S.reportThread={prompt,report:r.text,turns:[]};$("#aiFollow").hidden=false;
     if(r.truncated)out.append(el("p",{class:"small muted",text:"انقطع الرد قبل نهايته."}));
-    if(r.cost!=null)out.append(el("p",{class:"small muted",text:"تكلفة هذا التحليل تقريباً $"+r.cost.toFixed(3)+" · هذا الشهر $"+r.month.toFixed(2)}));
-    if(S.currentRec&&!S.lastIsExample){S.currentRec.report=r.text;S.currentRec.reportT=Date.now();await updateRec(S.currentRec);}
+    if(r.cost!=null)out.append(el("p",{class:"small muted",text:(r.model?r.model+" · ":"")+"تكلفة هذا التحليل تقريباً $"+r.cost.toFixed(3)+" · هذا الشهر $"+r.month.toFixed(2)}));
+    if(S.currentRec&&!S.lastIsExample){S.currentRec.report=r.text;S.currentRec.reportT=Date.now();const gm=r.text.split(/##\s*هدف التسجيل القادم/)[1];if(gm)S.currentRec.goal=gm.replace(/##[\s\S]*/,"").trim().slice(0,300);await updateRec(S.currentRec);}
   }catch(e){if(e&&e.text)out.innerHTML=md(e.text);const msg=sampleErrFull(e);if(msg)out.append(el("p",{class:"status err",text:msg}));}
   finally{$("#aiBtn").disabled=false;$("#aiStop").hidden=true;}
 });
 $("#aiStop").addEventListener("click",()=>aiCtl&&aiCtl.abort());
-$("#copyBtn").addEventListener("click",()=>{const R=S.lastAnalysis;if(!R)return;const txt=reportPrompt(R,$("#aiNote").value.trim());const ta=$("#copyArea");
+async function askReport(){
+  const q=$("#aiQ").value.trim();const T=S.reportThread;if(!q||!T||!aiReady())return;$("#aiQ").value="";
+  const th=$("#aiThread");th.append(el("div",{class:"msg u",text:q}));const a=el("div",{class:"msg a"});a.innerHTML='<span class="thinking">يفكّر</span>';th.append(a);a.scrollIntoView({block:"nearest"});
+  const turns=[{role:"user",content:T.prompt},{role:"assistant",content:T.report},...T.turns,{role:"user",content:q+"\n(أجب عن سؤالي بدقة وإيجاز، حتى 250 كلمة، مستنداً إلى قياسات التسجيل أعلاه.)"}];
+  $("#aiAsk").disabled=true;
+  try{const r=await ask(turns,{system:COACH_KB,maxTokens:12000,onText:({text})=>{a.innerHTML=md(text);}});T.turns.push({role:"user",content:q},{role:"assistant",content:r.text});
+    if(S.currentRec&&!S.lastIsExample){S.currentRec.reportChat=(S.currentRec.reportChat||[]).concat([{q,a:r.text}]).slice(-10);updateRec(S.currentRec);}
+    if(r.cost!=null)a.append(el("p",{class:"small muted",text:"$"+r.cost.toFixed(3)}));}
+  catch(e){a.innerHTML=e&&e.text?md(e.text):"";const msg=sampleErrFull(e);if(msg)a.append(el("p",{class:"status err",text:msg}));}
+  finally{$("#aiAsk").disabled=false;}
+}
+$("#aiAsk").addEventListener("click",askReport);
+$("#aiQ").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();askReport();}});
+// model + profile settings
+$("#coachModel").value=store.get("coachModel","sonnet");$("#coachModel").addEventListener("change",e=>store.set("coachModel",e.target.value));
+(function(){const p=store.get("profile",{});$("#pLevel").value=p.level||"";$("#pFocus").value=p.focus||"";$("#pStyle").value=p.style||"";$("#pGoals").value=p.goals||"";
+  $("#pSave").addEventListener("click",()=>{store.set("profile",{level:$("#pLevel").value,focus:$("#pFocus").value,style:$("#pStyle").value.trim(),goals:$("#pGoals").value.trim()});$("#profSaved").textContent="حُفظ ✓";setTimeout(()=>$("#profSaved").textContent="",2500);});})();
+$("#copyBtn").addEventListener("click",()=>{const R=S.lastAnalysis;if(!R)return;const txt=COACH_KB+"\n\n"+reportPrompt(R,$("#aiNote").value.trim());const ta=$("#copyArea");
   const fallback=()=>{ta.hidden=false;ta.value=txt;ta.focus();ta.select();$("#copyBtn").textContent="انسخ النص المحدد يدوياً";};
   try{navigator.clipboard.writeText(txt).then(()=>{$("#copyBtn").textContent="نُسخ. الصقه في محادثة Claude";ta.hidden=true;setTimeout(()=>$("#copyBtn").textContent="انسخ القياسات لـ Claude",3000);},fallback);}catch(e){fallback();}});
 
@@ -2154,9 +2324,9 @@ async function sendChat(){
   const a=el("div",{class:"msg a"});a.innerHTML='<span class="thinking">يفكّر</span>';chat.append(a);a.scrollIntoView({block:"nearest"});
   chatTurns.push({role:"user",content:q});
   const ctxTxt=COACH_ROLE+(S.activeSong?"\nالمتدرب يتدرّب الآن على أغنية «"+S.activeSong.title+"» لـ"+S.activeSong.artist+" (بياناتها الموثّقة إن وجدت: "+JSON.stringify({composer:S.activeSong.composer,maqam:S.activeSong.maqamText,iqa:S.activeSong.iqa,mods:S.activeSong.mods})+"). لا تكتب كلمات الأغنية.":"")+"\n\nسياق التطبيق: المقام المختار حالياً "+byId(S.maqam).name+" (الدرجات بالسنت من القرار: "+byId(S.maqam).steps.join("، ")+"). أدوات التطبيق المتاحة للمتدرب: مستكشف المقامات بصوت العود والصوت البشري، قرار مستمر، تمارين (تعرّف على المقام، أي درجة، أذن الربع تون)، مؤشر طبقة مباشر، تسجيل وتحليل بالسنت، مكتبة إيقاعات (مقسوم، بلدي، سعيدي، ملفوف، أيوب، خليجي، عدني، جورجينا، فالس، مصمودي كبير، دور هندي، سماعي ثقيل، وإيقاعات يضيفها المتدرب بنفسه) ومترونوم وتمارين نقر تقيس الدقة بالملّي ثانية وتمرين الصمت. "+(S.lastTiming?"آخر نتيجة تمرين زمن: "+JSON.stringify(S.lastTiming)+". ":"")+""+(S.lastAnalysis?"آخر تحليل لتسجيله: "+JSON.stringify(analysisSummary(S.lastAnalysis)):"لا يوجد تحليل تسجيل بعد.")+"\nأجب بإيجاز (حتى 200 كلمة) ما لم يطلب التفصيل، وبنقاط عند الحاجة.";
-  const turns=[{role:"user",content:ctxTxt},...chatTurns.slice(-12)];
+  const turns=[{role:"user",content:ctxTxt+"\nملف المتدرب: "+JSON.stringify(studentProfile())},...chatTurns.slice(-12)];
   $("#chatSend").disabled=true;
-  try{const r=await ask(turns,{onText:({text})=>{a.innerHTML=md(text);}});chatTurns.push({role:"assistant",content:r.text});}
+  try{const r=await ask(turns,{system:COACH_KB,maxTokens:12000,onText:({text})=>{a.innerHTML=md(text);}});chatTurns.push({role:"assistant",content:r.text});}
   catch(e){a.innerHTML=e&&e.text?md(e.text):"";const msg=sampleErrFull(e);if(msg)a.append(el("p",{class:"status err",text:msg}));chatTurns.pop();}
   finally{$("#chatSend").disabled=false;}
 }
@@ -2243,7 +2413,7 @@ const rs=$("#recMaqam");rs.append(el("option",{value:"auto"},"اكتشف الم�
 window.addEventListener("resize",()=>{if(S.lastAnalysis&&!$("#v-rec").hidden)drawPlot(S.lastAnalysis);});
 window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{if(S.lastAnalysis){drawPlot(S.lastAnalysis);renderDevBars(S.lastAnalysis);}});
 
-const APP_VER="2026.10.10-6";
+const APP_VER="2026.10.10-7";
 $("#verTxt").textContent="الإصدار \u2066"+APP_VER+"\u2069";
 const hardReload=()=>{location.replace(location.pathname+"?v="+Date.now()+location.hash);};
 $("#updBtn").addEventListener("click",hardReload);$("#updNow").addEventListener("click",hardReload);
