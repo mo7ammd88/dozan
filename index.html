@@ -324,6 +324,14 @@ a.btn{text-decoration:none;color:inherit;display:inline-block}
       <label>طبقة القرار (نقل بالأنصاف)</label>
       <div class="stepper"><button id="trDown" aria-label="أخفض">−</button><output id="trOut" class="mono">0</output><button id="trUp" aria-label="أعلى">+</button></div>
     </div>
+    <div style="grid-column:1/-1">
+      <label for="a4In">تردد الدوزان: نغمة لا (A4) بالهرتز</label>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+        <div class="stepper"><button id="a4Down" aria-label="أخفض هرتز">−</button><input id="a4In" class="field mono" type="number" inputmode="decimal" min="380" max="480" step="0.5" style="width:84px;flex:none;text-align:center"><button id="a4Up" aria-label="أعلى هرتز">+</button></div>
+        <div class="seg" id="a4Seg"><button data-a="440">440</button><button data-a="432">432</button><button data-a="415">415</button></div>
+      </div>
+      <p class="small muted" id="a4Txt"></p>
+    </div>
     <div>
       <label>الصوت البشري</label>
       <div class="seg" id="voiceSeg"><button data-v="m" aria-pressed="true">رجالي</button><button data-v="f" aria-pressed="false">نسائي</button></div>
@@ -658,7 +666,7 @@ const el=(t,a={},...kids)=>{const e=document.createElement(t);for(const k in a){
 const store={get(k,d){try{const v=localStorage.getItem("dozan."+k);return v==null?d:JSON.parse(v);}catch(e){return d;}},set(k,v){try{localStorage.setItem("dozan."+k,JSON.stringify(v));}catch(e){}}};
 
 /* ---------------- Music data ---------------- */
-const C3=130.8128;
+let A4=+(store.get("a4",440))||440;let C3=A4*Math.pow(2,-21/12);
 const NAMES={"-500":"يكاه","-300":"عشيران","-200":"عجم عشيران","-150":"عراق","-100":"كوشت","0":"راست","100":"زيركلاه","200":"دوكاه","300":"كرد","350":"سيكاه","400":"بوسليك","500":"جهاركاه","600":"حجاز","700":"نوى","800":"حصار","900":"حسيني","1000":"عجم","1050":"أوج","1100":"ماهور","1200":"كردان","1300":"شهناز","1400":"محيّر","1550":"بزرك","1700":"ماهوران"};
 function noteName(abs){const r=Math.round(abs/50)*50;if(NAMES[r]!=null)return NAMES[r];if(r>=1200)return "جواب "+noteName(r-1200);if(r<-500)return "قرار "+noteName(r+1200);return "—";}
 function intervalWord(c){const m={50:"ربع تون",100:"نصف تون",150:"¾ تون",200:"تون",250:"تون وربع",300:"تون ونصف",350:"تون و¾",400:"تونان"};return m[Math.round(c/50)*50]||"";}
@@ -1251,7 +1259,7 @@ makeQuiz("exR",{
 function renderStrings(){
   const s=[["قرار راست","C2",-1200],["قرار جهاركاه","F2",-700],["عشيران","A2",-300],["دوكاه","D3",200],["نوى","G3",700],["كردان","C4",1200]];
   const box=$("#strings");box.innerHTML="";
-  s.forEach(([n,w,c],k)=>box.append(el("button",{onclick:()=>{const ctx=getCtx();playOud(ctx,bus,C3*Math.pow(2,c/1200),ctx.currentTime+0.02,2.5);}},el("span",{class:"small muted",text:"الوتر "+(6-k)}),el("b",{text:n}),el("span",{class:"mono small muted",text:w}))));
+  s.forEach(([n,w,c],k)=>{const f=C3*Math.pow(2,c/1200);box.append(el("button",{onclick:()=>{const ctx=getCtx();playOud(ctx,bus,C3*Math.pow(2,c/1200),ctx.currentTime+0.02,2.5);}},el("span",{class:"small muted",text:"الوتر "+(6-k)}),el("b",{text:n}),el("span",{class:"mono small muted",text:w+" · "+f.toFixed(1)+" Hz"})));});
 }
 
 /* ---------------- Pitch detection (YIN) ---------------- */
@@ -2214,6 +2222,12 @@ function go(v){if(v!=="rhythm"&&TM.active)tmFinish(true);document.querySelectorA
   if(v==="rec"&&S.lastAnalysis)setTimeout(()=>drawPlot(S.lastAnalysis),30);}
 document.querySelectorAll("nav.tabs button").forEach(b=>b.addEventListener("click",()=>go(b.dataset.v)));
 $("#setBtn").addEventListener("click",()=>{const s=$("#settings");s.hidden=!s.hidden;$("#setBtn").setAttribute("aria-expanded",String(!s.hidden));});
+function setA4(v){v=Math.round(Math.max(380,Math.min(480,+v||440))*2)/2;A4=v;C3=A4*Math.pow(2,-21/12);store.set("a4",A4);renderA4();renderStrings();if(S.drone)startDrone();}
+function renderA4(){$("#a4In").value=A4;document.querySelectorAll("#a4Seg button").forEach(b=>b.setAttribute("aria-pressed",String(+b.dataset.a===A4)));
+  const ct=1200*Math.log2(A4/440);$("#a4Txt").textContent=Math.abs(ct)<1?"الدوزان العالمي القياسي.":(ct<0?"أخفض":"أعلى")+" من 440 بـ "+Math.abs(Math.round(ct))+" سنت ("+(Math.abs(ct/100)).toFixed(2)+" نصف تون). كل الأصوات والتحليل ومؤشر الطبقة تتبع هذا الدوزان.";}
+$("#a4Up").addEventListener("click",()=>setA4(A4+1));$("#a4Down").addEventListener("click",()=>setA4(A4-1));
+$("#a4In").addEventListener("change",e=>setA4(e.target.value));
+document.querySelectorAll("#a4Seg button").forEach(b=>b.addEventListener("click",()=>setA4(+b.dataset.a)));
 function renderTr(){$("#trOut").textContent=(S.transpose>0?"+":"")+S.transpose;}
 $("#trUp").addEventListener("click",()=>{if(S.transpose<7){S.transpose++;store.set("tr",S.transpose);renderTr();if(S.drone)startDrone();}});
 $("#trDown").addEventListener("click",()=>{if(S.transpose>-7){S.transpose--;store.set("tr",S.transpose);renderTr();if(S.drone)startDrone();}});
@@ -2229,15 +2243,15 @@ const rs=$("#recMaqam");rs.append(el("option",{value:"auto"},"اكتشف الم�
 window.addEventListener("resize",()=>{if(S.lastAnalysis&&!$("#v-rec").hidden)drawPlot(S.lastAnalysis);});
 window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{if(S.lastAnalysis){drawPlot(S.lastAnalysis);renderDevBars(S.lastAnalysis);}});
 
-const APP_VER="2026.10.10-5";
-$("#verTxt").textContent="الإصدار "+APP_VER;
+const APP_VER="2026.10.10-6";
+$("#verTxt").textContent="الإصدار \u2066"+APP_VER+"\u2069";
 const hardReload=()=>{location.replace(location.pathname+"?v="+Date.now()+location.hash);};
 $("#updBtn").addEventListener("click",hardReload);$("#updNow").addEventListener("click",hardReload);
 if(!window.claude&&location.protocol==="https:"){fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"}).then(r=>r.text()).then(t=>{const m=t.match(/APP_VER="([^"]+)"/);if(m&&m[1]!==APP_VER)$("#updBanner").hidden=false;}).catch(()=>{});}
-renderTr();renderChips();renderMaqam();renderIqaChips();renderIqa();renderDots();edSetMeter(false);ED.steps="D..D..T.";renderEd();setTmMode("pulse");if(TM.calib)$("#calibTxt").textContent="المعايرة الحالية: "+Math.round(TM.calib)+" مث.";renderStrings();renderPath();renderSuggest();$("#exDMaqam").textContent=byId(S.maqam).name;
+renderTr();renderA4();renderChips();renderMaqam();renderIqaChips();renderIqa();renderDots();edSetMeter(false);ED.steps="D..D..T.";renderEd();setTmMode("pulse");if(TM.calib)$("#calibTxt").textContent="المعايرة الحالية: "+Math.round(TM.calib)+" مث.";renderStrings();renderPath();renderSuggest();$("#exDMaqam").textContent=byId(S.maqam).name;
 renderExample().then(prev=>{if(prev){$("#recMaqam").value="auto";syncRecMaqam();}}).catch(()=>{});
 initSample();
-window.__dozan={SONGS:()=>SONGS,openSong,compareWithOriginal,trainSong,runAnalysis,loadLib,playVoice,LIBCACHE:()=>LIBCACHE,openRec,analyze,MAQAMAT,S,phraseEvents,playOud,makeBus,C3,RHY,TM,IQAAT,onTap,drumHit,getCtx};
+window.__dozan={setA4,getC3:()=>C3,SONGS:()=>SONGS,openSong,compareWithOriginal,trainSong,runAnalysis,loadLib,playVoice,LIBCACHE:()=>LIBCACHE,openRec,analyze,MAQAMAT,S,phraseEvents,playOud,makeBus,C3,RHY,TM,IQAAT,onTap,drumHit,getCtx};
 })();
 </script>
 
