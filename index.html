@@ -110,6 +110,26 @@ section.view,section.page{display:grid;gap:22px;padding-bottom:12px;min-width:0}
 .ib svg{width:19px;height:19px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .ib.c1{background:#E8930C}.ib.c2{background:#AF52DE}.ib.c3{background:#007AFF}.ib.c4{background:#34C759}.ib.c5{background:#FF2D55}.ib.c6{background:#5856D6}.ib.c7{background:#8E8E93}.ib.c8{background:#FF9500}
 
+/* tiles */
+.tiles{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.tile{--k:var(--brass);--ks:var(--brass-soft);border:0;background:var(--surface);border-radius:24px;padding:16px 16px 18px;min-height:150px;display:flex;flex-direction:column;align-items:flex-start;gap:3px;text-align:start;cursor:pointer;position:relative;overflow:hidden;color:var(--ink);transition:transform .12s}
+.tile:active{transform:scale(.97)}
+.tile.wide{grid-column:1/-1;min-height:0;display:grid;grid-template-columns:auto 1fr;grid-template-rows:auto auto;column-gap:14px;align-items:center}
+.tile.wide .tg{grid-row:1/span 2;margin:0}
+.tile.wide .tt{margin:0}
+.tile .tg{width:46px;height:46px;border-radius:15px;background:var(--ks);display:grid;place-items:center;margin-bottom:auto}
+.tile .tg svg{width:25px;height:25px;stroke:var(--k);fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.tile .tt{font-size:17px;font-weight:700;margin-top:14px;line-height:1.25}
+.tile .ts{font-size:13.5px;color:var(--muted);line-height:1.35}
+.tile .ts.has{color:var(--k);font-weight:600}
+.tile .bar{position:absolute;bottom:0;left:0;right:0;height:4px;background:transparent}
+.tile .bar i{display:block;height:100%;width:0;background:var(--k);opacity:.85}
+.k-ear{--k:#C77A0A;--ks:#FBEBD3}
+.k-voice{--k:#1E8A55;--ks:#DDF2E6}
+.k-time{--k:#5856D6;--ks:#E6E5FA}
+:root[data-theme="dark"] .k-ear{--k:#F0A93B;--ks:#3A2A12}:root[data-theme="dark"] .k-voice{--k:#30D158;--ks:#12301E}:root[data-theme="dark"] .k-time{--k:#8E8CFF;--ks:#24234A}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .k-ear{--k:#F0A93B;--ks:#3A2A12}:root:not([data-theme="light"]) .k-voice{--k:#30D158;--ks:#12301E}:root:not([data-theme="light"]) .k-time{--k:#8E8CFF;--ks:#24234A}}
+
 /* switch */
 input.sw{appearance:none;-webkit-appearance:none;width:51px;height:31px;border-radius:16px;background:var(--surface-2);position:relative;cursor:pointer;flex:none;margin:0;transition:background .2s;border:0}
 input.sw::after{content:"";position:absolute;top:2px;right:2px;width:27px;height:27px;border-radius:50%;background:#fff;box-shadow:0 2px 4px rgba(0,0,0,.25);transition:transform .2s}
@@ -442,6 +462,7 @@ details.more[open]>summary{margin-bottom:8px}
 @keyframes fadein{from{background:rgba(0,0,0,0)}}
 .stepper{display:flex;align-items:center;gap:8px}
 .stepper button{width:36px;height:32px;border-radius:8px;border:0;background:var(--surface-2);cursor:pointer;font-size:18px;color:var(--ink)}
+.stepper output small{display:none}
 .stepper output{font-variant-numeric:tabular-nums;min-width:44px;text-align:center;font-weight:600}
 
 @media (max-width:520px){
@@ -535,26 +556,26 @@ details.more[open]>summary{margin-bottom:8px}
   <section class="view" id="t-train" data-title="تمرّن" hidden>
     <h1 class="lt">تمرّن</h1>
     <div class="sec">
-      <p class="sh">الأذن</p>
-      <div class="list ico">
-        <button class="row" data-push="exm"><span class="ib c1"><svg viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg></span><span class="tx">تعرّف على المقام<small data-mirror="exMScore"></small></span><svg class="chev"><use href="#i-chev"/></svg></button>
-        <button class="row" data-push="exd"><span class="ib c2"><svg viewBox="0 0 24 24"><path d="M4 18h16M6 14v4M10 10v8M14 6v12M18 12v6"/></svg></span><span class="tx">أي درجة؟<small data-mirror="exDScore"></small></span><svg class="chev"><use href="#i-chev"/></svg></button>
-        <button class="row" data-push="exq"><span class="ib c3"><svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 1 1 12 0c0 4-4 5-4 9a3 3 0 0 1-6 0"/><path d="M10 9a2 2 0 1 1 4 0"/></svg></span><span class="tx">أذن الربع تون<small data-mirror="exQScore"></small></span><svg class="chev"><use href="#i-chev"/></svg></button>
-        <button class="row" data-push="exr"><span class="ib c8"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="7" rx="8" ry="3"/><path d="M4 7v6c0 1.7 3.6 3 8 3s8-1.3 8-3V7"/></svg></span><span class="tx">تعرّف على الإيقاع<small data-mirror="exRScore"></small></span><svg class="chev"><use href="#i-chev"/></svg></button>
-        <button class="row" data-push="exs"><span class="ib c5"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h7"/><circle cx="18" cy="17" r="3"/></svg></span><span class="tx">خمّن مقام الأغنية<small data-mirror="exSScore"></small></span><svg class="chev"><use href="#i-chev"/></svg></button>
+      <p class="sh big">الأذن</p>
+      <div class="tiles">
+        <button class="tile k-ear" data-push="exm"><span class="tg"><svg viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg></span><span class="tt">تعرّف على المقام</span><span class="ts" data-mirror="exMScore" data-def="جملة على العود، ما مقامها؟">جملة على العود، ما مقامها؟</span><span class="bar"><i></i></span></button>
+        <button class="tile k-ear" data-push="exd"><span class="tg"><svg viewBox="0 0 24 24"><path d="M4 18h16M6 14v4M10 10v8M14 6v12M18 12v6"/></svg></span><span class="tt">أي درجة؟</span><span class="ts" data-mirror="exDScore" data-def="القرار ثم درجة، سمّها">القرار ثم درجة، سمّها</span><span class="bar"><i></i></span></button>
+        <button class="tile k-ear" data-push="exq"><span class="tg"><svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 1 1 12 0c0 4-4 5-4 9a3 3 0 0 1-6 0"/><path d="M10 9a2 2 0 1 1 4 0"/></svg></span><span class="tt">أذن الربع تون</span><span class="ts" data-mirror="exQScore" data-def="كرد أم سيكاه أم بوسليك">كرد أم سيكاه أم بوسليك</span><span class="bar"><i></i></span></button>
+        <button class="tile k-ear" data-push="exr"><span class="tg"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="7" rx="8" ry="3"/><path d="M4 7v6c0 1.7 3.6 3 8 3s8-1.3 8-3V7"/></svg></span><span class="tt">تعرّف على الإيقاع</span><span class="ts" data-mirror="exRScore" data-def="دورتان، ما اسمه؟">دورتان، ما اسمه؟</span><span class="bar"><i></i></span></button>
+        <button class="tile k-ear wide" data-push="exs"><span class="tg"><svg viewBox="0 0 24 24"><path d="M4 6h16M4 12h10M4 18h7"/><circle cx="18" cy="17" r="3"/></svg></span><span class="tt">خمّن مقام الأغنية</span><span class="ts" data-mirror="exSScore" data-def="من أغانٍ تحفظها">من أغانٍ تحفظها</span><span class="bar"><i></i></span></button>
       </div>
     </div>
     <div class="sec">
-      <p class="sh">الصوت والآلة</p>
-      <div class="list ico">
-        <button class="row" data-push="tuner"><span class="ib c4"><svg viewBox="0 0 24 24"><path d="M4 16a8 8 0 1 1 16 0"/><path d="m12 16 4-6"/></svg></span><span class="tx">مؤشر الطبقة المباشر<small>غنِّ أو اعزف ويريك بُعدك بالسنت</small></span><svg class="chev"><use href="#i-chev"/></svg></button>
-        <button class="row" data-push="oud"><span class="ib c7"><svg viewBox="0 0 24 24"><ellipse cx="9" cy="15" rx="6" ry="6"/><path d="m13 11 7-7M17 4l3 3"/></svg></span><span class="tx">دوزان العود<small>اسمع كل وتر</small></span><svg class="chev"><use href="#i-chev"/></svg></button>
+      <p class="sh big">الصوت والآلة</p>
+      <div class="tiles">
+        <button class="tile k-voice" data-push="tuner"><span class="tg"><svg viewBox="0 0 24 24"><path d="M4 16a8 8 0 1 1 16 0"/><path d="m12 16 4-6"/></svg></span><span class="tt">مؤشر الطبقة</span><span class="ts" data-def="بُعدك عن الدرجة بالسنت">بُعدك عن الدرجة بالسنت</span><span class="bar"><i></i></span></button>
+        <button class="tile k-voice" data-push="oud"><span class="tg"><svg viewBox="0 0 24 24"><ellipse cx="9" cy="15" rx="6" ry="6"/><path d="m13 11 7-7M17 4l3 3"/></svg></span><span class="tt">دوزان العود</span><span class="ts" data-def="اسمع كل وتر">اسمع كل وتر</span><span class="bar"><i></i></span></button>
       </div>
     </div>
     <div class="sec">
-      <p class="sh">الزمن</p>
-      <div class="list ico">
-        <button class="row" data-push="timing"><span class="ib c6"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></svg></span><span class="tx">التدريب على الزمن<small>انقر مع النبض ويقيس دقتك</small></span><svg class="chev"><use href="#i-chev"/></svg></button>
+      <p class="sh big">الزمن</p>
+      <div class="tiles">
+        <button class="tile k-time wide" data-push="timing"><span class="tg"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></svg></span><span class="tt">التدريب على الزمن</span><span class="ts" data-def="انقر مع النبض ونقيس دقتك بالملّي ثانية">انقر مع النبض ونقيس دقتك بالملّي ثانية</span><span class="bar"><i></i></span></button>
       </div>
     </div>
   </section>
@@ -587,25 +608,26 @@ details.more[open]>summary{margin-bottom:8px}
         </div>
       </details>
     </div>
-    <div class="sec">
-      <div class="list ico">
-        <button class="row" data-push="metro"><span class="ib c1"><svg viewBox="0 0 24 24"><path d="M8 21h8l-3-17h-2zM12 14l5-6"/></svg></span><span class="tx">المترونوم</span><svg class="chev"><use href="#i-chev"/></svg></button>
-        <button class="row" data-push="timing"><span class="ib c6"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></svg></span><span class="tx">التدريب على الزمن</span><svg class="chev"><use href="#i-chev"/></svg></button>
-        <button class="row" data-push="editor"><span class="ib c4"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span><span class="tx">أضف إيقاعاً من عندك<small>سامري، خبيتي، دوسري…</small></span><svg class="chev"><use href="#i-chev"/></svg></button>
-        <button class="row" data-push="exr"><span class="ib c8"><svg viewBox="0 0 24 24"><path d="M9 9a3 3 0 1 1 4 2.8c-.7.3-1 .9-1 1.6V15M12 19h.01"/></svg></span><span class="tx">تعرّف على الإيقاع</span><svg class="chev"><use href="#i-chev"/></svg></button>
-      </div>
+    <div class="tiles">
+      <button class="tile k-time" data-push="metro"><span class="tg"><svg viewBox="0 0 24 24"><path d="M8 21h8l-3-17h-2zM12 14l5-6"/></svg></span><span class="tt">المترونوم</span><span class="ts" data-def="موازين وتقسيمات">موازين وتقسيمات</span><span class="bar"><i></i></span></button>
+      <button class="tile k-time" data-push="timing"><span class="tg"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></svg></span><span class="tt">التدريب على الزمن</span><span class="ts" data-def="دقتك بالملّي ثانية">دقتك بالملّي ثانية</span><span class="bar"><i></i></span></button>
+      <button class="tile k-voice" data-push="editor"><span class="tg"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span><span class="tt">أضف إيقاعاً</span><span class="ts" data-def="سامري، خبيتي، دوسري…">سامري، خبيتي، دوسري…</span><span class="bar"><i></i></span></button>
+      <button class="tile k-ear" data-push="exr"><span class="tg"><svg viewBox="0 0 24 24"><path d="M9 9a3 3 0 1 1 4 2.8c-.7.3-1 .9-1 1.6V15M12 19h.01"/></svg></span><span class="tt">تعرّف على الإيقاع</span><span class="ts" data-mirror="exRScore" data-def="اختبر أذنك">اختبر أذنك</span><span class="bar"><i></i></span></button>
     </div>
   </section>
 
   <!-- ===== TAB: RECORD ===== -->
   <section class="view" id="t-rec" data-title="سجّل" hidden>
     <h1 class="lt">سجّل</h1>
-    <div class="activesong" id="activeSong" hidden><span id="activeSongTxt"></span><button id="activeSongX" aria-label="إلغاء ربط الأغنية">✕</button></div>
+    <div class="activesong" id="activeSong" hidden style="display:none!important"><span id="activeSongTxt"></span><button id="activeSongX" aria-label="إلغاء ربط الأغنية">✕</button></div>
     <div id="v-rec" class="sec">
       <div class="list">
         <label class="row static"><span class="tx">المقام</span><select id="recMaqam"></select></label>
         <label class="row static"><span class="tx">الأداء</span><select id="recMode"><option value="auto">اكتشف تلقائياً</option><option value="voice">غناء</option><option value="oud">عزف عود</option></select></label>
+        <div class="row static"><span class="tx">الأغنية</span><button class="link" id="recSongBtn" data-push="songpick">بدون</button><button class="link" id="recSongX" hidden aria-label="إلغاء الأغنية" style="color:var(--muted)">✕</button></div>
         <label class="row static"><span class="tx">شغّل الإيقاع وقِس التزامي</span><input type="checkbox" class="sw" id="recWithIqa"></label>
+        <label class="row static" id="recIqaRow" hidden><span class="tx">الإيقاع</span><select class="iqaPick" aria-label="الإيقاع"></select></label>
+        <div class="row static" id="recBpmRow" hidden><span class="tx">السرعة</span><div class="stepper" data-tempo-mirror><button data-tm="-" aria-label="أبطأ">−</button><output data-tm-out style="min-width:64px"></output><button data-tm="+" aria-label="أسرع">+</button></div></div>
         <label class="row static" id="autoTonicRow"><span class="tx">اكتشف القرار تلقائياً</span><input type="checkbox" class="sw" id="autoTonic" checked></label>
       </div>
       <p class="sf" id="recHint">سجّل 20 إلى 60 ثانية في مكان هادئ، واختم على القرار. مع الإيقاع استخدم سماعات.</p>
@@ -660,6 +682,11 @@ details.more[open]>summary{margin-bottom:8px}
     <div class="card" id="songDetail"></div>
   </section>
 
+  <section class="page" id="p-songpick" data-title="اختر أغنية" hidden>
+    <div class="search"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg><input id="spQ" type="search" placeholder="أغنية أو فنان" aria-label="بحث"></div>
+    <div class="songlist" id="spList"></div>
+  </section>
+
   <section class="page" id="p-exm" data-title="تعرّف على المقام" hidden>
     <div class="card" id="ex-maqam">
       <p class="scorebig">النتيجة <span class="score" id="exMScore">0 / 0</span></p>
@@ -671,13 +698,14 @@ details.more[open]>summary{margin-bottom:8px}
   </section>
 
   <section class="page" id="p-exd" data-title="أي درجة؟" hidden>
+    <div class="chips maqpick" role="group" aria-label="المقام"></div>
     <div class="card" id="ex-degree">
       <p class="scorebig">النتيجة <span class="score" id="exDScore">0 / 0</span></p>
       <div class="btns" style="justify-content:center"><button class="btn primary" id="exDPlay">اسمع درجة جديدة</button><button class="btn" id="exDRe" disabled>أعد</button></div>
       <div class="ex-opts" id="exDOpts"></div>
       <p class="fb" id="exDFb"></p>
     </div>
-    <p class="sf">يُعزف القرار ثم درجة من مقام <b id="exDMaqam">بياتي</b>. غيّر المقام من «تعلّم».</p>
+    <p class="sf">يُعزف القرار ثم درجة من مقام <b id="exDMaqam">بياتي</b>.</p>
   </section>
 
   <section class="page" id="p-exq" data-title="أذن الربع تون" hidden>
@@ -712,6 +740,7 @@ details.more[open]>summary{margin-bottom:8px}
   </section>
 
   <section class="page" id="p-tuner" data-title="مؤشر الطبقة" hidden>
+    <div class="chips maqpick" role="group" aria-label="المقام"></div>
     <div class="card" id="tunerCard">
       <div class="tuner">
         <p class="small muted" id="targetTxt"></p>
@@ -720,10 +749,10 @@ details.more[open]>summary{margin-bottom:8px}
         <div class="meter"><div class="zone"></div><div class="center"></div><div class="needle" id="needle"></div></div>
         <div class="meter-scale"><span>−50</span><span>0</span><span>+50</span></div>
       </div>
-      <div class="btns" style="justify-content:center"><button class="btn primary" id="tunerBtn">شغّل الميكروفون</button><button class="btn" id="targetBtn" disabled>أعطني هدفاً</button></div>
+      <div class="btns" style="justify-content:center"><button class="btn primary" id="tunerBtn">شغّل الميكروفون</button><button class="btn" id="targetBtn" disabled>أعطني هدفاً</button><button class="btn" data-drone aria-pressed="false">قرار مستمر</button></div>
       <p class="status" id="tunerStatus"></p>
     </div>
-    <p class="sf">غنِّ أو اعزف نغمة طويلة، ويخبرك المؤشر بأقرب درجة في المقام المختار وبُعدك عنها بالسنت.</p>
+    <p class="sf">غنِّ أو اعزف نغمة طويلة، ويخبرك المؤشر بأقرب درجة في المقام المختار وبُعدك عنها بالسنت. مع «القرار المستمر» استخدم سماعات.</p>
   </section>
 
   <section class="page" id="p-oud" data-title="دوزان العود" hidden>
@@ -752,6 +781,7 @@ details.more[open]>summary{margin-bottom:8px}
     <div class="card" id="timingCard">
       <div class="seg full" id="tmMode"><button data-m="pulse" aria-pressed="true">على النبض</button><button data-m="iqa" aria-pressed="false">دُم وتَك</button><button data-m="silent" aria-pressed="false">الصمت</button></div>
       <p class="small muted" id="tmHelp"></p>
+      <div class="list" style="background:var(--surface-2)"><label class="row static"><span class="tx">الإيقاع</span><select class="iqaPick" aria-label="الإيقاع"></select></label></div>
       <div class="tempo" data-tempo-mirror>
         <button class="iconbtn" data-tm="-" aria-label="أبطأ">−</button><span></span><button class="iconbtn" data-tm="+" aria-label="أسرع">+</button>
         <div class="bpm" data-tm-out>100<small>نبضة/د</small></div>
@@ -1208,6 +1238,7 @@ function roleOf(m,i){if(i===0)return "القرار";if(i===m.steps.length-1&&m.s
 function renderChips(){
   const c=$("#chips");c.innerHTML="";
   MAQAMAT.forEach(m=>c.append(el("button",{class:"chip","aria-pressed":String(m.id===S.maqam),onclick:()=>selectMaqam(m.id)},m.name)));
+  document.querySelectorAll(".maqpick").forEach(w=>{w.innerHTML="";MAQAMAT.forEach(m=>w.append(el("button",{class:"chip","aria-pressed":String(m.id===S.maqam),onclick:()=>selectMaqam(m.id)},m.name)));});
 }
 function selectMaqam(id){
   S.maqam=id;store.set("maqam",id);stopAll();renderChips();renderMaqam();
@@ -1342,7 +1373,9 @@ function iqaSeq(q,orn,click){
 function stepDurOf(q,bpm){return 60/bpm/q.spb;}
 
 /* ---------- iqa UI ---------- */
-function renderIqaChips(){const c=$("#iqaChips");c.innerHTML="";allIqaat().forEach(q=>c.append(el("button",{class:"chip","aria-pressed":String(q.id===S.iqa),onclick:()=>selectIqa(q.id)},(q.custom?"★ ":"")+q.name)));}
+function renderIqaChips(){const c=$("#iqaChips");c.innerHTML="";allIqaat().forEach(q=>c.append(el("button",{class:"chip","aria-pressed":String(q.id===S.iqa),onclick:()=>selectIqa(q.id)},(q.custom?"★ ":"")+q.name)));
+  document.querySelectorAll(".iqaPick").forEach(sel=>{sel.innerHTML="";allIqaat().forEach(q=>sel.append(el("option",{value:q.id},(q.custom?"★ ":"")+q.name)));sel.value=S.iqa;});}
+document.querySelectorAll(".iqaPick").forEach(sel=>sel.addEventListener("change",()=>selectIqa(sel.value)));
 function selectIqa(id){const was=RHY.kind==="iqa";S.iqa=id;store.set("iqa",id);S.bpm=store.get("bpm."+id,iqaById(id).bpm);renderIqaChips();renderIqa();const dl=$("#edDelete");if(dl)dl.hidden=!iqaById(id).custom;if(was)playIqa();}
 function renderIqa(){
   const q=iqaById(S.iqa);$("#iqaName").textContent=q.name;
@@ -2131,7 +2164,7 @@ function openSong(id){
   b.append(el("button",{class:"btn primary",onclick:()=>trainSong(x)},"تدرّب عليها"));
   b.append(el("button",{class:"btn",id:"songResearch",onclick:()=>researchSong(x)},x.status==="u"?"ابحث عن بياناتها":"حدّث البيانات"));
   if(x.maqam)b.append(el("button",{class:"btn",onclick:()=>{selectMaqam(x.maqam);go("maqam");}},"افتح مقام "+maqName(x.maqam)));
-  const iq=iqaFromText(x.iqa);if(iq)b.append(el("button",{class:"btn",onclick:()=>{selectIqa(iq);go("rhythm");}},"شغّل إيقاع "+iqaById(iq).name));
+  const iq=iqaFromText(x.iqa);if(iq){const lab="شغّل إيقاع "+iqaById(iq).name;const rb=el("button",{class:"btn",onclick:()=>{if(RHY.kind==="iqa"&&S.iqa===iq){rhythmStop();rb.textContent=lab;}else{selectIqa(iq);playIqa();rb.textContent="أوقف الإيقاع";}}},RHY.kind==="iqa"&&S.iqa===iq?"أوقف الإيقاع":lab);b.append(rb);}
   b.append(el("label",{class:"btn",for:"songClipIn"},"اكتشف المقام من مقطع"));
   b.append(el("button",{class:"btn",onclick:()=>{$("#chatIn").value="حدثني عن أغنية «"+x.title+"» لـ"+x.artist+" من ناحية المقام والسير والإيقاع، وكيف أتدرب على غنائها خطوة بخطوة.";go("coach");}},"اسأل المدرب عنها"));
   if(x.custom||x.status!=="v")b.append(el("button",{class:"btn",onclick:()=>editSong(x)},"عدّل يدوياً"));
@@ -2160,10 +2193,17 @@ function editSong(x){
 }
 function trainSong(x){
   S.activeSong=x;$("#activeSong").hidden=false;$("#activeSongTxt").textContent="تتدرّب على: "+x.title+" · "+x.artist+(x.maqam?" ("+maqName(x.maqam)+")":"");
-  $("#recMaqam").value=x.maqam||"auto";syncRecMaqam();$("#recMode").value="voice";go("rec");
+  $("#recMaqam").value=x.maqam||"auto";syncRecMaqam();$("#recMode").value="voice";go("rec");renderSongRow();
   setStatus("غنِّ مقطعاً من «"+x.title+"» من حفظك (20 إلى 60 ثانية)، ثم «أوقف وحلّل». يُحفظ التسجيل تحت هذه الأغنية.");
 }
-$("#activeSongX").addEventListener("click",()=>{S.activeSong=null;$("#activeSong").hidden=true;});
+$("#activeSongX").addEventListener("click",()=>{S.activeSong=null;$("#activeSong").hidden=true;renderSongRow();});
+function renderSongRow(){const x=S.activeSong;$("#recSongBtn").textContent=x?x.title:"بدون";$("#recSongX").hidden=!x;}
+$("#recSongX").addEventListener("click",()=>{S.activeSong=null;renderSongRow();setStatus("");});
+function renderSongPick(){const q=norm($("#spQ").value.trim());const box=$("#spList");box.innerHTML="";
+  box.append(el("button",{class:"songrow",onclick:()=>{S.activeSong=null;renderSongRow();navBack();}},el("b",{text:"بدون أغنية"}),el("span"),el("span",{class:"a",text:"تسجيل حر"})));
+  SONGS.filter(x=>!q||norm(x.title+" "+x.artist).includes(q)).sort((a,b)=>(a.status==="u")-(b.status==="u")||a.title.localeCompare(b.title,"ar")).slice(0,200)
+    .forEach(x=>box.append(el("button",{class:"songrow",onclick:()=>trainSong(x)},el("b",{text:x.title}),statusBadge(x),el("span",{class:"a",text:x.artist}))));}
+$("#spQ").addEventListener("input",renderSongPick);
 
 /* ----- research with cited web sources (needs the viewer's API key) ----- */
 async function apiResearch(prompt,maxUses){
@@ -2726,9 +2766,13 @@ function navRender(){
   $("#setBtn").hidden=paged;$("#profBtn").hidden=paged||NAV.tab!=="coach";
   if(TM.active&&key!=="p-timing")tmFinish(true);
   if(typeof tuner!=="undefined"&&tuner&&key!=="p-tuner")tuner.stop();
+  if(key==="p-songpick"){$("#spQ").value="";renderSongPick();}
+  syncRecIqa();
   if(key==="p-result"&&S.lastAnalysis&&!$('[data-rp="plot"]').hidden)setTimeout(()=>drawPlot(S.lastAnalysis),30);
   onScrollNav();
 }
+function syncRecIqa(){const on=$("#recWithIqa").checked;$("#recIqaRow").hidden=!on;$("#recBpmRow").hidden=!on;}
+$("#recWithIqa").addEventListener("change",syncRecIqa);
 function saveScroll(){NAV.scroll[curKey()]=window.scrollY;}
 function restoreScroll(){window.scrollTo({top:NAV.scroll[curKey()]||0});}
 function push(pid){saveScroll();const st=NAV.stack[NAV.tab];if(st[st.length-1]===pid){window.scrollTo({top:0});return;}st.push(pid);NAV.scroll["p-"+pid]=0;navRender();window.scrollTo({top:0});
@@ -2757,7 +2801,9 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")document.querySelect
 $("#setBtn").addEventListener("click",()=>{Awake.sync();openSheet("setSheet");});
 $("#profBtn").addEventListener("click",()=>openSheet("profSheet"));
 // mirrors: exercise scores into hub rows, tempo into metronome / timing pages
-document.querySelectorAll("[data-mirror]").forEach(m=>{const src=$("#"+m.dataset.mirror);if(!src)return;const upd=()=>{const t=src.textContent.trim();m.textContent=t&&t!=="0 / 0"?"نتيجتك "+t:"";};upd();new MutationObserver(upd).observe(src,{childList:true,characterData:true,subtree:true});});
+document.querySelectorAll("[data-mirror]").forEach(m=>{const src=$("#"+m.dataset.mirror);if(!src)return;const tile=m.closest(".tile");const bar=tile&&tile.querySelector(".bar i");
+  const upd=()=>{const mm=src.textContent.match(/(\d+)\s*\/\s*(\d+)/);if(mm&&+mm[2]>0){const c=+mm[1],n=+mm[2];m.textContent="نتيجتك "+c+" من "+n+" · "+Math.round(c/n*100)+"%";m.classList.add("has");if(bar)bar.style.width=(c/n*100)+"%";}
+    else{m.textContent=m.dataset.def||"";m.classList.remove("has");if(bar)bar.style.width="0";}};upd();new MutationObserver(upd).observe(src,{childList:true,characterData:true,subtree:true});});
 (function(){const out=$("#bpmOut");const upd=()=>document.querySelectorAll("[data-tm-out]").forEach(o=>o.innerHTML=out.innerHTML);upd();new MutationObserver(upd).observe(out,{childList:true,characterData:true,subtree:true});
   document.querySelectorAll("[data-tm]").forEach(b=>b.addEventListener("click",()=>$(b.dataset.tm==="+"?"#bpmUp":"#bpmDown").click()));})();
 function setA4(v){v=Math.round(Math.max(380,Math.min(480,+v||440))*2)/2;A4=v;C3=A4*Math.pow(2,-21/12);store.set("a4",A4);renderA4();renderStrings();if(S.drone)startDrone();}
@@ -2775,13 +2821,14 @@ document.querySelectorAll("#timbreSeg button").forEach(b=>b.addEventListener("cl
 $("#playUp").addEventListener("click",()=>playScale(false));
 $("#playDown").addEventListener("click",()=>playScale(true));
 $("#playPhrase").addEventListener("click",()=>playPhrase(byId(S.maqam),S.timbre));
-$("#stopBtn").addEventListener("click",()=>{stopAll();if(S.drone){S.drone=false;stopDrone();$("#droneBtn").setAttribute("aria-pressed","false");}});
-$("#droneBtn").addEventListener("click",()=>{S.drone=!S.drone;$("#droneBtn").setAttribute("aria-pressed",String(S.drone));if(S.drone)startDrone();else stopDrone();});
+function setDrone(on){S.drone=on;document.querySelectorAll("#droneBtn,[data-drone]").forEach(b=>b.setAttribute("aria-pressed",String(on)));if(on)startDrone();else stopDrone();}
+$("#stopBtn").addEventListener("click",()=>{stopAll();if(S.drone)setDrone(false);});
+document.querySelectorAll("#droneBtn,[data-drone]").forEach(b=>b.addEventListener("click",()=>setDrone(!S.drone)));
 const rs=$("#recMaqam");rs.append(el("option",{value:"auto"},"اكتشف المقام تلقائياً"));MAQAMAT.forEach(m=>rs.append(el("option",{value:m.id},m.name)));rs.value="auto";syncRecMaqam();loadLib().then(loadSongs);
 window.addEventListener("resize",()=>{if(S.lastAnalysis&&!$("#p-result").hidden&&!$('[data-rp="plot"]').hidden)drawPlot(S.lastAnalysis);});
 window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{if(S.lastAnalysis){drawPlot(S.lastAnalysis);renderDevBars(S.lastAnalysis);}});
 
-const APP_VER="2026.10.10-10";
+const APP_VER="2026.10.10-11";
 $("#verTxt").textContent="الإصدار \u2066"+APP_VER+"\u2069";
 const hardReload=()=>{location.replace(location.pathname+"?v="+Date.now()+location.hash);};
 $("#updBtn").addEventListener("click",hardReload);$("#updNow").addEventListener("click",hardReload);
