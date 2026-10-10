@@ -300,6 +300,7 @@ a.btn{text-decoration:none;color:inherit;display:inline-block}
 </style>
 
 <div class="app" dir="rtl" lang="ar">
+  <div class="activesong" id="updBanner" hidden style="margin-top:10px"><span>نسخة جديدة من دوزان متاحة.</span><button class="btn" id="updNow" style="color:inherit">حدّث الآن</button></div>
   <header class="top">
     <div class="brand">
       <svg class="star" viewBox="0 0 40 40" aria-hidden="true"><polygon points="20,2 25,13 37,13 28,21 32,34 20,27 8,34 12,21 3,13 15,13"/><polygon points="20,8 28,20 20,32 12,20"/><circle cx="20" cy="20" r="2.5"/></svg>
@@ -321,6 +322,7 @@ a.btn{text-decoration:none;color:inherit;display:inline-block}
       <div style="display:flex;gap:8px"><input id="apiKey" type="password" autocomplete="off" spellcheck="false" placeholder="sk-ant-…" class="field"><button class="btn" id="saveKey">حفظ</button></div>
       <p class="small muted" id="keyState"></p>
     </div>
+    <div style="grid-column:1/-1;display:flex;gap:10px;align-items:center;flex-wrap:wrap"><span class="small muted" id="verTxt"></span><button class="btn" id="updBtn">حدّث التطبيق</button></div>
     <p class="small muted" style="grid-column:1/-1">الصوت البشري هنا مُولَّد بتركيب الرنينات الصوتية (حرف «آ»)، وصوت العود مولّد بنمذجة الوتر المنقور. الدرجات مضبوطة بالسنت، فالأرباع حقيقية وليست تقريباً للبيانو.</p>
   </div>
 
@@ -2159,6 +2161,11 @@ const rs=$("#recMaqam");rs.append(el("option",{value:"auto"},"اكتشف الم�
 window.addEventListener("resize",()=>{if(S.lastAnalysis&&!$("#v-rec").hidden)drawPlot(S.lastAnalysis);});
 window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{if(S.lastAnalysis){drawPlot(S.lastAnalysis);renderDevBars(S.lastAnalysis);}});
 
+const APP_VER="2026.10.10-4";
+$("#verTxt").textContent="الإصدار "+APP_VER;
+const hardReload=()=>{location.replace(location.pathname+"?v="+Date.now()+location.hash);};
+$("#updBtn").addEventListener("click",hardReload);$("#updNow").addEventListener("click",hardReload);
+if(!window.claude&&location.protocol==="https:"){fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"}).then(r=>r.text()).then(t=>{const m=t.match(/APP_VER="([^"]+)"/);if(m&&m[1]!==APP_VER)$("#updBanner").hidden=false;}).catch(()=>{});}
 renderTr();renderChips();renderMaqam();renderIqaChips();renderIqa();renderDots();edSetMeter(false);ED.steps="D..D..T.";renderEd();setTmMode("pulse");if(TM.calib)$("#calibTxt").textContent="المعايرة الحالية: "+Math.round(TM.calib)+" مث.";renderStrings();renderPath();renderSuggest();$("#exDMaqam").textContent=byId(S.maqam).name;
 renderExample().then(prev=>{if(prev){$("#recMaqam").value="auto";syncRecMaqam();}}).catch(()=>{});
 initSample();
