@@ -72,6 +72,7 @@ button:focus-visible,select:focus-visible,input:focus-visible,textarea:focus-vis
 .navbtn{border:0;background:var(--surface);color:var(--brass);border-radius:999px;height:36px;min-width:36px;padding:0 12px;display:inline-flex;align-items:center;justify-content:center;gap:6px;cursor:pointer;font-size:15px;font-weight:500;box-shadow:0 1px 2px rgba(0,0,0,.06)}
 .navbtn svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .navbtn.ic{padding:0;width:36px}
+.navbtn[aria-pressed="true"]{background:var(--brass);color:var(--on-brass)}
 .lt{font-size:34px;font-weight:700;letter-spacing:-.01em;margin:2px 0 10px;line-height:1.15}
 
 /* ---------- floating tab bar ---------- */
@@ -450,6 +451,35 @@ details.more[open]>summary{margin-bottom:8px}
 .empty-coach{display:grid;justify-items:center;text-align:center;gap:8px;padding:24px 8px 8px;color:var(--muted)}
 .empty-coach svg{width:44px;height:44px;stroke:var(--brass);fill:none;stroke-width:1.5}
 
+/* accessibility helpers */
+details.tip>summary{list-style:none}details.tip>summary::-webkit-details-marker{display:none}
+details.tip>summary .tx::after{content:"";}
+details.tip p{padding:0 16px 14px;font-size:15px;color:var(--muted);line-height:1.5}
+.report,.prose,.msg,.issue p{font:-apple-system-body;line-height:1.55}
+.speak{border:0;background:none;color:var(--brass);font-size:14px;font-weight:600;cursor:pointer;padding:6px 0 0;display:inline-flex;gap:6px;align-items:center}
+.speak svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+:root[data-cb="1"]{--good:#0A6FD6;--good-soft:#DCEBFB;--warn:#C26A00;--bad:#B4127A;--bad-soft:#F8DDEE}
+@media (prefers-color-scheme: dark){:root[data-cb="1"]:not([data-theme="light"]){--good:#4DA3FF;--good-soft:#10263F;--warn:#FFA733;--bad:#FF5FC8;--bad-soft:#3A1230}}
+@media (prefers-contrast: more){:root{--muted:#3A3A3F;--line:#9A9AA2}}
+@media (prefers-contrast: more) and (prefers-color-scheme: dark){:root{--muted:#C8C8CE;--line:#6A6A70}}
+.stage{position:fixed;inset:0;z-index:70;background:var(--bg);display:grid;grid-template-rows:auto 1fr auto auto;padding:calc(env(safe-area-inset-top,0px) + 10px) 18px calc(env(safe-area-inset-bottom,0px) + 18px);transition:background .25s}
+.stage.in{background:var(--good-soft)}.stage.near{background:color-mix(in srgb,var(--warn) 16%,var(--bg))}
+.stage-top{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.stage-top span{font-family:var(--f-display);font-size:20px}
+.stage-mid{display:grid;align-content:center;justify-items:center;gap:14px;text-align:center}
+.stage-note{font-family:var(--f-display);font-size:min(30vw,150px);line-height:1.1;font-weight:700}
+.stage-dev{font-size:24px;font-weight:600;font-variant-numeric:tabular-nums;min-height:1.4em}
+.stage.in .stage-dev{color:var(--good)}
+.stage-meter{position:relative;width:100%;max-width:520px;height:64px;border-radius:32px;background:var(--surface-2);overflow:hidden;direction:ltr}
+.stage-meter .z{position:absolute;top:0;bottom:0;left:40%;width:20%;background:var(--good-soft)}
+.stage-meter .c{position:absolute;top:0;bottom:0;left:50%;width:3px;margin-left:-1px;background:var(--good)}
+.stage-meter i{position:absolute;top:8px;bottom:8px;width:14px;margin-left:-7px;border-radius:7px;background:var(--ink);left:50%;transition:left .08s linear}
+.stage-scale{display:flex;justify-content:space-between;width:100%;max-width:520px;font-size:15px;color:var(--muted);direction:ltr}
+.stage-bot{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.stage-target{text-align:center;font-size:18px;font-weight:600;min-height:1.4em;margin-top:8px}
+.flash{position:fixed;inset:0;z-index:65;pointer-events:none;background:var(--brass);opacity:0;transition:opacity .12s ease-out}
+.flash.on{opacity:.22;transition:none}.flash.on.acc{opacity:.4}
+
 /* sheets */
 .sheet{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.35);display:flex;align-items:flex-end;justify-content:center;animation:fadein .2s}
 .sheet-card{background:var(--bg);width:min(680px,100%);max-height:calc(100% - env(safe-area-inset-top,0px) - 24px);border-radius:14px 14px 0 0;overflow-y:auto;overscroll-behavior:contain;padding:0 16px calc(24px + env(safe-area-inset-bottom,0px));animation:sheetup .28s cubic-bezier(.2,.8,.2,1)}
@@ -629,6 +659,7 @@ details.more[open]>summary{margin-bottom:8px}
         <label class="row static"><span class="tx">شغّل الإيقاع وقِس التزامي</span><input type="checkbox" class="sw" id="recWithIqa"></label>
         <label class="row static" id="recIqaRow" hidden><span class="tx">الإيقاع</span><select class="iqaPick" aria-label="الإيقاع"></select></label>
         <div class="row static" id="recBpmRow" hidden><span class="tx">السرعة</span><div class="stepper" data-tempo-mirror><button data-tm="-" aria-label="أبطأ">−</button><output data-tm-out style="min-width:64px"></output><button data-tm="+" aria-label="أسرع">+</button></div></div>
+        <label class="row static"><span class="tx">سجّل بدون لمس<small>يبدأ الحفظ وتعزف براحتك، ويتوقف وحده بعد 3 ثوانٍ صمت</small></span><input type="checkbox" class="sw" id="recAutoStop"></label>
         <label class="row static" id="autoTonicRow"><span class="tx">اكتشف القرار تلقائياً</span><input type="checkbox" class="sw" id="autoTonic" checked></label>
       </div>
       <p class="sf" id="recHint">سجّل 20 إلى 60 ثانية في مكان هادئ، واختم على القرار. مع الإيقاع استخدم سماعات.</p>
@@ -751,6 +782,7 @@ details.more[open]>summary{margin-bottom:8px}
         <div class="meter-scale"><span>−50</span><span>0</span><span>+50</span></div>
       </div>
       <div class="btns" style="justify-content:center"><button class="btn primary" id="tunerBtn">شغّل الميكروفون</button><button class="btn" id="targetBtn" disabled>أعطني هدفاً</button><button class="btn" data-drone aria-pressed="false">قرار مستمر</button></div>
+      <button class="btn big" id="stageOpen">وضع العزف: شاشة كاملة تُقرأ من بعيد</button>
       <p class="status" id="tunerStatus"></p>
     </div>
     <p class="sf">غنِّ أو اعزف نغمة طويلة، ويخبرك المؤشر بأقرب درجة وبُعدك عنها بالسنت وبالهرتز، وتردد صوتك. السنت أدق للحكم: 100 سنت نصف تون و50 ربع تون، والأخضر ±10. مع «القرار المستمر» استخدم سماعات.</p>
@@ -775,6 +807,11 @@ details.more[open]>summary{margin-bottom:8px}
       </div>
       <div class="dots" id="metDots"></div>
       <button class="btn primary big" id="metPlay">شغّل المترونوم</button>
+      <div class="list" style="background:var(--surface-2)">
+        <label class="row static"><span class="tx">وميض الشاشة مع النبضة<small>تشوف الزمن وعينك على النوتة أو والصوت عالٍ</small></span><input type="checkbox" class="sw" id="metFlash"></label>
+        <label class="row static"><span class="tx">نبض بالاهتزاز<small>تحس الزمن بيدك (تجريبي في سفاري)</small></span><input type="checkbox" class="sw" id="metHaptic"></label>
+        <label class="row static"><span class="tx">عدّ بصوت<small>«واحد، اثنين…» على كل نبضة، مع سماعات</small></span><input type="checkbox" class="sw" id="metCount"></label>
+      </div>
     </div>
   </section>
 
@@ -841,6 +878,7 @@ details.more[open]>summary{margin-bottom:8px}
               <h3 id="sumTitle" style="font-size:20px"></h3>
               <p class="small muted" id="sumLine"></p>
               <p class="small" id="sumTonic"></p>
+              <button class="speak" id="sayResult" style="justify-self:start"><svg viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg><span>استمع للملخص</span></button>
             </div>
           </div>
           <div class="alt" id="altMaqam"></div>
@@ -937,6 +975,28 @@ details.more[open]>summary{margin-bottom:8px}
         </div>
       </div>
       <div class="sec">
+        <p class="sh">الصوت والاهتزاز واللمس</p>
+        <div class="list">
+          <label class="row static"><span class="tx">أصوات التطبيق في الوضع الصامت<small>يعمل الصوت حتى لو مفتاح الصامت مفعّل</small></span><input type="checkbox" class="sw" id="optSilent"></label>
+          <div class="row static"><span class="tx">الاهتزاز<small>عند الإجابة الصحيحة وضبط النغمة ونبض المترونوم</small></span><button class="btn small" id="hapticTest">جرّب</button><input type="checkbox" class="sw" id="optHaptic"></div>
+          <label class="row static"><span class="tx">اقرأ ردود المدرب بصوت<small>تلقائياً بعد كل رد، ويداك على العود</small></span><input type="checkbox" class="sw" id="optAutoSpeak"></label>
+          <label class="row static"><span class="tx">ملخص صوتي بعد كل تسجيل</span><input type="checkbox" class="sw" id="optSpeakResult"></label>
+          <label class="row static"><span class="tx">ألوان تناسب عمى الألوان<small>أزرق للصحيح وبرتقالي وأرجواني للخطأ بدل الأخضر والأحمر</small></span><input type="checkbox" class="sw" id="optCB"></label>
+        </div>
+        <p class="sf" id="voiceTxt"></p>
+      </div>
+      <div class="sec">
+        <p class="sh">استفد من آيفونك أثناء التمرين</p>
+        <div class="list">
+          <details class="tip"><summary class="row"><span class="tx">الوصول الموجّه: لا تخرج من التطبيق بالغلط</span></summary><p>الإعدادات ← تسهيلات الاستخدام ← الوصول الموجّه، وفعّله. داخل دوزان اضغط الزر الجانبي ثلاث مرات فيُقفل الجوال على التطبيق، فلا يقطع التسجيلَ لمسٌ خاطئ وأنت ماسك العود. للخروج اضغط ثلاث مرات مرة ثانية.</p></details>
+          <details class="tip"><summary class="row"><span class="tx">تركيز «تمرين»: لا إشعارات وقت التسجيل</span></summary><p>الإعدادات ← التركيز ← + ← مخصص، وسمّه «تمرين» واسمح لدوزان فقط. فعّله من مركز التحكم قبل التمرين؛ الإشعار والاتصال يوقفان الميكروفون.</p></details>
+          <details class="tip"><summary class="row"><span class="tx">اسأل المدرب بصوتك</span></summary><p>في تبويب «المدرب» اضغط ميكروفون لوحة المفاتيح وتكلّم بالعربية، ثم «أرسل». ومع «اقرأ ردود المدرب بصوت» تصير المحادثة كلها صوتية.</p></details>
+          <details class="tip"><summary class="row"><span class="tx">حجم خط التقارير</span></summary><p>تقارير المدرب وشروحه تتبع حجم النص في جوالك: الإعدادات ← الشاشة والإضاءة ← حجم النص.</p></details>
+          <details class="tip"><summary class="row"><span class="tx">السماعات وAirPods</span></summary><p>مع القرار المستمر أو الإيقاع أثناء التسجيل استخدم سماعات حتى لا يدخل صوتها في التحليل. البلوتوث يؤخر الصوت قليلاً، فأعد «معايرة التأخير» في تمرين الزمن كلما غيّرت السماعة.</p></details>
+          <details class="tip"><summary class="row"><span class="tx">التحكم بلمسة ظهر الجوال</span></summary><p>الإعدادات ← تسهيلات الاستخدام ← اللمس ← النقر على الظهر ← نقرتان ← «لقطة شاشة». مفيد لحفظ نتيجة تمرين أو تقرير بدون ما تترك العود.</p></details>
+        </div>
+      </div>
+      <div class="sec">
         <p class="sh">الشاشة</p>
         <div class="list"><label class="row static"><span class="tx">أبقِ الشاشة مضاءة</span><input type="checkbox" class="sw" id="keepAwake"></label></div>
         <p class="sf"><span id="awakeTxt"></span> تبقى مضاءة دائماً أثناء التسجيل والميكروفون والإيقاع ورد المدرب.</p>
@@ -965,6 +1025,15 @@ details.more[open]>summary{margin-bottom:8px}
   </div>
 </div>
 
+<div class="stage" id="stage" hidden dir="rtl" lang="ar" role="dialog" aria-label="وضع العزف">
+  <div class="stage-top"><button class="navbtn" id="stageClose">إغلاق</button><span id="stageMaq"></span><button class="navbtn" data-drone aria-pressed="false">قرار</button></div>
+  <div class="stage-mid"><div class="stage-note" id="stageNote" aria-live="polite">—</div><div class="stage-dev" id="stageDev">غنِّ أو اعزف نغمة طويلة</div>
+    <div class="stage-meter"><span class="z"></span><span class="c"></span><i id="stageNeedle"></i></div>
+    <div class="stage-scale"><span>أخفض</span><span>مضبوط</span><span>أعلى</span></div></div>
+  <div class="stage-bot"><label class="opt"><input type="checkbox" class="sw" id="stageSpeak"> نبّهني بصوت (مع سماعات)</label><button class="navbtn" id="stageTarget">أعطني هدفاً</button></div>
+  <p class="stage-target" id="stageTargetTxt"></p>
+</div>
+<div class="flash" id="flash" aria-hidden="true"></div>
 <nav class="tabs" aria-label="الأقسام"><div class="in" role="tablist">
   <button role="tab" data-t="learn" aria-selected="true"><svg viewBox="0 0 24 24"><path d="M4 18h16M6 14v4M10 10v8M14 6v12M18 12v6"/></svg>تعلّم</button>
   <button role="tab" data-t="train" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M6 8a6 6 0 1 1 12 0c0 4-4 5-4 9a3 3 0 0 1-6 0"/><path d="M10 9a2 2 0 1 1 4 0"/></svg>تمرّن</button>
@@ -1414,7 +1483,7 @@ function metroSeq(sp){const starts=new Set([0]);if(sp.groups){let a=0;sp.groups.
 function renderDots(){const sp=metroSpec();const d=$("#metDots");d.innerHTML="";let a=0;const st=new Set([0]);if(sp.groups)sp.groups.forEach(g=>{st.add(a);a+=g;});
   for(let i=0;i<sp.n;i++)d.append(el("span",{class:st.has(i)?"acc":"","data-b":String(i)}));}
 function playMetro(){const sp=metroSpec();renderDots();
-  rhythmStart("metro",metroSeq(sp),60/S.bpm/sp.sub,{onStep:ev=>{if(ev.i%sp.sub)return;const b=ev.i/sp.sub;document.querySelectorAll("#metDots span").forEach((e,k)=>e.classList.toggle("on",k===b));}});
+  rhythmStart("metro",metroSeq(sp),60/S.bpm/sp.sub,{onStep:ev=>{if(ev.i%sp.sub)return;const b=ev.i/sp.sub;document.querySelectorAll("#metDots span").forEach((e,k)=>e.classList.toggle("on",k===b));metroBeatFx(b,b===0);}});
   $("#metPlay").textContent="أوقف المترونوم";}
 $("#metPlay").addEventListener("click",()=>{if(RHY.on&&RHY.kind==="metro")rhythmStop();else playMetro();});
 ["#metSig","#metSub"].forEach(id=>$(id).addEventListener("change",()=>{renderDots();if(RHY.kind==="metro")playMetro();}));
@@ -1622,7 +1691,7 @@ function makeQuiz(prefix,opts){
     const right=o.key===st.cur.answer.key;if(right)st.ok++;
     btn.classList.add(right?"ok":"no");if(!right){[...box.children].forEach(b=>{if(b.textContent===st.cur.answer.label)b.classList.add("ok");});}
     fb.textContent=right?"صحيح. "+(st.cur.why||""):"الإجابة: "+st.cur.answer.label+". "+(st.cur.why||"");fb.className="fb "+(right?"ok":"no");
-    sc.textContent=st.ok+" / "+st.n;
+    sc.textContent=st.ok+" / "+st.n;if(right)Haptic.tap();
     const best=store.get("ex."+prefix,{n:0,ok:0});store.set("ex."+prefix,{n:best.n+1,ok:best.ok+(right?1:0)});renderPath();}
   playB.addEventListener("click",newQ);reB.addEventListener("click",()=>{if(st.cur)opts.play(st.cur);});
 }
@@ -2392,7 +2461,7 @@ async function runAnalysis(data,sr,isExample,grid,opts){
   if(opts.existing&&rec.report){S.reportThread={prompt:reportPrompt(R,""),report:rec.report,turns:[]};$("#aiFollow").hidden=false;(rec.reportChat||[]).forEach(x=>{$("#aiThread").append(el("div",{class:"msg u",text:x.q}));const a=el("div",{class:"msg a"});a.innerHTML=md(x.a);$("#aiThread").append(a);S.reportThread.turns.push({role:"user",content:x.q},{role:"assistant",content:x.a});});$("#aiOut").innerHTML=md(rec.report);$("#aiOut").append(el("p",{class:"small muted",text:"تقرير محفوظ من "+fmtDate(rec.reportT||rec.t)+". اضغط «حلّل أدائي» لتقرير جديد."}));}
   if(isNew){setStatus("اكتمل التحليل وحُفظ التسجيل.");
     const h=store.get("history",[]);h.push({d:Date.now(),m:R.maqam.id,s:R.score,acc:Math.round(R.within25*100)});store.set("history",h.slice(-50));renderPath();
-    showResult();
+    showResult();if(store.get("speakResult",false))setTimeout(()=>Voice.say(resultSpeech(R)),300);
     if(!sample&&apiKey()&&store.get("autoAi",true))setTimeout(()=>{$("#aiBtn").click();},400);}
   else if(!opts.updateMetrics)setStatus("");
 }
@@ -2402,7 +2471,7 @@ async function handleArrayBuffer(ab,grid,opts){
 }
 $("#fileIn").addEventListener("change",async e=>{const f=e.target.files[0];if(!f)return;setStatus("جارٍ قراءة "+f.name+"…");const ab=await f.arrayBuffer();e.target.value="";await handleArrayBuffer(ab,null,{blob:f,mime:f.type});});
 function pickMime(){if(typeof MediaRecorder==="undefined"||!MediaRecorder.isTypeSupported)return "";return ["audio/mp4","audio/webm;codecs=opus","audio/webm","audio/ogg"].find(t=>{try{return MediaRecorder.isTypeSupported(t);}catch(e){return false;}})||"";}
-function stopRecUI(){Awake.off("rec");$("#recBtn").classList.remove("on");$("#recBtn").setAttribute("aria-label","ابدأ التسجيل");$("#recPause").hidden=true;clearInterval(recTimer);if(recLiveStop){recLiveStop();recLiveStop=null;}$("#recLive").hidden=true;$("#recBtn").textContent="ابدأ التسجيل";$("#recBtn").disabled=false;}
+function stopRecUI(){Awake.off("rec");aSess("playback");$("#recBtn").classList.remove("on");$("#recBtn").setAttribute("aria-label","ابدأ التسجيل");$("#recPause").hidden=true;clearInterval(recTimer);if(recLiveStop){recLiveStop();recLiveStop=null;}$("#recLive").hidden=true;$("#recBtn").textContent="ابدأ التسجيل";$("#recBtn").disabled=false;}
 $("#recBtn").addEventListener("click",()=>startRec(null));
 $("#recPause").addEventListener("click",()=>{if(!mediaRec)return;
   if(mediaRec.state==="recording"){try{mediaRec.pause();S.recPauseAt=Date.now();$("#recPause").textContent="استئناف";if(RHY.kind==="rec")rhythmStop();}catch(e){}}
@@ -2413,7 +2482,7 @@ async function startRec(parentId){
   const ctx=getCtx();
   if(!micAvailable()||typeof MediaRecorder==="undefined"){$("#micNotice").hidden=false;setStatus(micErrorText(null),true);return;}
   let stream;
-  try{stream=await navigator.mediaDevices.getUserMedia(MIC);}
+  aSess("play-and-record");try{stream=await navigator.mediaDevices.getUserMedia(MIC);}
   catch(e){$("#micNotice").hidden=false;setStatus(micErrorText(e),true);return;}
   $("#micNotice").hidden=true;$("#saveRow").hidden=true;
   // reference: play the tonic first, then start recording
@@ -2434,12 +2503,14 @@ async function startRec(parentId){
     const intr=S.recInterrupted;S.recInterrupted=false;
     await handleArrayBuffer(await blob.arrayBuffer(),grid,{blob,mime:type,parentId});
     if(intr){const st=$("#recStatus");const was=st.textContent;st.className="status err";st.textContent="توقف التسجيل لأن الشاشة انطفأت أو خرجت من التطبيق، وحُلّل ما سُجّل قبلها. "+was;}};
-  mediaRec.start(250);Awake.on("rec");S.recInterrupted=false;stream.getAudioTracks().forEach(t=>t.addEventListener("ended",()=>{if(mediaRec&&mediaRec.state!=="inactive"){S.recInterrupted=true;try{mediaRec.stop();}catch(e){}}}));recStart=Date.now();S.recPausedMs=0;S.recPauseAt=0;
+  mediaRec.start(250);Awake.on("rec");Haptic.tap();S.recInterrupted=false;stream.getAudioTracks().forEach(t=>t.addEventListener("ended",()=>{if(mediaRec&&mediaRec.state!=="inactive"){S.recInterrupted=true;try{mediaRec.stop();}catch(e){}}}));recStart=Date.now();S.recPausedMs=0;S.recPauseAt=0;
   const pb=$("#recPause");pb.hidden=typeof mediaRec.pause!=="function";pb.textContent="إيقاف مؤقت";
   $("#recBtn").disabled=false;$("#recBtn").textContent="أوقف وحلّل";$("#recBtn").classList.add("on");$("#recBtn").setAttribute("aria-label","أوقف وحلّل");$("#recLive").hidden=false;
   let held=null;
-  recLiveStop=livePitch(stream,(c)=>{if(c==null)return;showNeedle($("#recLiveNote"),$("#recLiveCents"),$("#recNeedle"),nearestDeg(c,mid));});
-  const s=$("#recStatus");recTimer=setInterval(()=>{if(mediaRec.state==="paused"){s.className="status";s.textContent="متوقف مؤقتاً. اضغط «استئناف» للمتابعة.";return;}const sec=Math.round((Date.now()-recStart-(S.recPausedMs||0))/1000);s.className="status";s.innerHTML="";s.append(el("span",{class:"rec-dot"}),(parentId?"محاولة جديدة… ":"يسجّل… ")+sec+" ث (الحد 120 ث)");if(sec>=120&&mediaRec.state==="recording")mediaRec.stop();},250);
+  S.voicedMs=0;S.silentMs=0;
+  recLiveStop=livePitch(stream,(c,dt)=>{if(store.get("recAutoStop",false)&&mediaRec&&mediaRec.state==="recording"){if(c!=null){S.voicedMs+=dt;S.silentMs=0;}else S.silentMs+=dt;if(S.voicedMs>4000&&S.silentMs>3000){S.voicedMs=0;Haptic.tap();mediaRec.stop();}}
+    if(c==null)return;showNeedle($("#recLiveNote"),$("#recLiveCents"),$("#recNeedle"),nearestDeg(c,mid));});
+  const s=$("#recStatus");recTimer=setInterval(()=>{if(mediaRec.state==="paused"){s.className="status";s.textContent="متوقف مؤقتاً. اضغط «استئناف» للمتابعة.";return;}const sec=Math.round((Date.now()-recStart-(S.recPausedMs||0))/1000);s.className="status";s.innerHTML="";s.append(el("span",{class:"rec-dot"}),(parentId?"محاولة جديدة… ":"يسجّل… ")+sec+" ث"+(store.get("recAutoStop",false)?(S.voicedMs>0?" · يتوقف وحده بعد 3 ثوانٍ صمت":" · ابدأ العزف متى شئت"):" (الحد 120 ث)"));if(sec>=120&&mediaRec.state==="recording")mediaRec.stop();},250);
 }
 async function renderExample(){
   // synthesize a sung Bayati phrase with deliberate errors: sikah +28c, one flat jaharkah, normal vibrato
@@ -2465,13 +2536,13 @@ $("#tunerBtn").addEventListener("click",async()=>{
   getCtx();const st=$("#tunerStatus");
   if(!micAvailable()){st.textContent=micErrorText(null);st.className="status err";return;}
   let stream;
-  try{stream=await navigator.mediaDevices.getUserMedia(MIC);}catch(e){st.textContent=micErrorText(e);st.className="status err";return;}
+  aSess("play-and-record");try{stream=await navigator.mediaDevices.getUserMedia(MIC);}catch(e){st.textContent=micErrorText(e);st.className="status err";return;}
   let hold=0;
-  const stopLive=livePitch(stream,(c,dt)=>{if(c==null){return;}
+  const stopLive=livePitch(stream,(c,dt)=>{stageUpdate(c,dt);if(c==null){return;}
     const r=nearestDeg(c,S.maqam,target);showNeedle($("#tNote"),$("#tCents"),$("#needle"),r);
-    if(target){if(Math.abs(r.dev)<=12){hold+=dt;if(hold>1200){$("#targetTxt").textContent="أحسنت! ثبّتَّ "+r.name+" أكثر من ثانية.";target=null;hold=0;}}else hold=0;}});
+    if(target){if(Math.abs(r.dev)<=12){hold+=dt;if(hold>1200){$("#targetTxt").textContent="أحسنت! ثبّتَّ "+r.name+" أكثر من ثانية.";Haptic.double();target=null;hold=0;}}else hold=0;}});
   Awake.on("tuner");$("#tunerBtn").textContent="أوقف الميكروفون";$("#targetBtn").disabled=false;st.textContent="";st.className="status";
-  tuner={stop(){Awake.off("tuner");stopLive();stream.getTracks().forEach(t=>t.stop());tuner=null;$("#tunerBtn").textContent="شغّل الميكروفون";$("#targetBtn").disabled=true;}};
+  tuner={stop(){Awake.off("tuner");aSess("playback");stopLive();stream.getTracks().forEach(t=>t.stop());tuner=null;$("#tunerBtn").textContent="شغّل الميكروفون";$("#targetBtn").disabled=true;}};
 });
 $("#targetBtn").addEventListener("click",()=>{const m=byId(S.maqam);const ps=pcsOf(m).filter(p=>!p.alt);target=ps[Math.random()*ps.length|0];
   $("#targetTxt").textContent="الهدف: غنِّ "+noteName(m.tonic+target.c)+" وثبّتها ثانية كاملة";const ctx=getCtx();playAbs(m.tonic,ctx.currentTime+0.02,0.8,"oud");playAbs(m.tonic+target.c,ctx.currentTime+0.9,1.4,S.timbre==="oud"?"oud":"voice");});
@@ -2648,7 +2719,7 @@ $("#aiBtn").addEventListener("click",async()=>{
   try{
     const img=plotImageB64();$("#aiFollow").hidden=true;$("#aiThread").innerHTML="";
     const r=await ask(prompt,{system:COACH_KB,images:img?[img]:null,signal:aiCtl.signal,onRetry:retryNote(out),onThinking:()=>{if(out.querySelector(".thinking"))out.innerHTML='<p class="thinking">المدرب يدرس تسجيلك ('+coachModel().name+'، قد يأخذ 30 إلى 90 ثانية)</p>';},onText:({text})=>{out.innerHTML=md(text);}});
-    S.reportThread={prompt,report:r.text,turns:[]};$("#aiFollow").hidden=false;
+    S.reportThread={prompt,report:r.text,turns:[]};$("#aiFollow").hidden=false;afterAiReply(out,r.text);
     if(r.truncated)out.append(el("p",{class:"small muted",text:"انقطع الرد قبل نهايته."}));
     if(r.cost!=null)out.append(el("p",{class:"small muted",text:(r.model?r.model+" · ":"")+"تكلفة هذا التحليل تقريباً $"+r.cost.toFixed(3)+" · هذا الشهر $"+r.month.toFixed(2)}));
     if(S.currentRec&&!S.lastIsExample){S.currentRec.report=r.text;S.currentRec.reportT=Date.now();const gm=r.text.split(/##\s*هدف التسجيل القادم/)[1];if(gm)S.currentRec.goal=gm.replace(/##[\s\S]*/,"").trim().slice(0,300);await updateRec(S.currentRec);}
@@ -2661,7 +2732,7 @@ async function askReport(){
   const th=$("#aiThread");th.append(el("div",{class:"msg u",text:q}));const a=el("div",{class:"msg a"});a.innerHTML='<span class="thinking">يفكّر</span>';th.append(a);a.scrollIntoView({block:"nearest"});
   const turns=[{role:"user",content:T.prompt},{role:"assistant",content:T.report},...T.turns,{role:"user",content:q+"\n(أجب عن سؤالي بدقة وإيجاز، حتى 250 كلمة، مستنداً إلى قياسات التسجيل أعلاه.)"}];
   $("#aiAsk").disabled=true;
-  try{const r=await ask(turns,{system:COACH_KB,maxTokens:12000,effort:"medium",onRetry:retryNote(a),onText:({text})=>{a.innerHTML=md(text);}});T.turns.push({role:"user",content:q},{role:"assistant",content:r.text});
+  try{const r=await ask(turns,{system:COACH_KB,maxTokens:12000,effort:"medium",onRetry:retryNote(a),onText:({text})=>{a.innerHTML=md(text);}});T.turns.push({role:"user",content:q},{role:"assistant",content:r.text});afterAiReply(a,r.text);
     if(S.currentRec&&!S.lastIsExample){S.currentRec.reportChat=(S.currentRec.reportChat||[]).concat([{q,a:r.text}]).slice(-10);updateRec(S.currentRec);}
     if(r.cost!=null)a.append(el("p",{class:"small muted",text:"$"+r.cost.toFixed(3)}));}
   catch(e){a.innerHTML=e&&e.text?md(e.text):"";const msg=sampleErrFull(e);if(msg)a.append(el("p",{class:"status err",text:msg}));}
@@ -2690,7 +2761,7 @@ async function sendChat(){
   const ctxTxt=COACH_ROLE+(S.activeSong?"\nالمتدرب يتدرّب الآن على أغنية «"+S.activeSong.title+"» لـ"+S.activeSong.artist+" (بياناتها الموثّقة إن وجدت: "+JSON.stringify({composer:S.activeSong.composer,maqam:S.activeSong.maqamText,iqa:S.activeSong.iqa,mods:S.activeSong.mods})+"). لا تكتب كلمات الأغنية.":"")+"\n\nسياق التطبيق: المقام المختار حالياً "+byId(S.maqam).name+" (الدرجات بالسنت من القرار: "+byId(S.maqam).steps.join("، ")+"). أدوات التطبيق المتاحة للمتدرب: مستكشف المقامات بصوت العود والصوت البشري، قرار مستمر، تمارين (تعرّف على المقام، أي درجة، أذن الربع تون)، مؤشر طبقة مباشر، تسجيل وتحليل بالسنت، مكتبة إيقاعات (مقسوم، بلدي، سعيدي، ملفوف، أيوب، خليجي، عدني، جورجينا، فالس، مصمودي كبير، دور هندي، سماعي ثقيل، وإيقاعات يضيفها المتدرب بنفسه) ومترونوم وتمارين نقر تقيس الدقة بالملّي ثانية وتمرين الصمت. "+(S.lastTiming?"آخر نتيجة تمرين زمن: "+JSON.stringify(S.lastTiming)+". ":"")+""+(S.lastAnalysis?"آخر تحليل لتسجيله: "+JSON.stringify(analysisSummary(S.lastAnalysis)):"لا يوجد تحليل تسجيل بعد.")+"\nأجب بإيجاز (حتى 200 كلمة) ما لم يطلب التفصيل، وبنقاط عند الحاجة.";
   const turns=[{role:"user",content:ctxTxt+"\nملف المتدرب: "+JSON.stringify(studentProfile())},...chatTurns.slice(-12)];
   $("#chatSend").disabled=true;
-  try{const r=await ask(turns,{system:COACH_KB,maxTokens:12000,effort:"medium",onRetry:retryNote(a),onText:({text})=>{a.innerHTML=md(text);}});chatTurns.push({role:"assistant",content:r.text});}
+  try{const r=await ask(turns,{system:COACH_KB,maxTokens:12000,effort:"medium",onRetry:retryNote(a),onText:({text})=>{a.innerHTML=md(text);}});chatTurns.push({role:"assistant",content:r.text});afterAiReply(a,r.text);}
   catch(e){a.innerHTML=e&&e.text?md(e.text):"";const msg=sampleErrFull(e);if(msg)a.append(el("p",{class:"status err",text:msg}));chatTurns.pop();
     if(e&&e.code!=="cancelled")a.append(el("button",{class:"btn small",onclick:()=>{a.previousElementSibling&&a.previousElementSibling.remove();a.remove();$("#chatIn").value=q;sendChat();}},"أعد السؤال"));}
   finally{$("#chatSend").disabled=false;}
@@ -2753,6 +2824,74 @@ function renderPath(){
 }
 
 /* ---------------- Shell ---------------- */
+
+/* ---------------- iPhone helpers: audio session, haptics, speech, stage ---------------- */
+function aSess(t){try{if(navigator.audioSession){if(t==="playback"&&!store.get("silentOk",true))t="auto";navigator.audioSession.type=t;}}catch(e){}}
+aSess("playback");
+const Haptic=(()=>{let lab=null;
+  function init(){if(lab)return;const i=document.createElement("input");i.type="checkbox";i.setAttribute("switch","");i.id="dzHaptic";i.tabIndex=-1;i.setAttribute("aria-hidden","true");
+    lab=document.createElement("label");lab.htmlFor="dzHaptic";lab.setAttribute("aria-hidden","true");
+    [i,lab].forEach(e=>{e.style.cssText="position:fixed;left:-200px;top:0;width:1px;height:1px;opacity:0;pointer-events:none";});document.body.append(i,lab);}
+  return {tap(force){if(!force&&!store.get("haptic",true))return;try{if(navigator.vibrate){navigator.vibrate(18);return;}init();lab.click();}catch(e){}},
+    double(){this.tap();setTimeout(()=>this.tap(),120);}};})();
+const Voice=(()=>{const ok="speechSynthesis" in window;let v=null,cur=null;
+  function pick(){if(!ok)return;const vs=speechSynthesis.getVoices().filter(x=>/^ar/i.test(x.lang));v=vs.find(x=>/maged|majed|ماجد/i.test(x.name))||vs.find(x=>/SA/i.test(x.lang))||vs[0]||null;
+    const t=$("#voiceTxt");if(t)t.textContent=!ok?"القراءة الصوتية غير متاحة في هذا المتصفح.":v?"الصوت المستخدم: "+v.name+". لتحسينه: الإعدادات ← تسهيلات الاستخدام ← المحتوى المنطوق ← الأصوات ← العربية، ونزّل صوتاً «محسّناً».":"لم أجد صوتاً عربياً في جهازك. نزّله من: الإعدادات ← تسهيلات الاستخدام ← المحتوى المنطوق ← الأصوات ← العربية.";}
+  if(ok){pick();speechSynthesis.onvoiceschanged=pick;}
+  function clean(t){return String(t).replace(/```[\s\S]*?```/g,"").replace(/^#+\s*/gm,"").replace(/\*\*|__|`/g,"").replace(/^\s*[-*•]\s+/gm,"").replace(/^\s*(\d+)[.)]\s+/gm,"$1، ").replace(/\|/g,"، ")
+    .replace(/±/g,"زائد أو ناقص ").replace(/([+−-])(\d)/g,(m,a,b)=>(a==="+"?"زائد ":"ناقص ")+b).replace(/%/g," بالمئة").replace(/→|←/g,"، ").replace(/[«»"]/g,"");}
+  function chunks(t){const out=[];t.split(/\n+/).forEach(par=>{par=par.trim();if(!par)return;while(par.length>220){let k=par.lastIndexOf("،",220);if(k<80)k=par.lastIndexOf(" ",220);if(k<80)k=220;out.push(par.slice(0,k+1));par=par.slice(k+1).trim();}if(par)out.push(par);});return out;}
+  return {ok,get speaking(){return ok&&speechSynthesis.speaking;},
+    say(text,{rate=1,onend}={}){if(!ok)return;speechSynthesis.cancel();const parts=chunks(clean(text));cur=parts.length;
+      parts.forEach((p,i)=>{const u=new SpeechSynthesisUtterance(p);u.lang=v?v.lang:"ar-SA";if(v)u.voice=v;u.rate=rate;if(i===parts.length-1)u.onend=()=>{cur=null;onend&&onend();};speechSynthesis.speak(u);});},
+    stop(){if(ok)speechSynthesis.cancel();cur=null;}};})();
+const SPK='<svg viewBox="0 0 24 24"><path d="M11 5 6 9H3v6h3l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13"/></svg>';
+function speakBtn(getText){if(!Voice.ok)return el("span");const b=el("button",{class:"speak","aria-label":"استمع"});b.innerHTML=SPK+"<span>استمع</span>";
+  b.addEventListener("click",()=>{if(b.dataset.on){Voice.stop();b.dataset.on="";b.lastChild.textContent="استمع";return;}
+    document.querySelectorAll(".speak[data-on='1']").forEach(x=>{x.dataset.on="";x.lastChild.textContent="استمع";});
+    b.dataset.on="1";b.lastChild.textContent="أوقف القراءة";Voice.say(getText(),{onend:()=>{b.dataset.on="";b.lastChild.textContent="استمع";}});});return b;}
+function afterAiReply(box,text){box.append(speakBtn(()=>text));if(store.get("autoSpeak",false))Voice.say(text);}
+function resultSpeech(R){const parts=["التقييم "+R.score+" من مئة"];if(R.within25!=null)parts.push("دقة الدرجات "+Math.round(R.within25*100)+" بالمئة");
+  const w=(R.degs||[]).filter(d=>d.dev!=null&&Math.abs(d.dev)>=15).sort((a,b)=>Math.abs(b.dev)-Math.abs(a.dev)).slice(0,2);
+  if(w.length)parts.push("انتبه: "+w.map(d=>d.name+" "+(d.dev>0?"أعلى":"أخفض")+" "+Math.abs(Math.round(d.dev))+" سنت").join("، و"));else parts.push("درجاتك مضبوطة");
+  return "مقام "+R.maqam.name+". "+parts.join("، ")+".";}
+/* stage mode: full-screen tuner readable from a music stand */
+const STAGE={open:false,inMs:0,lastSay:0,lastState:"",target:null,hold:0};
+function stageOpen(){STAGE.open=true;$("#stage").hidden=false;document.body.style.overflow="hidden";$("#stageMaq").textContent="مقام "+byId(S.maqam).name;$("#stageTargetTxt").textContent="";STAGE.target=null;
+  if(!tuner)$("#tunerBtn").click();Awake.on("stage");}
+function stageClose(){STAGE.open=false;$("#stage").hidden=true;document.body.style.overflow="";Awake.off("stage");Voice.stop();}
+$("#stageOpen").addEventListener("click",stageOpen);$("#stageClose").addEventListener("click",stageClose);
+$("#stageSpeak").checked=store.get("stageSpeak",false);$("#stageSpeak").addEventListener("change",e=>store.set("stageSpeak",e.target.checked));
+$("#stageTarget").addEventListener("click",()=>{const m=byId(S.maqam);const ps=pcsOf(m).filter(p=>!p.alt);STAGE.target=ps[Math.random()*ps.length|0];STAGE.hold=0;
+  const nm=noteName(m.tonic+STAGE.target.c);$("#stageTargetTxt").textContent="الهدف: "+nm+"، ثبّتها ثانية";const ctx=getCtx();playAbs(m.tonic,ctx.currentTime+0.02,0.8,"oud");playAbs(m.tonic+STAGE.target.c,ctx.currentTime+0.9,1.4,"oud");
+  if($("#stageSpeak").checked)setTimeout(()=>Voice.say("غنِّ "+nm),2400);});
+function stageUpdate(c,dt){if(!STAGE.open)return;const st=$("#stage");
+  if(Voice.speaking)return;
+  if(c==null){STAGE.inMs=0;st.classList.remove("in","near");return;}
+  const r=nearestDeg(c,S.maqam,STAGE.target);const dv=Math.round(r.dev),a=Math.abs(dv);
+  $("#stageNote").textContent=r.name;$("#stageDev").textContent=a<=10?"مضبوط ✓":(dv>0?"أعلى ":"أخفض ")+a+" سنت";
+  $("#stageNeedle").style.left=(50+Math.max(-50,Math.min(50,dv)))+"%";
+  st.classList.toggle("in",a<=10);st.classList.toggle("near",a>10&&a<=25);
+  if(a<=10){STAGE.inMs+=dt;if(STAGE.inMs>350&&STAGE.inMs-dt<=350)Haptic.tap();}else STAGE.inMs=0;
+  if(STAGE.target){if(a<=12){STAGE.hold+=dt;if(STAGE.hold>1000){STAGE.target=null;STAGE.hold=0;$("#stageTargetTxt").textContent="أحسنت! ثبّتَّ "+r.name;Haptic.double();if($("#stageSpeak").checked)Voice.say("أحسنت");}}else STAGE.hold=0;}
+  if($("#stageSpeak").checked){const state=a<=10?"ok":dv>0?"hi":"lo";const now=performance.now();
+    if(state!==STAGE.lastState&&now-STAGE.lastSay>2500&&(state==="ok"?STAGE.inMs>400:true)){STAGE.lastState=state;STAGE.lastSay=now;Voice.say(state==="ok"?"مضبوط":state==="hi"?"انزل قليلاً":"اطلع قليلاً",{rate:1.1});}}
+}
+/* settings bindings */
+(function(){const bind=(id,key,def,fn)=>{const e=$("#"+id);e.checked=store.get(key,def);e.addEventListener("change",()=>{store.set(key,e.checked);fn&&fn(e.checked);});fn&&fn(e.checked,true);};
+  bind("optSilent","silentOk",true,()=>aSess("playback"));
+  bind("optHaptic","haptic",true,(on,init)=>{if(on&&!init)Haptic.tap();});
+  bind("optAutoSpeak","autoSpeak",false);bind("optSpeakResult","speakResult",false);
+  bind("optCB","cb",false,on=>{if(on)document.documentElement.setAttribute("data-cb","1");else document.documentElement.removeAttribute("data-cb");if(S.lastAnalysis){try{drawPlot(S.lastAnalysis);renderDevBars(S.lastAnalysis);}catch(e){}}});
+  bind("recAutoStop","recAutoStop",false);
+  ["metFlash","metHaptic","metCount"].forEach(id=>bind(id,id,false));
+  $("#hapticTest").addEventListener("click",()=>Haptic.tap(true));
+  $("#sayResult").addEventListener("click",()=>{if(S.lastAnalysis)Voice.say(resultSpeech(S.lastAnalysis));});})();
+const COUNT=["واحد","اثنين","ثلاثة","أربعة","خمسة","ستة","سبعة","ثمانية","تسعة","عشرة"];
+function metroBeatFx(b,acc){if(store.get("metFlash",false)){const f=$("#flash");f.classList.add("on");f.classList.toggle("acc",acc);setTimeout(()=>f.classList.remove("on","acc"),90);}
+  if(store.get("metHaptic",false))Haptic.tap(true);
+  if(store.get("metCount",false)&&Voice.ok&&60/S.bpm>0.45){const u=new SpeechSynthesisUtterance(COUNT[b%COUNT.length]);u.lang="ar-SA";u.rate=1.4;speechSynthesis.cancel();speechSynthesis.speak(u);}}
+
 /* navigation: 5 tabs, each with its own push stack; sheets */
 const TAB_OF={maqam:"learn",songs:"learn",path:"learn",train:"train",rhythm:"rhythm",rec:"rec",coach:"coach"};
 const NAV={tab:"learn",stack:{learn:[],train:[],rhythm:[],rec:[],coach:[]},scroll:{},hist:!window.claude&&location.protocol==="https:"};
@@ -2831,7 +2970,7 @@ const rs=$("#recMaqam");rs.append(el("option",{value:"auto"},"اكتشف الم�
 window.addEventListener("resize",()=>{if(S.lastAnalysis&&!$("#p-result").hidden&&!$('[data-rp="plot"]').hidden)drawPlot(S.lastAnalysis);});
 window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{if(S.lastAnalysis){drawPlot(S.lastAnalysis);renderDevBars(S.lastAnalysis);}});
 
-const APP_VER="2026.10.10-12";
+const APP_VER="2026.10.10-13";
 $("#verTxt").textContent="الإصدار \u2066"+APP_VER+"\u2069";
 const hardReload=()=>{location.replace(location.pathname+"?v="+Date.now()+location.hash);};
 $("#updBtn").addEventListener("click",hardReload);$("#updNow").addEventListener("click",hardReload);
@@ -2840,7 +2979,7 @@ renderTr();renderA4();renderChips();renderMaqam();renderIqaChips();renderIqa();r
 renderExample().then(prev=>{if(prev){$("#recMaqam").value="auto";syncRecMaqam();}}).catch(()=>{});
 setLearn(store.get("learnPane","maqam"));navRender();
 initSample();
-window.__dozan={go,push,navBack,switchTab,setResPane,setA4,getC3:()=>C3,SONGS:()=>SONGS,openSong,compareWithOriginal,trainSong,runAnalysis,loadLib,playVoice,LIBCACHE:()=>LIBCACHE,openRec,analyze,MAQAMAT,S,phraseEvents,playOud,makeBus,C3,RHY,TM,IQAAT,onTap,drumHit,getCtx};
+window.__dozan={go,push,navBack,switchTab,setResPane,stageUpdate,stageOpen,stageClose,resultSpeech,Voice,Haptic,setA4,getC3:()=>C3,SONGS:()=>SONGS,openSong,compareWithOriginal,trainSong,runAnalysis,loadLib,playVoice,LIBCACHE:()=>LIBCACHE,openRec,analyze,MAQAMAT,S,phraseEvents,playOud,makeBus,C3,RHY,TM,IQAAT,onTap,drumHit,getCtx};
 })();
 </script>
 
