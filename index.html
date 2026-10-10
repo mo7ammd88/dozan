@@ -2212,30 +2212,56 @@ const COACH_ROLE="أنت «دوزان»، مدرّب محترف ومتعمق ف�
 const inClaude=!!window.claude;
 const apiKey=()=>store.get("apikey","");
 const aiReady=()=>!!sample||!!apiKey();
-async function ask(input,{onText,signal,onThinking,maxTokens,system,images}={}){
-  const M=coachModel();
-  if(sample){let inp=input;if(system){inp=typeof input==="string"?system+"\n\n"+input:[{role:"user",content:system},...input];}return await sample(inp,{signal,cache:false,onText,modelTier:M.tier});}
-  const key=apiKey();if(!key)throw {code:"no_key"};
-  const msgs=[];(typeof input==="string"?[{role:"user",content:input}]:input).forEach(t=>{const l=msgs[msgs.length-1];if(l&&l.role===t.role)l.content+="\n\n"+t.content;else msgs.push({role:t.role,content:t.content});});
-  let text="",stop=null,inTok=0,outTok=0;
+let wakeLock=null,wasHidden=false;
+document.addEventListener("visibilitychange",()=>{if(document.hidden)wasHidden=true;});
+async function holdWake(on){try{if(on){if(!wakeLock&&navigator.wakeLock)wakeLock=await navigator.wakeLock.request("screen");}else if(wakeLock){await wakeLock.release();wakeLock=null;}}catch(e){wakeLock=null;}}
+const untilVisible=()=>document.hidden?new Promise(r=>{const f=()=>{if(!document.hidden){document.removeEventListener("visibilitychange",f);r();}};document.addEventListener("visibilitychange",f);}):Promise.resolve();
+async function streamOnce(key,bodyObj,{signal,onThinking,onDelta}){
+  const body=JSON.stringify(bodyObj);let text="",stop=null,inTok=0,outTok=0;
+  const base={"content-type":"application/json","anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"};
   try{
-    if(images&&images.length){const l=msgs[msgs.length-1];l.content=[...images.map(b=>({type:"image",source:{type:"base64",media_type:"image/png",data:b}})),{type:"text",text:l.content}];}
-    const bodyObj={model:M.id,max_tokens:maxTokens||20000,stream:true,output_config:{effort:M.effort},messages:msgs};
-    if(system)bodyObj.system=[{type:"text",text:system,cache_control:{type:"ephemeral"}}];
-    const body=JSON.stringify(bodyObj);
-    const base={"content-type":"application/json","anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"};
     let res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",signal,headers:Object.assign({"authorization":"Bearer "+key},base),body});
     if(res.status===401)res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",signal,headers:Object.assign({"x-api-key":key},base),body});
-    if(!res.ok){let msg="";try{const j=await res.json();msg=(j.error&&j.error.message)||"";}catch(e){}throw {code:res.status===401||res.status===403?"bad_key":res.status===429?"rate_limited":"upstream_error",message:"HTTP "+res.status+(msg?": "+msg:"")};}
+    if(!res.ok){let msg="";try{const j=await res.json();msg=(j.error&&j.error.message)||"";}catch(e){}throw {code:res.status===401||res.status===403?"bad_key":res.status===429?"rate_limited":"upstream_error",retry:res.status>=500,message:"HTTP "+res.status+(msg?": "+msg:"")};}
     const rd=res.body.getReader(),dec=new TextDecoder();let pend="";
     for(;;){const {done,value}=await rd.read();if(done)break;pend+=dec.decode(value,{stream:true});const lines=pend.split("\n");pend=lines.pop();
       for(const ln of lines){if(!ln.startsWith("data:"))continue;let j;try{j=JSON.parse(ln.slice(5));}catch(e){continue;}
         if(j.type==="content_block_start"&&j.content_block&&j.content_block.type==="thinking"&&onThinking)onThinking();
-        if(j.type==="content_block_delta"&&j.delta&&j.delta.type==="text_delta"){text+=j.delta.text;onText&&onText({text,delta:j.delta.text});}
+        if(j.type==="content_block_delta"&&j.delta&&j.delta.type==="text_delta"){text+=j.delta.text;onDelta(j.delta.text);}
         else if(j.type==="message_start"&&j.message&&j.message.usage){const u=j.message.usage;inTok=(u.input_tokens||0)+1.25*(u.cache_creation_input_tokens||0)+0.1*(u.cache_read_input_tokens||0);}
         else if(j.type==="message_delta"){if(j.delta)stop=j.delta.stop_reason;if(j.usage&&j.usage.output_tokens)outTok=j.usage.output_tokens;}
-        else if(j.type==="error")throw {code:"upstream_error",message:j.error&&j.error.message,text};}}
-  }catch(e){if(e&&e.name==="AbortError")throw {code:"cancelled",text};if(e&&e.code)throw Object.assign(e,{text:e.text||text||undefined});throw {code:"upstream_error",message:"شبكة: "+((e&&e.message)||"تعذّر الوصول إلى api.anthropic.com"),text:text||undefined};}
+        else if(j.type==="error")throw {code:"upstream_error",retry:true,message:j.error&&j.error.message};}}
+    if(!stop)throw {code:"upstream_error",retry:true,message:"انقطع البث قبل نهايته"};
+  }catch(e){const part={text,inTok,outTok};if(e&&e.name==="AbortError")throw Object.assign({code:"cancelled"},{part});if(e&&e.code)throw Object.assign(e,{part});throw {code:"upstream_error",retry:true,net:true,message:"شبكة: "+((e&&e.message)||"تعذّر الوصول إلى api.anthropic.com"),part};}
+  return {text,stop,inTok,outTok};
+}
+async function ask(input,{onText,signal,onThinking,maxTokens,system,images,effort,onRetry}={}){
+  const M=coachModel();
+  if(sample){let inp=input;if(system){inp=typeof input==="string"?system+"\n\n"+input:[{role:"user",content:system},...input];}return await sample(inp,{signal,cache:false,onText,modelTier:M.tier});}
+  const key=apiKey();if(!key)throw {code:"no_key"};
+  const msgs=[];(typeof input==="string"?[{role:"user",content:input}]:input).forEach(t=>{const l=msgs[msgs.length-1];if(l&&l.role===t.role)l.content+="\n\n"+t.content;else msgs.push({role:t.role,content:t.content});});
+  if(images&&images.length){const l=msgs[msgs.length-1];l.content=[...images.map(b=>({type:"image",source:{type:"base64",media_type:"image/png",data:b}})),{type:"text",text:l.content}];}
+  let text="",stop=null,inTok=0,outTok=0;const MAXTRY=3;
+  wasHidden=document.hidden;holdWake(true);
+  try{
+    for(let attempt=0;;attempt++){
+      const cont=text.trim().length>0;
+      const m2=cont?[...msgs,{role:"assistant",content:text.replace(/\s+$/,"")},{role:"user",content:"انقطع ردك السابق عند هذا الموضع بسبب الشبكة. أكمل من الكلمة التي توقفت عندها تماماً، بلا مقدمة ولا تكرار لأي جزء سبق."}]:msgs;
+      const bodyObj={model:M.id,max_tokens:maxTokens||20000,stream:true,output_config:{effort:effort||M.effort},messages:m2};
+      if(system)bodyObj.system=[{type:"text",text:system,cache_control:{type:"ephemeral"}}];
+      const prefix=cont?text.replace(/\s+$/,"")+(/^[\s\S]*\n$/.test(text)?"\n":" "):"";let added="";
+      try{
+        const r=await streamOnce(key,bodyObj,{signal,onThinking:attempt?null:onThinking,onDelta:d=>{added+=d;const t=prefix+added.replace(cont?/^\s+/:/$^/,"");onText&&onText({text:t,delta:d});}});
+        text=prefix+r.text.replace(cont?/^\s+/:/$^/,"");stop=r.stop;inTok+=r.inTok;outTok+=r.outTok;break;
+      }catch(e){
+        const p=e.part||{};if(p.text)text=prefix+p.text.replace(cont?/^\s+/:/$^/,"");inTok+=p.inTok||0;outTok+=p.outTok||0;
+        if(e.code==="cancelled"||!e.retry||attempt>=MAXTRY-1){if(e.net&&wasHidden)e.message+=" — خرج التطبيق للخلفية أو قُفلت الشاشة أثناء الرد";e.text=text||undefined;throw e;}
+        onRetry&&onRetry({attempt:attempt+1,partial:!!text});
+        await untilVisible();await new Promise(r=>setTimeout(r,1200*(attempt+1)));
+        if(signal&&signal.aborted)throw {code:"cancelled",text};
+      }
+    }
+  }finally{holdWake(false);}
   if(!text)throw {code:"empty_completion",message:"وصل الرد بلا نص (stop_reason: "+(stop||"؟")+")"};
   const cost=inTok*M.inP/1e6+outTok*M.outP/1e6;const mk=new Date().toISOString().slice(0,7);const sp=store.get("spend",{});sp[mk]=(sp[mk]||0)+cost;store.set("spend",sp);
   return {text,truncated:stop==="max_tokens",cost,month:sp[mk],model:M.name};
@@ -2285,7 +2311,7 @@ $("#aiBtn").addEventListener("click",async()=>{
   aiCtl=new AbortController();$("#aiBtn").disabled=true;$("#aiStop").hidden=false;
   try{
     const img=plotImageB64();$("#aiFollow").hidden=true;$("#aiThread").innerHTML="";
-    const r=await ask(prompt,{system:COACH_KB,images:img?[img]:null,signal:aiCtl.signal,onThinking:()=>{if(out.querySelector(".thinking"))out.innerHTML='<p class="thinking">المدرب يدرس تسجيلك ('+coachModel().name+'، قد يأخذ 30 إلى 90 ثانية)</p>';},onText:({text})=>{out.innerHTML=md(text);}});
+    const r=await ask(prompt,{system:COACH_KB,images:img?[img]:null,signal:aiCtl.signal,onRetry:retryNote(out),onThinking:()=>{if(out.querySelector(".thinking"))out.innerHTML='<p class="thinking">المدرب يدرس تسجيلك ('+coachModel().name+'، قد يأخذ 30 إلى 90 ثانية)</p>';},onText:({text})=>{out.innerHTML=md(text);}});
     S.reportThread={prompt,report:r.text,turns:[]};$("#aiFollow").hidden=false;
     if(r.truncated)out.append(el("p",{class:"small muted",text:"انقطع الرد قبل نهايته."}));
     if(r.cost!=null)out.append(el("p",{class:"small muted",text:(r.model?r.model+" · ":"")+"تكلفة هذا التحليل تقريباً $"+r.cost.toFixed(3)+" · هذا الشهر $"+r.month.toFixed(2)}));
@@ -2299,7 +2325,7 @@ async function askReport(){
   const th=$("#aiThread");th.append(el("div",{class:"msg u",text:q}));const a=el("div",{class:"msg a"});a.innerHTML='<span class="thinking">يفكّر</span>';th.append(a);a.scrollIntoView({block:"nearest"});
   const turns=[{role:"user",content:T.prompt},{role:"assistant",content:T.report},...T.turns,{role:"user",content:q+"\n(أجب عن سؤالي بدقة وإيجاز، حتى 250 كلمة، مستنداً إلى قياسات التسجيل أعلاه.)"}];
   $("#aiAsk").disabled=true;
-  try{const r=await ask(turns,{system:COACH_KB,maxTokens:12000,onText:({text})=>{a.innerHTML=md(text);}});T.turns.push({role:"user",content:q},{role:"assistant",content:r.text});
+  try{const r=await ask(turns,{system:COACH_KB,maxTokens:12000,effort:"medium",onRetry:retryNote(a),onText:({text})=>{a.innerHTML=md(text);}});T.turns.push({role:"user",content:q},{role:"assistant",content:r.text});
     if(S.currentRec&&!S.lastIsExample){S.currentRec.reportChat=(S.currentRec.reportChat||[]).concat([{q,a:r.text}]).slice(-10);updateRec(S.currentRec);}
     if(r.cost!=null)a.append(el("p",{class:"small muted",text:"$"+r.cost.toFixed(3)}));}
   catch(e){a.innerHTML=e&&e.text?md(e.text):"";const msg=sampleErrFull(e);if(msg)a.append(el("p",{class:"status err",text:msg}));}
@@ -2315,6 +2341,7 @@ $("#copyBtn").addEventListener("click",()=>{const R=S.lastAnalysis;if(!R)return;
   const fallback=()=>{ta.hidden=false;ta.value=txt;ta.focus();ta.select();$("#copyBtn").textContent="انسخ النص المحدد يدوياً";};
   try{navigator.clipboard.writeText(txt).then(()=>{$("#copyBtn").textContent="نُسخ. الصقه في محادثة Claude";ta.hidden=true;setTimeout(()=>$("#copyBtn").textContent="انسخ القياسات لـ Claude",3000);},fallback);}catch(e){fallback();}});
 
+function retryNote(box){return ({partial})=>{let n=box.querySelector(".retrynote");if(!n){n=el("p",{class:"small muted retrynote"});box.append(n);}n.textContent=partial?"انقطع الاتصال، يكمل المدرب من حيث توقف…":"انقطع الاتصال، إعادة المحاولة…";};}
 const chatTurns=[];
 const SUGGEST=["ما الفرق بين البياتي والكرد بالسماع؟","كيف أضبط السيكاه بصوتي؟","اقترح لي تمرين تسخين للصوت 10 دقائق","كيف أنتقل من البياتي إلى الصبا؟","ما أفضل طريقة لمسك الريشة؟","ما الفرق بين المقسوم والبلدي؟","كيف أطوّر إحساسي بالزمن؟"];
 function renderSuggest(){const b=$("#suggest");SUGGEST.forEach(s=>b.append(el("button",{onclick:()=>{$("#chatIn").value=s;sendChat();}},s)));}
@@ -2326,8 +2353,9 @@ async function sendChat(){
   const ctxTxt=COACH_ROLE+(S.activeSong?"\nالمتدرب يتدرّب الآن على أغنية «"+S.activeSong.title+"» لـ"+S.activeSong.artist+" (بياناتها الموثّقة إن وجدت: "+JSON.stringify({composer:S.activeSong.composer,maqam:S.activeSong.maqamText,iqa:S.activeSong.iqa,mods:S.activeSong.mods})+"). لا تكتب كلمات الأغنية.":"")+"\n\nسياق التطبيق: المقام المختار حالياً "+byId(S.maqam).name+" (الدرجات بالسنت من القرار: "+byId(S.maqam).steps.join("، ")+"). أدوات التطبيق المتاحة للمتدرب: مستكشف المقامات بصوت العود والصوت البشري، قرار مستمر، تمارين (تعرّف على المقام، أي درجة، أذن الربع تون)، مؤشر طبقة مباشر، تسجيل وتحليل بالسنت، مكتبة إيقاعات (مقسوم، بلدي، سعيدي، ملفوف، أيوب، خليجي، عدني، جورجينا، فالس، مصمودي كبير، دور هندي، سماعي ثقيل، وإيقاعات يضيفها المتدرب بنفسه) ومترونوم وتمارين نقر تقيس الدقة بالملّي ثانية وتمرين الصمت. "+(S.lastTiming?"آخر نتيجة تمرين زمن: "+JSON.stringify(S.lastTiming)+". ":"")+""+(S.lastAnalysis?"آخر تحليل لتسجيله: "+JSON.stringify(analysisSummary(S.lastAnalysis)):"لا يوجد تحليل تسجيل بعد.")+"\nأجب بإيجاز (حتى 200 كلمة) ما لم يطلب التفصيل، وبنقاط عند الحاجة.";
   const turns=[{role:"user",content:ctxTxt+"\nملف المتدرب: "+JSON.stringify(studentProfile())},...chatTurns.slice(-12)];
   $("#chatSend").disabled=true;
-  try{const r=await ask(turns,{system:COACH_KB,maxTokens:12000,onText:({text})=>{a.innerHTML=md(text);}});chatTurns.push({role:"assistant",content:r.text});}
-  catch(e){a.innerHTML=e&&e.text?md(e.text):"";const msg=sampleErrFull(e);if(msg)a.append(el("p",{class:"status err",text:msg}));chatTurns.pop();}
+  try{const r=await ask(turns,{system:COACH_KB,maxTokens:12000,effort:"medium",onRetry:retryNote(a),onText:({text})=>{a.innerHTML=md(text);}});chatTurns.push({role:"assistant",content:r.text});}
+  catch(e){a.innerHTML=e&&e.text?md(e.text):"";const msg=sampleErrFull(e);if(msg)a.append(el("p",{class:"status err",text:msg}));chatTurns.pop();
+    if(e&&e.code!=="cancelled")a.append(el("button",{class:"btn small",onclick:()=>{a.previousElementSibling&&a.previousElementSibling.remove();a.remove();$("#chatIn").value=q;sendChat();}},"أعد السؤال"));}
   finally{$("#chatSend").disabled=false;}
 }
 $("#chatSend").addEventListener("click",sendChat);
@@ -2413,7 +2441,7 @@ const rs=$("#recMaqam");rs.append(el("option",{value:"auto"},"اكتشف الم�
 window.addEventListener("resize",()=>{if(S.lastAnalysis&&!$("#v-rec").hidden)drawPlot(S.lastAnalysis);});
 window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{if(S.lastAnalysis){drawPlot(S.lastAnalysis);renderDevBars(S.lastAnalysis);}});
 
-const APP_VER="2026.10.10-7";
+const APP_VER="2026.10.10-8";
 $("#verTxt").textContent="الإصدار \u2066"+APP_VER+"\u2069";
 const hardReload=()=>{location.replace(location.pathname+"?v="+Date.now()+location.hash);};
 $("#updBtn").addEventListener("click",hardReload);$("#updNow").addEventListener("click",hardReload);
