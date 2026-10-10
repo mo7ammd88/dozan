@@ -1502,6 +1502,7 @@ document.querySelectorAll("#tmMode button").forEach(b=>b.addEventListener("click
 function audioLatency(ctx){return (ctx.outputLatency||0)+(ctx.baseLatency||0);}
 function tapCtxTime(e){const ctx=getCtx();const lagMs=e&&e.timeStamp?Math.max(0,Math.min(200,performance.now()-e.timeStamp)):0;return ctx.currentTime-lagMs/1000;}
 function onTap(type,btn,e){
+  if(CAL.on){calibTap(btn,e);return;}
   if(!TM.active)return;const ctx=getCtx();
   const t=tapCtxTime(e)-audioLatency(ctx)-TM.calib/1000;
   // nearest target
@@ -1553,8 +1554,6 @@ function tmStep(ev){if(!TM.active)return;const ctx=getCtx();const t=ev.t;
 function tmFinish(aborted){
   if(!TM.active)return;TM.active=false;rhythmStop();$("#tmStart").textContent="ابدأ";$("#tmPhase").textContent=aborted?"توقف التمرين.":"انتهى التمرين.";
   const hits=TM.taps.filter(x=>x.off!=null),offs=hits.map(x=>x.off);
-  if(TM.calibrating){TM.calibrating=false;const use=offs.slice(2);if(use.length>=5){const sorted=[...use].sort((a,b)=>a-b);const med=sorted[sorted.length>>1];TM.calib=Math.max(-150,Math.min(300,TM.calib+med));store.set("calib",TM.calib);}
-    $("#calibTxt").textContent=use.length>=5?"تمت المعايرة: يُطرح "+Math.round(TM.calib)+" مث من كل نقرة.":"لم تكفِ النقرات للمعايرة. أعد المحاولة.";return;}
   if(!offs.length){$("#tmResults").hidden=true;return;}
   const mean=offs.reduce((a,b)=>a+b,0)/offs.length,sd=Math.sqrt(offs.reduce((a,b)=>a+(b-mean)**2,0)/offs.length);
   const within=offs.filter(o=>Math.abs(o)<=30).length/offs.length;
@@ -1580,10 +1579,29 @@ function tmFinish(aborted){
   renderPath();
 }
 $("#tmStart").addEventListener("click",tmStart);
-$("#calibBtn").addEventListener("click",()=>{if(TM.active)return;setTmMode("pulse");TM.calibrating=true;const saved=TM.calib;
-  $("#calibTxt").textContent="انقر مع كل نقرة بأدق ما تستطيع. نقيس تأخير جهازك ونطرحه من نتائجك.";
-  const keepBpm=S.bpm;S.bpm=90;tmStart();S.bpm=keepBpm;});
-window.addEventListener("keydown",e=>{if(!TM.active||$("#p-timing").hidden)return;if(e.target&&/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
+/* latency calibration: its own routine with a wide window, independent of the current calibration */
+const CAL={on:false,taps:[],n:20,ci:4,sd:60/90,t0:0};
+function calibStart(){if(TM.active)tmFinish(true);rhythmStop();setTmMode("pulse");getCtx();
+  CAL.on=true;CAL.taps=[];const seq=[];for(let i=0;i<CAL.n;i++)seq.push([i%4===0?"C":"b"]);
+  rhythmStart("cal",seq,CAL.sd,{bars:1,onStep:ev=>{if(!CAL.on)return;const k=ev.i;$("#tmPhase").textContent=k<CAL.ci?"اسمع فقط: "+(k+1)+" من "+CAL.ci:"انقر مع كل نقرة ("+(k-CAL.ci+1)+" من "+(CAL.n-CAL.ci)+")";},onEnd:()=>setTimeout(calibFinish,250)});
+  CAL.t0=RHY.t0;$("#tmStart").disabled=true;$("#calibTxt").textContent="جارٍ القياس… انقر الزر الكبير مع الصوت، لا قبله ولا بعده.";$("#tapFb").textContent=" ";
+  TM.taps=[];drawStrip();setTimeout(()=>$("#pads").scrollIntoView({behavior:"smooth",block:"center"}),50);}
+function calibTap(btn,e){const ctx=getCtx();const t=tapCtxTime(e)-audioLatency(ctx);const k=Math.round((t-CAL.t0)/CAL.sd);const off=(t-(CAL.t0+k*CAL.sd))*1000;
+  if(k<CAL.ci||k>=CAL.n){flash(btn,"hit-warn");$("#tapFb").textContent=k<CAL.ci?"انتظر حتى ينتهي العدّ":"انتهت النقرات";return;}
+  if(CAL.taps.some(x=>x.k===k)){flash(btn,"hit-warn");return;}
+  CAL.taps.push({k,off});flash(btn,"hit-good");$("#tapFb").textContent="نقرة "+CAL.taps.length;
+  TM.taps.push({off:Math.max(-100,Math.min(100,off))});drawStrip();}
+function calibAbort(){if(!CAL.on)return;CAL.on=false;rhythmStop();$("#tmStart").disabled=false;$("#tmPhase").textContent="";$("#calibTxt").textContent=TM.calib?"المعايرة الحالية: "+Math.round(TM.calib)+" مث.":"لم تُعاير بعد.";}
+function calibFinish(){if(!CAL.on)return;CAL.on=false;$("#tmStart").disabled=false;$("#tmPhase").textContent="";
+  const offs=CAL.taps.sort((a,b)=>a.k-b.k).slice(2).map(x=>x.off);const tx=$("#calibTxt");
+  if(offs.length<6){tx.textContent="وصلت "+CAL.taps.length+" نقرات فقط. أعد واضغط الزر الكبير مع كل نقرة بعد العدّ ("+(CAL.n-CAL.ci)+" نقرة).";Haptic.double();return;}
+  const sorted=[...offs].sort((a,b)=>a-b),med=sorted[sorted.length>>1];
+  const mad=[...offs].map(o=>Math.abs(o-med)).sort((a,b)=>a-b)[offs.length>>1];
+  if(mad>80){tx.textContent="نقراتك متفاوتة كثيراً (±"+Math.round(mad)+" مث)، فلم أحفظ النتيجة. أعد وركّز على النقر مع الصوت نفسه بإيقاع ثابت.";Haptic.double();return;}
+  TM.calib=Math.max(-100,Math.min(450,med));store.set("calib",TM.calib);Haptic.tap();
+  tx.textContent="تمت المعايرة ✓ تأخير جهازك نحو "+Math.round(TM.calib)+" مث، ويُطرح من كل نقرة."+(TM.calib>120?" هذا تأخير كبير، غالباً من سماعات بلوتوث؛ أعد المعايرة إن غيّرت السماعة.":"")+" ثبات نقرك ±"+Math.round(mad)+" مث.";}
+$("#calibBtn").addEventListener("click",()=>{if(CAL.on){calibAbort();return;}calibStart();});
+window.addEventListener("keydown",e=>{if(!(TM.active||CAL.on)||$("#p-timing").hidden)return;if(e.target&&/INPUT|TEXTAREA|SELECT/.test(e.target.tagName))return;
   const pads=document.querySelectorAll("#pads .pad");
   if(TM.mode==="iqa"){if(e.key==="j"||e.key==="ت"){e.preventDefault();onTap("D",pads[0],e);}else if(e.key==="f"||e.key==="ب"){e.preventDefault();onTap("T",pads[1],e);}}
   else if(e.code==="Space"){e.preventDefault();onTap("X",pads[0],e);}});
@@ -2907,6 +2925,7 @@ function navRender(){
   $("#navBack").hidden=!paged;if(paged)$("#navBackTxt").textContent=st.length>1?titleOf("p-"+st[st.length-2]):titleOf("t-"+NAV.tab);
   $("#setBtn").hidden=paged;$("#profBtn").hidden=paged||NAV.tab!=="coach";
   if(TM.active&&key!=="p-timing")tmFinish(true);
+  if(CAL.on&&key!=="p-timing")calibAbort();
   if(typeof tuner!=="undefined"&&tuner&&key!=="p-tuner")tuner.stop();
   if(key==="p-songpick"){$("#spQ").value="";renderSongPick();}
   syncRecIqa();
@@ -2970,7 +2989,7 @@ const rs=$("#recMaqam");rs.append(el("option",{value:"auto"},"اكتشف الم�
 window.addEventListener("resize",()=>{if(S.lastAnalysis&&!$("#p-result").hidden&&!$('[data-rp="plot"]').hidden)drawPlot(S.lastAnalysis);});
 window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{if(S.lastAnalysis){drawPlot(S.lastAnalysis);renderDevBars(S.lastAnalysis);}});
 
-const APP_VER="2026.10.10-13";
+const APP_VER="2026.10.10-14";
 $("#verTxt").textContent="الإصدار \u2066"+APP_VER+"\u2069";
 const hardReload=()=>{location.replace(location.pathname+"?v="+Date.now()+location.hash);};
 $("#updBtn").addEventListener("click",hardReload);$("#updNow").addEventListener("click",hardReload);
@@ -2979,7 +2998,7 @@ renderTr();renderA4();renderChips();renderMaqam();renderIqaChips();renderIqa();r
 renderExample().then(prev=>{if(prev){$("#recMaqam").value="auto";syncRecMaqam();}}).catch(()=>{});
 setLearn(store.get("learnPane","maqam"));navRender();
 initSample();
-window.__dozan={go,push,navBack,switchTab,setResPane,stageUpdate,stageOpen,stageClose,resultSpeech,Voice,Haptic,setA4,getC3:()=>C3,SONGS:()=>SONGS,openSong,compareWithOriginal,trainSong,runAnalysis,loadLib,playVoice,LIBCACHE:()=>LIBCACHE,openRec,analyze,MAQAMAT,S,phraseEvents,playOud,makeBus,C3,RHY,TM,IQAAT,onTap,drumHit,getCtx};
+window.__dozan={CAL,go,push,navBack,switchTab,setResPane,stageUpdate,stageOpen,stageClose,resultSpeech,Voice,Haptic,setA4,getC3:()=>C3,SONGS:()=>SONGS,openSong,compareWithOriginal,trainSong,runAnalysis,loadLib,playVoice,LIBCACHE:()=>LIBCACHE,openRec,analyze,MAQAMAT,S,phraseEvents,playOud,makeBus,C3,RHY,TM,IQAAT,onTap,drumHit,getCtx};
 })();
 </script>
 
