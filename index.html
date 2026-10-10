@@ -61,8 +61,8 @@ header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background
 .seg button{border:0;background:transparent;padding:6px 12px;cursor:pointer;font-size:13px}
 .seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
 nav.tabs{position:fixed;bottom:0;left:0;right:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
-nav.tabs .in{max-width:760px;margin:0 auto;display:grid;grid-template-columns:repeat(6,1fr)}
-nav.tabs button{border:0;background:none;padding:10px 1px 9px;cursor:pointer;font-size:11.5px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px}
+nav.tabs .in{max-width:760px;margin:0 auto;display:grid;grid-template-columns:repeat(7,1fr)}
+nav.tabs button{border:0;background:none;padding:10px 0 9px;cursor:pointer;font-size:10.5px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px}
 nav.tabs button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.6}
 nav.tabs button[aria-selected="true"]{color:var(--brass);font-weight:600}
 section.view{padding-block:18px;display:grid;gap:18px}
@@ -190,6 +190,27 @@ a.btn{text-decoration:none;color:inherit;display:inline-block}
 .composer textarea{min-height:46px;flex:1}
 .suggest{display:flex;flex-wrap:wrap;gap:6px}
 .suggest button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;cursor:pointer;font-size:13px}
+/* songs */
+.songbar{display:grid;gap:10px}
+.songsearch{display:flex;gap:8px}
+.songsearch input{flex:1;min-width:0;border:1px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 12px}
+.songlist{display:grid;gap:6px}
+.songrow{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:9px 12px;background:var(--surface);cursor:pointer;text-align:start;width:100%}
+.songrow b{font-family:var(--f-display);font-size:16px;font-weight:500}
+.songrow .a{font-size:12.5px;color:var(--muted)}
+.badge{font-size:11.5px;border-radius:999px;padding:2px 9px;white-space:nowrap;border:1px solid var(--line)}
+.badge.v{background:var(--good-soft);border-color:var(--good);color:var(--good)}
+.badge.e{background:var(--brass-soft);border-color:var(--brass);color:var(--brass)}
+.badge.u{color:var(--muted)}
+.songhead{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;flex-wrap:wrap}
+.songtitle{font-family:var(--f-display);font-size:32px;line-height:1.15;font-weight:700}
+.src{font-size:12.5px;display:grid;gap:3px}
+.src a{color:var(--brass);overflow-wrap:anywhere}
+.cmpplot{width:100%;height:220px;display:block;border-radius:10px;background:var(--surface-2)}
+.activesong{display:flex;gap:8px;align-items:center;justify-content:space-between;background:var(--brass-soft);color:var(--brass);border-radius:10px;padding:8px 12px;font-size:13.5px}
+.activesong button{border:0;background:none;color:inherit;cursor:pointer;font-size:16px}
+.songmaq{display:flex;flex-wrap:wrap;gap:6px}
+.songmaq button{border:1px solid var(--line);background:var(--surface-2);border-radius:999px;padding:4px 11px;cursor:pointer;font-size:13px;font-family:var(--f-display)}
 /* issues, library, comparison */
 .issues{display:grid;gap:10px}
 .issue{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:grid;gap:6px;background:var(--surface)}
@@ -464,6 +485,7 @@ a.btn{text-decoration:none;color:inherit;display:inline-block}
   <!-- RECORD -->
   <section class="view" id="v-rec" hidden>
     <h2>سجّل وحلّل</h2>
+    <div class="activesong" id="activeSong" hidden><span id="activeSongTxt"></span><button id="activeSongX" aria-label="إلغاء ربط الأغنية">✕</button></div>
     <div class="card">
       <div class="formrow">
         <div><label for="recMaqam">المقام</label><select id="recMaqam"></select></div>
@@ -550,6 +572,32 @@ a.btn{text-decoration:none;color:inherit;display:inline-block}
     </div>
   </section>
 
+  <!-- SONGS -->
+  <section class="view" id="v-songs" hidden>
+    <h2>مكتبة الأغاني</h2>
+    <div class="card" id="songDetail" hidden></div>
+    <div class="card songbar">
+      <div class="songsearch"><input id="songQ" type="search" placeholder="ابحث باسم الأغنية أو الملحن…" aria-label="بحث"><button class="btn" id="songAddBtn">أضف</button></div>
+      <div class="alt" id="artistChips"></div>
+      <div class="formrow">
+        <div><label for="songMaqF">المقام</label><select id="songMaqF"><option value="">كل المقامات</option></select></div>
+        <div><label for="songStatF">البيانات</label><select id="songStatF"><option value="">الكل</option><option value="v">موثّقة بمصدر</option><option value="e">مقدّرة من تحليلك</option><option value="u">غير معروفة بعد</option></select></div>
+      </div>
+      <div class="btns"><button class="btn" id="songComplete">استكمل أغاني الفنان المختار</button><span class="small muted" id="songCount"></span></div>
+      <p class="status" id="songStatus"></p>
+      <div class="songlist" id="songList"></div>
+    </div>
+    <div class="card" id="ex-song">
+      <div class="maqam-head"><h3>خمّن مقام الأغنية</h3><span class="score" id="exSScore">0 / 0</span></div>
+      <p class="small muted">تعلّم المقامات من أغانٍ تحفظها. الأسئلة من الأغاني ذات المقام الموثّق أو المقدّر فقط.</p>
+      <div class="btns"><button class="btn primary" id="exSPlay">سؤال جديد</button><button class="btn" id="exSRe" disabled>اسمع سلم الإجابة</button></div>
+      <p class="songtitle" id="exSQ" style="font-size:22px"></p>
+      <div class="ex-opts" id="exSOpts"></div>
+      <p class="fb" id="exSFb"></p>
+    </div>
+    <p class="small muted">الكلمات والتسجيلات الأصلية غير مضمّنة لأنها محمية بحقوق النشر. غنِّ من حفظك، وارفع مقاطع من نسختك الخاصة عند الحاجة؛ تبقى في جهازك فقط.</p>
+  </section>
+
   <!-- COACH -->
   <section class="view" id="v-coach" hidden>
     <h2>اسأل المدرب</h2>
@@ -573,6 +621,7 @@ a.btn{text-decoration:none;color:inherit;display:inline-block}
   <button role="tab" data-v="train" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M4 12a8 8 0 0 1 16 0v4a2 2 0 0 1-2 2h-1v-6h3M4 12v4a2 2 0 0 0 2 2h1v-6H4"/></svg>التدريب</button>
   <button role="tab" data-v="rhythm" aria-selected="false"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="7" rx="8" ry="3"/><path d="M4 7v6c0 1.7 3.6 3 8 3s8-1.3 8-3V7M8 20l2-4M16 20l-2-4"/></svg>الإيقاع</button>
   <button role="tab" data-v="rec" aria-selected="false"><svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>التسجيل</button>
+  <button role="tab" data-v="songs" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/></svg>الأغاني</button>
   <button role="tab" data-v="coach" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M4 5h16v11H9l-5 4z"/></svg>المدرب</button>
   <button role="tab" data-v="path" aria-selected="false"><svg viewBox="0 0 24 24"><path d="M5 20V6l7-3 7 3v14M9 20v-6h6v6"/></svg>المنهج</button>
 </div></nav>
@@ -811,6 +860,8 @@ function renderMaqam(){
   const p=$("#mqProse");p.innerHTML="";
   const add=(h,t)=>{p.append(el("h3",{text:h}));p.append(el("p",{text:t}));};
   add("سير المقام",m.sayr);add("ملاحظة على الأجناس",m.descJins);add("للمطرب",m.sing);add("لعازف العود",m.oud);
+  const sg=(typeof songsOnMaqam==="function")?songsOnMaqam(m.id):[];
+  if(sg.length){p.append(el("h3",{text:"أغانٍ في مكتبتك على هذا المقام"}));const w=el("div",{class:"songmaq"});sg.slice(0,14).forEach(x=>w.append(el("button",{onclick:()=>{openSong(x.id);go("songs");}},x.title+" · "+x.artist)));p.append(w);}
 }
 function playScale(down){
   stopAll();const m=byId(S.maqam);const ctx=getCtx();const t0=ctx.currentTime+0.05;const beat=0.5;
@@ -1479,12 +1530,12 @@ function micErrorText(e){
 
 /* ---------------- Saved recordings (IndexedDB) ---------------- */
 const DB={db:null,ok:true,
-  open(){if(this.db)return Promise.resolve(this.db);return new Promise((res,rej)=>{try{const r=indexedDB.open("dozan",1);r.onupgradeneeded=()=>{r.result.createObjectStore("recs",{keyPath:"id"});};r.onsuccess=()=>{this.db=r.result;res(r.result);};r.onerror=()=>rej(r.error);}catch(e){rej(e);}});},
-  async tx(mode,fn){const db=await this.open();return new Promise((res,rej)=>{const t=db.transaction("recs",mode);const st=t.objectStore("recs");const out=fn(st);t.oncomplete=()=>res(out&&out.result!==undefined?out.result:undefined);t.onerror=()=>rej(t.error);});},
-  put(o){return this.tx("readwrite",st=>st.put(o));},
-  get(id){return this.tx("readonly",st=>st.get(id));},
-  all(){return this.tx("readonly",st=>st.getAll());},
-  del(id){return this.tx("readwrite",st=>st.delete(id));}
+  open(){if(this.db)return Promise.resolve(this.db);return new Promise((res,rej)=>{try{const r=indexedDB.open("dozan",2);r.onupgradeneeded=()=>{const d=r.result;["recs","songs","clips"].forEach(n=>{if(!d.objectStoreNames.contains(n))d.createObjectStore(n,{keyPath:"id"});});};r.onsuccess=()=>{this.db=r.result;res(r.result);};r.onerror=()=>rej(r.error);}catch(e){rej(e);}});},
+  async tx(mode,fn,store){store=store||"recs";const db=await this.open();return new Promise((res,rej)=>{const t=db.transaction(store,mode);const st=t.objectStore(store);const out=fn(st);t.oncomplete=()=>res(out&&out.result!==undefined?out.result:undefined);t.onerror=()=>rej(t.error);});},
+  put(o,st){return this.tx("readwrite",x=>x.put(o),st);},
+  get(id,st){return this.tx("readonly",x=>x.get(id),st);},
+  all(st){return this.tx("readonly",x=>x.getAll(),st);},
+  del(id,st){return this.tx("readwrite",x=>x.delete(id),st);}
 };
 let LIBCACHE=[];S.libFilter="all";
 function recFields(R){return {maqamId:R.maqam.id,maqamName:R.maqam.name,autoMaq:!!R.autoMaq,mode:R.mode,dur:+R.dur.toFixed(1),
@@ -1518,7 +1569,7 @@ function renderLib(){
   else{sp.setAttribute("hidden","");st.hidden=true;}
 }
 async function saveNewRec(R,opts){
-  const rec=Object.assign({id:"r"+Date.now(),t:Date.now(),parent:opts.parentId||null,blob:opts.blob||null,mime:opts.mime||"",grid:S.lastGrid||null,report:null},recFields(R));
+  const rec=Object.assign({id:"r"+Date.now(),t:Date.now(),song:S.activeSong?S.activeSong.id:null,parent:opts.parentId||null,blob:opts.blob||null,mime:opts.mime||"",grid:S.lastGrid||null,report:null},recFields(R));
   try{await DB.put(rec);}catch(e){try{const r2=Object.assign({},rec,{blob:null});await DB.put(r2);rec.blob=null;}catch(e2){DB.ok=false;}}
   await loadLib();return rec;
 }
@@ -1559,6 +1610,245 @@ let delArm=0;$("#delRecBtn").addEventListener("click",async()=>{const rec=S.curr
   delArm=0;try{await DB.del(rec.id);}catch(e){}S.currentRec=null;$("#results").hidden=true;$("#delRecBtn").textContent="احذف التسجيل";setStatus("حُذف التسجيل.");await loadLib();});
 function syncRecMaqam(){const auto=$("#recMaqam").value==="auto";$("#autoTonicRow").hidden=auto;}
 $("#recMaqam").addEventListener("change",syncRecMaqam);
+
+
+/* ---------------- Song library ---------------- */
+const ARTISTS=["أم كلثوم","محمد عبدالوهاب","عبدالحليم حافظ","فيروز","وديع الصافي","كاظم الساهر","محمد عبده","طلال مداح","عبادي الجوهر"];
+const W="ويكيبيديا";
+const SEED_SONGS=[
+ {t:"أنت عمري",a:"أم كلثوم",composer:"محمد عبدالوهاب",lyricist:"أحمد شفيق كامل",year:"1964",maqam:"kurd",maqamText:"كرد",src:[{title:"Inta Omri – Wikipedia",url:"https://en.wikipedia.org/wiki/Inta_Omri"}]},
+ {t:"ألف ليلة وليلة",a:"أم كلثوم",composer:"بليغ حمدي",lyricist:"مرسي جميل عزيز",year:"1969",maqam:"nahawand",maqamText:"فرحفزا (مشتق من النهاوند)",src:[{title:"Alf Leila wa Leila – Wikipedia",url:"https://en.wikipedia.org/wiki/Alf_Leila_wa_Leila"}]},
+ {t:"فات الميعاد",a:"أم كلثوم",composer:"بليغ حمدي",lyricist:"مرسي جميل عزيز",year:"1967",maqam:"sikah",maqamText:"سيكاه",src:[{title:"Fat El Ma'ad – Wikipedia",url:"https://en.wikipedia.org/wiki/Fat_El_Ma%27ad"}]},
+ ...["الأطلال","فكروني","سيرة الحب","أمل حياتي","رباعيات الخيام","هذه ليلتي","أغداً ألقاك","دارت الأيام","الحب كده","أروح لمين","رق الحبيب","هو صحيح الهوى غلاب","بعيد عنك","يا ظالمني","حب إيه","أنا في انتظارك"].map(t=>({t,a:"أم كلثوم"})),
+ ...["قارئة الفنجان","أهواك","سواح","زي الهوا","موعود","جانا الهوى","على قد الشوق","أي دمعة حزن لا","فاتت جنبنا","رسالة من تحت الماء","توبة","صافيني مرة","بتلوموني ليه","حاول تفتكرني","أول مرة تحب يا قلبي","كامل الأوصاف","نبتدي منين الحكاية"].map(t=>({t,a:"عبدالحليم حافظ"})),
+ ...["الجندول","كليوباترا","النهر الخالد","يا مسافر وحدك","جفنه علم الغزل","من غير ليه","أحب عيشة الحرية","عاشق الروح","خايف أقول اللي في قلبي","الكرنك","مضناك جفاه مرقده","يا وابور قولي"].map(t=>({t,a:"محمد عبدالوهاب"})),
+ ...["نسم علينا الهوى","شادي","زهرة المدائن","سألوني الناس","كيفك إنت","أعطني الناي وغني","حبيتك بالصيف","بكتب اسمك يا حبيبي","نحنا والقمر جيران","لبيروت","طيري يا طيارة","سهار بعد سهار","ردني إلى بلادي","زوروني كل سنة مرة","أنا لحبيبي"].map(t=>({t,a:"فيروز"})),
+ ...["لبنان يا قطعة سما","عالله تعود","الليل يا ليلى","ولو","عندك بحرية يا ريس","طل الصباح"].map(t=>({t,a:"وديع الصافي"})),
+ ...["زيديني عشقاً","أنا وليلى","إني خيرتك فاختاري","قولي أحبك","مدرسة الحب","لا يا صديقي","أكرهها","علمني حبك","هل عندك شك","المستبدة","كثر الحديث","أحبيني بلا عقد","حبيبتي والمطر","الرسم بالكلمات"].map(t=>({t,a:"كاظم الساهر"})),
+ ...["الأماكن","أبعاد","على البال","مذهلة","ليلة خميس","من بادي الوقت","الرسايل","لنا الله","مجموعة إنسان","كلك نظر","ما عاد بدري","شبيه الريح"].map(t=>({t,a:"محمد عبده"})),
+ ...["مقادير","وترحل","زمان الصمت","أغراب","عطني المحبة","وطني الحبيب"].map(t=>({t,a:"طلال مداح"})),
+ ...["أرفض المسافة","تصدق ولا أحلف لك"].map(t=>({t,a:"عبادي الجوهر"}))
+];
+const songKey=(t,a)=>"s:"+(a+"|"+t).replace(/[ًٌٍَُِّْـ]/g,"").replace(/[إأآ]/g,"ا").replace(/ة/g,"ه").replace(/ى/g,"ي").replace(/\s+/g," ").trim();
+let SONGS=[];S.songArtist=store.get("songArtist","");S.activeSong=null;S.curSongId=null;
+function seedSongs(){return SEED_SONGS.map(x=>({id:songKey(x.t,x.a),title:x.t,artist:x.a,composer:x.composer||"",lyricist:x.lyricist||"",year:x.year||"",form:"",maqam:x.maqam||"",maqamText:x.maqamText||"",mods:[],iqa:"",tempo:"",status:x.maqam?"v":"u",sources:x.src||[],notes:"",seed:true}));}
+async function loadSongs(){
+  const base=new Map(seedSongs().map(x=>[x.id,x]));
+  try{(await DB.all("songs")||[]).forEach(x=>base.set(x.id,Object.assign(base.get(x.id)||{},x)));}catch(e){}
+  SONGS=[...base.values()];renderSongFilters();renderSongs();renderMaqam();
+}
+async function saveSong(x){x.updated=Date.now();try{await DB.put(x,"songs");}catch(e){}const i=SONGS.findIndex(y=>y.id===x.id);if(i>=0)SONGS[i]=x;else SONGS.push(x);}
+function songsOnMaqam(id){return SONGS.filter(x=>x.maqam===id&&x.status!=="u");}
+function statusBadge(x){return x.status==="v"?el("span",{class:"badge v",text:"✓ "+(x.maqamText||maqName(x.maqam))}):x.status==="e"?el("span",{class:"badge e",text:"≈ "+(x.maqamText||maqName(x.maqam))}):el("span",{class:"badge u",text:"المقام غير معروف"});}
+const maqName=id=>(byId(id)||{name:id||""}).name;
+function renderSongFilters(){
+  const c=$("#artistChips");c.innerHTML="";const arts=[...new Set(ARTISTS.concat(SONGS.map(x=>x.artist)))];
+  c.append(el("button",{"aria-pressed":String(!S.songArtist),onclick:()=>{S.songArtist="";store.set("songArtist","");renderSongFilters();renderSongs();}},"الكل"));
+  arts.forEach(a=>c.append(el("button",{"aria-pressed":String(S.songArtist===a),onclick:()=>{S.songArtist=a;store.set("songArtist",a);renderSongFilters();renderSongs();}},a)));
+  const mf=$("#songMaqF");if(mf.options.length<=1)MAQAMAT.forEach(m=>mf.append(el("option",{value:m.id},m.name)));
+  $("#songComplete").textContent=S.songArtist?"استكمل أغاني "+S.songArtist:"اختر فناناً لاستكمال أغانيه";$("#songComplete").disabled=!S.songArtist;
+}
+const norm=t=>String(t||"").replace(/[ًٌٍَُِّْـ]/g,"").replace(/[إأآ]/g,"ا").replace(/ة/g,"ه").replace(/ى/g,"ي").toLowerCase();
+function renderSongs(){
+  const q=norm($("#songQ").value.trim()),mf=$("#songMaqF").value,sf=$("#songStatF").value;
+  const list=SONGS.filter(x=>(!S.songArtist||x.artist===S.songArtist)&&(!mf||x.maqam===mf)&&(!sf||x.status===sf)&&(!q||norm(x.title+" "+x.artist+" "+x.composer+" "+x.lyricist).includes(q)))
+    .sort((a,b)=>(a.status==="u")-(b.status==="u")||a.artist.localeCompare(b.artist,"ar")||a.title.localeCompare(b.title,"ar"));
+  const box=$("#songList");box.innerHTML="";
+  list.slice(0,300).forEach(x=>{const n=LIBCACHE.filter(r=>r.song===x.id).length;
+    box.append(el("button",{class:"songrow",onclick:()=>openSong(x.id)},el("b",{text:x.title}),statusBadge(x),
+      el("span",{class:"a",text:x.artist+(x.composer?" · لحن "+x.composer:"")+(x.year?" · "+x.year:"")+(n?" · تدرّبت "+n:"")}),el("span",{class:"a",text:x.iqa?"إيقاع "+x.iqa:""})));});
+  const v=SONGS.filter(x=>x.status==="v").length,e=SONGS.filter(x=>x.status==="e").length;
+  $("#songCount").textContent=SONGS.length+" أغنية · "+v+" موثّقة · "+e+" مقدّرة";
+  if(!list.length)box.append(el("p",{class:"small muted",text:"لا نتائج. اضغط «أضف» لإضافتها، أو «استكمل أغاني الفنان»."}));
+}
+["#songQ","#songMaqF","#songStatF"].forEach(id=>$(id).addEventListener("input",renderSongs));
+$("#songAddBtn").addEventListener("click",()=>{const t=$("#songQ").value.trim();const st=$("#songStatus");
+  if(!t){st.textContent="اكتب اسم الأغنية في خانة البحث ثم اضغط «أضف».";return;}
+  const a=S.songArtist||"";if(!a){st.textContent="اختر الفنان من الأزرار أولاً ثم اضغط «أضف».";return;}
+  const id=songKey(t,a);if(SONGS.some(x=>x.id===id)){openSong(id);return;}
+  const x={id,title:t,artist:a,composer:"",lyricist:"",year:"",form:"",maqam:"",maqamText:"",mods:[],iqa:"",tempo:"",status:"u",sources:[],notes:"",custom:true};
+  saveSong(x).then(()=>{renderSongs();openSong(id);st.textContent="أُضيفت «"+t+"». اضغط «ابحث عن بياناتها» لتعبئتها من المصادر.";});});
+
+/* ----- detail ----- */
+function iqaFromText(t){t=norm(t);const m=IQAAT.find(q=>t.includes(norm(q.name)));return m?m.id:null;}
+function maqFromText(t){t=norm(t);const pairs=[["نهاوند","nahawand"],["فرحفزا","nahawand"],["حجاز","hijaz"],["صبا","saba"],["بياتي","bayati"],["سيكاه","sikah"],["هزام","sikah"],["راست","rast"],["عجم","ajam"],["جهاركاه","ajam"],["كرد","kurd"]];const f=pairs.find(([k])=>t.includes(norm(k)));return f?f[1]:"";}
+function openSong(id){
+  const x=SONGS.find(y=>y.id===id);if(!x)return;S.curSongId=id;const d=$("#songDetail");d.hidden=false;d.innerHTML="";
+  const recs=LIBCACHE.filter(r=>r.song===id).sort((a,b)=>a.t-b.t);
+  d.append(el("div",{class:"songhead"},el("div",{},el("div",{class:"songtitle",text:x.title}),el("p",{class:"muted",text:x.artist})),statusBadge(x)));
+  const kv=el("dl",{class:"kv"});const row=(k,v)=>{if(v){kv.append(el("dt",{text:k}));kv.append(el("dd",{text:v}));}};
+  row("الملحن",x.composer);row("الشاعر",x.lyricist);row("السنة",x.year);row("القالب",x.form);
+  row("المقام",x.maqam||x.maqamText?(x.maqamText||maqName(x.maqam))+(x.status==="e"?" (مقدّر من تحليل مقطع)":""):"");
+  row("تنقلات المقام",(x.mods||[]).join("، "));row("الإيقاع",x.iqa+(x.tempo?" · "+x.tempo:""));row("القرار",x.tonicName||"");row("ملاحظات",x.notes);
+  if(!kv.children.length)kv.append(el("dt",{text:"البيانات"}),el("dd",{text:"غير معروفة بعد. اضغط «ابحث عن بياناتها»."}));
+  d.append(kv);
+  if(x.sources&&x.sources.length){const sb=el("div",{class:"src"},el("span",{class:"muted",text:"المصادر:"}));x.sources.slice(0,6).forEach(s=>sb.append(el("a",{href:s.url,target:"_blank",rel:"noopener"},s.title||s.url)));d.append(sb);}
+  const b=el("div",{class:"btns"});
+  b.append(el("button",{class:"btn primary",onclick:()=>trainSong(x)},"تدرّب عليها"));
+  b.append(el("button",{class:"btn",id:"songResearch",onclick:()=>researchSong(x)},x.status==="u"?"ابحث عن بياناتها":"حدّث البيانات من المصادر"));
+  if(x.maqam)b.append(el("button",{class:"btn",onclick:()=>{selectMaqam(x.maqam);go("maqam");}},"افتح مقام "+maqName(x.maqam)));
+  const iq=iqaFromText(x.iqa);if(iq)b.append(el("button",{class:"btn",onclick:()=>{selectIqa(iq);go("rhythm");}},"شغّل إيقاع "+iqaById(iq).name));
+  b.append(el("label",{class:"btn",for:"songClipIn"},"اكتشف المقام من مقطع الأصل"));
+  b.append(el("button",{class:"btn",onclick:()=>{$("#chatIn").value="حدثني عن أغنية «"+x.title+"» لـ"+x.artist+" من ناحية المقام والسير والإيقاع، وكيف أتدرب على غنائها خطوة بخطوة.";go("coach");}},"اسأل المدرب عنها"));
+  if(x.custom||x.status!=="v")b.append(el("button",{class:"btn",onclick:()=>editSong(x)},"عدّل يدوياً"));
+  d.append(b);
+  d.append(el("p",{class:"status",id:"songDStatus"}));
+  // practice history + comparison with the original
+  const ph=el("div",{class:"prose"});
+  if(recs.length){ph.append(el("h3",{text:"تدريبك على هذه الأغنية"}));const pts=recs.map(r=>r.m.score);ph.append(el("p",{class:"small",text:recs.length+" محاولة · التقييم: "+pts.join(" ← ")+(pts.length>1?" ("+(pts[pts.length-1]-pts[0]>=0?"+":"")+(pts[pts.length-1]-pts[0])+")":"")}));
+    const rr=el("div",{class:"songmaq"});recs.slice(-6).reverse().forEach(r=>rr.append(el("button",{onclick:()=>{go("rec");openRec(r.id);}},fmtDate(r.t)+" · "+r.m.score)));ph.append(rr);}
+  ph.append(el("h3",{text:"قارن أداءك بالأصل"}));
+  ph.append(el("p",{class:"small muted",id:"origInfo",text:"ارفع مقطعاً من التسجيل الأصلي (10 إلى 30 ثانية)، ثم سجّل نفس المقطع بصوتك من «تدرّب عليها». نطابق اللحنين لحظة بلحظة."}));
+  const cb=el("div",{class:"btns"});cb.append(el("label",{class:"btn",for:"songClipIn"},"ارفع مقطع الأصل"));
+  cb.append(el("button",{class:"btn primary",id:"cmpOrigBtn",onclick:()=>compareWithOriginal(x)},"قارن آخر محاولة بالأصل"));ph.append(cb);
+  ph.append(el("div",{id:"origCmp"}));
+  d.append(ph);
+  DB.get(id,"clips").then(c=>{if(c){$("#origInfo").textContent="مقطع الأصل محفوظ ("+c.dur+" ث، رُفع "+fmtDate(c.t)+"). سجّل نفس المقطع ثم اضغط «قارن».";}}).catch(()=>{});
+  $("#cmpOrigBtn").disabled=!recs.length;
+  d.scrollIntoView({behavior:"smooth",block:"start"});
+}
+function editSong(x){
+  const d=$("#songDetail");const f=el("div",{class:"prose"});
+  const fld=(lab,key,ph)=>{const i=el("input",{class:"field",style:"direction:rtl;width:100%",value:x[key]||"",placeholder:ph||""});i.dataset.k=key;f.append(el("label",{class:"small muted",text:lab}),i);return i;};
+  const ins=[fld("الملحن","composer"),fld("الشاعر","lyricist"),fld("السنة","year"),fld("القالب","form","طقطوقة، قصيدة، دور، أغنية طويلة…"),fld("المقام (اكتبه كما تعرفه)","maqamText","مثال: بياتي"),fld("الإيقاع","iqa","مثال: مقسوم"),fld("ملاحظات","notes")];
+  f.append(el("div",{class:"btns"},el("button",{class:"btn primary",onclick:async()=>{ins.forEach(i=>x[i.dataset.k]=i.value.trim());x.maqam=maqFromText(x.maqamText);if(x.maqam&&x.status==="u")x.status="e";x.notes=(x.notes||"");await saveSong(x);renderSongs();openSong(x.id);}},"احفظ"),el("button",{class:"btn",onclick:()=>openSong(x.id)},"إلغاء")));
+  d.append(f);f.scrollIntoView({behavior:"smooth"});
+}
+function trainSong(x){
+  S.activeSong=x;$("#activeSong").hidden=false;$("#activeSongTxt").textContent="تتدرّب على: "+x.title+" · "+x.artist+(x.maqam?" ("+maqName(x.maqam)+")":"");
+  $("#recMaqam").value=x.maqam||"auto";syncRecMaqam();$("#recMode").value="voice";go("rec");
+  setStatus("غنِّ مقطعاً من «"+x.title+"» من حفظك (20 إلى 60 ثانية)، ثم «أوقف وحلّل». يُحفظ التسجيل تحت هذه الأغنية.");
+}
+$("#activeSongX").addEventListener("click",()=>{S.activeSong=null;$("#activeSong").hidden=true;});
+
+/* ----- research with cited web sources (needs the viewer's API key) ----- */
+async function apiResearch(prompt,maxUses){
+  const key=apiKey();if(!key)throw {code:"no_key"};
+  const base={"content-type":"application/json","anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true","authorization":"Bearer "+key};
+  let messages=[{role:"user",content:prompt}],content=[],usage={in:0,out:0,search:0};
+  for(let round=0;round<3;round++){
+    const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:base,body:JSON.stringify({model:"claude-sonnet-5-5",max_tokens:4000,messages,tools:[{type:"web_search_20250305",name:"web_search",max_uses:maxUses||5}]})});
+    if(!res.ok){let msg="";try{msg=(await res.json()).error.message;}catch(e){}throw {code:res.status===401||res.status===403?"bad_key":res.status===429?"rate_limited":"upstream_error",message:"HTTP "+res.status+(msg?": "+msg:"")};}
+    const j=await res.json();content=content.concat(j.content||[]);
+    if(j.usage){usage.in+=(j.usage.input_tokens||0)+(j.usage.cache_read_input_tokens||0);usage.out+=j.usage.output_tokens||0;usage.search+=(j.usage.server_tool_use&&j.usage.server_tool_use.web_search_requests)||0;}
+    if(j.stop_reason==="pause_turn"){messages=[{role:"user",content:prompt},{role:"assistant",content:j.content}];continue;}
+    break;
+  }
+  const text=content.filter(b=>b.type==="text").map(b=>b.text).join("");
+  const cites=[];content.forEach(b=>{(b.citations||[]).forEach(c=>{if(c.url&&!cites.some(x=>x.url===c.url))cites.push({title:c.title||c.url,url:c.url});});});
+  const cost=usage.in*2/1e6+usage.out*10/1e6+usage.search*0.01;
+  const mk=new Date().toISOString().slice(0,7);const sp=store.get("spend",{});sp[mk]=(sp[mk]||0)+cost;store.set("spend",sp);
+  let data=null;const m=text.match(/\{[\s\S]*\}|\[[\s\S]*\]/);if(m){try{data=JSON.parse(m[0]);}catch(e){}}
+  return {data,text,cites,cost,month:sp[mk],searches:usage.search};
+}
+const RESEARCH_RULES="قواعد صارمة: اعتمد فقط على ما تجده في المصادر عبر البحث، ولا تكمل من ذاكرتك. أي معلومة لم تجدها في مصدر اتركها فارغة. لا تكتب أي جزء من كلمات الأغنية إطلاقاً. فضّل المصادر الموسوعية والمقالات المتخصصة في الموسيقى العربية والمنتديات المتخصصة مثل سماعي. أسماء المقامات بالعربية.";
+async function researchSong(x){
+  const st=$("#songDStatus");
+  if(!apiKey()){st.textContent=sample?"البحث في المصادر متاح في دوزان المباشر بمفتاحك، لأنه يحتاج البحث في الإنترنت.":"أضف مفتاح API من «الضبط» لتفعيل البحث في المصادر.";st.className="status err";return;}
+  st.className="status";st.textContent="يبحث في المصادر عن «"+x.title+"»… (قد يستغرق 20 إلى 60 ثانية)";$("#songResearch").disabled=true;
+  const prompt="ابحث في الإنترنت عن البيانات الموسيقية لأغنية «"+x.title+"» للفنان "+x.artist+".\n"+RESEARCH_RULES+"\nأعد JSON واحداً فقط بهذا الشكل بلا أي نص آخر:\n{\"found\":true,\"title\":\"\",\"composer\":\"\",\"lyricist\":\"\",\"year\":\"\",\"form\":\"\",\"maqam\":\"المقام الرئيسي\",\"maqam_confidence\":\"high|medium|low\",\"modulations\":[\"مقامات تنتقل إليها\"],\"iqa\":\"الإيقاع الرئيسي\",\"tempo_note\":\"\",\"tonic\":\"قرار المقام إن ذُكر\",\"notes\":\"معلومة موسيقية قصيرة مفيدة للتدريب\"}\nإذا لم تجد الأغنية أصلاً فأعد {\"found\":false}.";
+  try{const r=await apiResearch(prompt,5);const dt=r.data;
+    if(!dt||dt.found===false){st.textContent="لم أجد مصادر كافية عن هذه الأغنية. يمكنك تعبئتها يدوياً أو اكتشاف مقامها من مقطع."+" (التكلفة $"+r.cost.toFixed(3)+")";return;}
+    const set=(k,v)=>{if(v&&String(v).trim())x[k]=String(v).trim();};
+    set("composer",dt.composer);set("lyricist",dt.lyricist);set("year",dt.year);set("form",dt.form);set("iqa",dt.iqa);set("tempo",dt.tempo_note);set("notes",dt.notes);set("tonicName",dt.tonic);
+    if(Array.isArray(dt.modulations))x.mods=dt.modulations.filter(Boolean).slice(0,8);
+    if(dt.maqam){x.maqamText=dt.maqam;x.maqam=maqFromText(dt.maqam);x.status=r.cites.length&&dt.maqam_confidence!=="low"?"v":"e";}
+    x.sources=r.cites.slice(0,8);x.researched=Date.now();
+    await saveSong(x);renderSongs();openSong(x.id);
+    $("#songDStatus").textContent="تم من "+r.searches+" بحث و"+r.cites.length+" مصدر. التكلفة تقريباً $"+r.cost.toFixed(3)+" · هذا الشهر $"+r.month.toFixed(2)+(x.status==="e"?" · ثقة المقام منخفضة، تحقق منه بمقطع من الأصل.":"");
+  }catch(e){st.textContent=(sampleErr(e)||"تعذّر البحث.")+(e&&e.message?" ["+e.message+"]":"");st.className="status err";}
+  finally{const b=$("#songResearch");if(b)b.disabled=false;}
+}
+$("#songComplete").addEventListener("click",async()=>{
+  const a=S.songArtist;const st=$("#songStatus");if(!a)return;
+  if(!apiKey()){st.textContent="أضف مفتاح API من «الضبط» لتفعيل البحث في المصادر.";st.className="status err";return;}
+  const have=SONGS.filter(x=>x.artist===a).map(x=>x.title);
+  st.className="status";st.textContent="يبحث عن أغاني "+a+" الرسمية في المصادر… (حتى دقيقة)";$("#songComplete").disabled=true;
+  const prompt="ابحث في الإنترنت عن قائمة الأغاني الرسمية المنشورة للفنان "+a+" (من ويكيبيديا أو مواقع الأرشيف الموسيقي الموثوقة).\n"+RESEARCH_RULES+"\nلدينا هذه الأغاني مسبقاً فلا تكررها: "+have.join("، ")+"\nأعد JSON فقط: {\"songs\":[{\"title\":\"\",\"composer\":\"\",\"lyricist\":\"\",\"year\":\"\"}]} بحد أقصى 40 أغنية جديدة موجودة فعلاً في المصادر.";
+  try{const r=await apiResearch(prompt,6);const arr=r.data&&Array.isArray(r.data.songs)?r.data.songs:[];let added=0;
+    for(const s0 of arr){if(!s0||!s0.title)continue;const id=songKey(s0.title,a);if(SONGS.some(x=>x.id===id))continue;
+      await saveSong({id,title:String(s0.title).trim(),artist:a,composer:s0.composer||"",lyricist:s0.lyricist||"",year:s0.year?String(s0.year):"",form:"",maqam:"",maqamText:"",mods:[],iqa:"",tempo:"",status:"u",sources:r.cites.slice(0,4),notes:"",custom:true});added++;}
+    renderSongs();st.textContent="أُضيفت "+added+" أغنية لـ"+a+" من "+r.cites.length+" مصدر. التكلفة تقريباً $"+r.cost.toFixed(3)+". مقاماتها غير معروفة بعد: افتح أي أغنية واضغط «ابحث عن بياناتها».";}
+  catch(e){st.textContent=(sampleErr(e)||"تعذّر البحث.")+(e&&e.message?" ["+e.message+"]":"");st.className="status err";}
+  finally{$("#songComplete").disabled=false;}
+});
+
+/* ----- original clip: detect maqam + keep the clip for comparisons ----- */
+const songClipIn=el("input",{type:"file",id:"songClipIn",accept:"audio/*,video/*",hidden:""});document.body.append(songClipIn);
+songClipIn.addEventListener("change",async e=>{const f=e.target.files[0];e.target.value="";const x=SONGS.find(y=>y.id===S.curSongId);if(!f||!x)return;
+  const st=$("#songDStatus");st.className="status";st.textContent="يحلّل مقطع الأصل…";
+  try{const audio=await decodeBlob(await f.arrayBuffer());let data=mono(audio);const sr=audio.sampleRate;if(data.length>sr*40)data=data.subarray(0,sr*40);
+    const R=await analyze(data,sr,"auto","voice",true,p=>{st.textContent="يحلّل مقطع الأصل… "+Math.round(p*100)+"%";},null);
+    if(R.error){st.textContent="لم نلتقط لحناً واضحاً في المقطع. اختر مقطعاً يغنّي فيه المطرب بوضوح.";st.className="status err";return;}
+    const contour=R.frames.filter(f=>f.v).map(f=>[+f.t.toFixed(3),Math.round(f.c)]);
+    await DB.put({id:x.id,t:Date.now(),dur:+R.dur.toFixed(1),blob:f,contour,maqam:R.maqam.id,tonicAbs:R.tonicAbs},"clips");
+    const c2=R.cands[1];const sure=!c2||c2.rel<0.9;
+    if(x.status!=="v"){x.maqam=R.maqam.id;x.maqamText=R.maqam.name;x.status="e";x.tonicName=noteName(Math.round(R.tonicAbs/50)*50)+" (في التسجيل)";await saveSong(x);}
+    renderSongs();openSong(x.id);
+    $("#songDStatus").textContent="المقام المكتشف من المقطع: "+R.maqam.name+(sure?"":" (قريب أيضاً من "+c2.name+")")+(x.status==="v"?" · البيانات الموثّقة: "+(x.maqamText||maqName(x.maqam))+(R.maqam.id===x.maqam?" ✓ متطابق":" · المقطع قد يكون من جزء ينتقل فيه المقام"):"")+". حُفظ المقطع للمقارنة.";
+  }catch(err){st.textContent="تعذّرت قراءة الملف.";st.className="status err";}});
+
+/* ----- compare your latest attempt with the original (key-invariant DTW on pitch contours) ----- */
+function resampleContour(pts,fps){if(!pts.length)return [];const out=[];const T=pts[pts.length-1][0];let j=0;
+  for(let t=pts[0][0];t<=T;t+=1/fps){while(j<pts.length-1&&pts[j+1][0]<=t)j++;const p=pts[j];if(Math.abs(p[0]-t)<0.12)out.push([t,p[1]]);}return out;}
+function keyShift(a,b){const h=x=>{const H=new Float32Array(120);x.forEach(p=>H[Math.round(mod(p[1],1200)/10)%120]++);return H;};const A=h(a),B=h(b);let best=-1,bs=0;
+  for(let s=0;s<120;s++){let v=0;for(let i=0;i<120;i++)v+=A[i]*B[(i+s)%120];if(v>best){best=v;bs=s;}}return bs*10;}
+function dtw(a,b){const n=a.length,m=b.length;const INF=1e12;let prev=new Float64Array(m+1).fill(INF),cur=new Float64Array(m+1);prev[0]=0;
+  const dirs=new Uint8Array((n+1)*(m+1));
+  for(let i=1;i<=n;i++){cur.fill(INF);for(let j=1;j<=m;j++){const c=Math.abs(wrap(a[i-1]-b[j-1]));let d=prev[j-1],k=0;if(prev[j]<d){d=prev[j];k=1;}if(cur[j-1]<d){d=cur[j-1];k=2;}cur[j]=c+d;dirs[i*(m+1)+j]=k;}const t=prev;prev=cur;cur=t;}
+  const path=[];let i=n,j=m;while(i>0&&j>0){path.push([i-1,j-1]);const k=dirs[i*(m+1)+j];if(k===0){i--;j--;}else if(k===1)i--;else j--;}return path.reverse();}
+async function compareWithOriginal(x){
+  const box=$("#origCmp");box.innerHTML="";
+  let clip=null;try{clip=await DB.get(x.id,"clips");}catch(e){}
+  if(!clip){box.append(el("p",{class:"status err",text:"ارفع مقطع الأصل أولاً."}));return;}
+  const rec=LIBCACHE.filter(r=>r.song===x.id).sort((a,b)=>b.t-a.t)[0];
+  if(!rec||!rec.blob){box.append(el("p",{class:"status err",text:"سجّل نفس المقطع بصوتك أولاً من «تدرّب عليها»."}));return;}
+  box.append(el("p",{class:"thinking",text:"يطابق اللحنين"}));
+  const audio=await decodeBlob(await rec.blob.arrayBuffer());const {frames}=await trackPitch(mono(audio),audio.sampleRate,"voice",null);
+  const fps=20;const U=resampleContour(frames.filter(f=>f.v).map(f=>[f.t,f.c]),fps).slice(0,fps*40),O=resampleContour(clip.contour,fps).slice(0,fps*40);
+  if(U.length<20||O.length<20){box.innerHTML="";box.append(el("p",{class:"status err",text:"أحد التسجيلين قصير أو غير واضح."}));return;}
+  const ks=keyShift(U,O);const uc=U.map(p=>p[1]+ks);const oc=O.map(p=>p[1]);
+  // match octave of the shifted user contour to the original
+  const med=v=>{const s=[...v].sort((a,b)=>a-b);return s[s.length>>1];};const oct=Math.round((med(oc)-med(uc))/1200)*1200;const uu=uc.map(v=>v+oct);
+  const path=dtw(uu,oc);const diffs=path.map(([i,j])=>({tu:U[i][0],to:O[j][0],d:wrap(uu[i]-oc[j]),o:oc[j],u:uu[i]}));
+  const within=diffs.filter(p=>Math.abs(p.d)<=30).length/diffs.length;const mad=diffs.reduce((a,p)=>a+Math.abs(p.d),0)/diffs.length;
+  const tempo=(O[O.length-1][0]-O[0][0])/Math.max(0.1,U[U.length-1][0]-U[0][0]);
+  // runs of large deviation
+  const flags=[];let run=[];diffs.forEach(p=>{if(Math.abs(p.d)>40)run.push(p);else{if(run.length>=4)flags.push(run);run=[];}});if(run.length>=4)flags.push(run);
+  const F=flags.map(r=>({to:r[0].to,tu:r[0].tu,dur:r[r.length-1].to-r[0].to,d:r.reduce((a,p)=>a+p.d,0)/r.length})).sort((a,b)=>Math.abs(b.d)*b.dur-Math.abs(a.d)*a.dur).slice(0,8).sort((a,b)=>a.to-b.to);
+  box.innerHTML="";
+  const M=el("div",{class:"metrics"});const met=(l,v,sub,cls)=>M.append(el("div",{class:"metric "+(cls||"")},el("span",{text:l}),el("b",{text:v}),el("small",{text:sub})));
+  met("مطابقة اللحن",Math.round(within*100)+"%","من الوقت ضمن ±30 سنت من المطرب",within>=.7?"good":within>=.45?"warn":"bad");
+  met("متوسط الفرق",Math.round(mad)+"¢","عن خط المطرب بعد ضبط الطبقة",mad<=20?"good":mad<=35?"warn":"bad");
+  met("سرعتك",tempo>1.08?"أسرع":tempo<0.92?"أبطأ":"قريبة",tempo>1.08||tempo<0.92?"بنسبة "+Math.round(Math.abs(tempo-1)*100)+"% عن الأصل":"من سرعة الأصل",Math.abs(tempo-1)<=0.08?"good":"warn");
+  {let sh=ks+oct;sh=sh-1200*Math.round(sh/1200);const st=Math.round(-sh/50)/2;met("طبقتك",st===0?"نفس الطبقة":(st>0?"أعلى ":"أخفض ")+Math.abs(st)+" نصف تون",st===0?"نفس قرار الأصل":"عن قرار الأصل، وهذا طبيعي ويُضبط تلقائياً");}
+  box.append(M);
+  const cv=el("canvas",{class:"cmpplot"});box.append(el("p",{class:"small muted",text:"الخط النحاسي = المطرب، الخط الداكن = أنت بعد مطابقة التوقيت والطبقة. المناطق الحمراء = ابتعاد أكثر من 40 سنت."}));box.append(cv);
+  requestAnimationFrame(()=>{const dpr=window.devicePixelRatio||1,Wd=cv.clientWidth||340,H=cv.clientHeight||220;cv.width=Wd*dpr;cv.height=H*dpr;const g=cv.getContext("2d");g.setTransform(dpr,0,0,dpr,0,0);
+    const lo=Math.min(...oc)-100,hi=Math.max(...oc)+100,T0=O[0][0],T1=O[O.length-1][0];const X=t=>8+(Wd-16)*(t-T0)/Math.max(0.1,T1-T0),Y=c=>8+(H-24)*(1-(c-lo)/(hi-lo));
+    g.fillStyle=cssVar("--bad-soft");F.forEach(f=>g.fillRect(X(f.to),0,Math.max(3,X(f.to+f.dur)-X(f.to)),H-16));
+    const line=(pts,col,w)=>{g.strokeStyle=col;g.lineWidth=w;g.beginPath();let pv=null;pts.forEach(([t,c])=>{const x=X(t),y=Y(c);if(pv&&t-pv>0.2)g.moveTo(x,y);else if(pv==null)g.moveTo(x,y);else g.lineTo(x,y);pv=t;});g.stroke();};
+    line(O.map(p=>[p[0],p[1]]),cssVar("--brass"),3);line(diffs.map(p=>[p.to,p.o+p.d]),cssVar("--ink"),1.5);
+    g.fillStyle=cssVar("--muted");g.font="11px "+cssVar("--f-body");g.textAlign="center";for(let t=Math.ceil(T0);t<=T1;t+=Math.max(1,Math.round((T1-T0)/6)))g.fillText(t+"ث",X(t),H-3);});
+  if(F.length){box.append(el("h3",{text:"أين ابتعدت عن المطرب"}));
+    const origAudio=await decodeBlob(await clip.blob.arrayBuffer()).catch(()=>null);
+    F.forEach((f,k)=>{const mm=t=>Math.floor(t/60)+":"+String(Math.floor(t%60)).padStart(2,"0");
+      box.append(el("div",{class:"issue"},el("div",{class:"h"},el("span",{class:"num",text:String(k+1)}),el("b",{text:"عند "+mm(f.to)+" في الأصل"}),el("span",{class:"dv",text:(f.d>0?"+":"")+Math.round(f.d)+"¢ "+(f.d>0?"أعلى منه":"أخفض منه")})),
+        el("p",{text:(Math.abs(f.d)>80?"غالباً غنّيت نغمة مختلفة عن لحن الأصل هنا. استمع للأصل وكرر الجملة ببطء.":"اللحن صحيح لكن الطبقة "+(f.d>0?"أعلى":"أخفض")+" من المطرب. "+(f.d>0?"اخفض":"ارفع")+" صوتك قليلاً في هذه الجملة.")+" المدة "+Math.round(f.dur*1000)+" مث."}),
+        el("div",{class:"row"},el("button",{onclick:()=>{if(origAudio)playBufSeg(origAudio,f.to-0.3,f.to+f.dur+0.3);}},"الأصل"),el("button",{onclick:()=>playBufSeg(audio,f.tu-0.3,f.tu+f.dur/Math.max(0.5,tempo)+0.3)},"أنت"))));});}
+  else box.append(el("p",{class:"verdict up",text:"لا توجد جمل ابتعدت فيها عن المطرب بأكثر من 40 سنت لمدة طويلة."}));
+  S.lastOrigCmp={song:x.title,artist:x.artist,match_pct:Math.round(within*100),mean_diff_cents:Math.round(mad),tempo_ratio:+tempo.toFixed(2),deviations:F.map(f=>({orig_time_s:+f.to.toFixed(1),cents:Math.round(f.d),ms:Math.round(f.dur*1000)}))};
+}
+function playBufSeg(buf,t0,t1){const ctx=getCtx();const src=ctx.createBufferSource();src.buffer=buf;src.connect(bus.master);src.start(0,Math.max(0,t0),Math.max(0.2,t1-Math.max(0,t0)));}
+
+/* ----- quiz: guess the maqam of a song you know ----- */
+makeQuiz("exS",{
+  make(){const pool=SONGS.filter(x=>x.maqam&&x.status!=="u");if(!pool.length){$("#exSQ").textContent="لا توجد بعد أغانٍ بمقام معروف. ابحث عن بيانات بعض الأغاني أولاً.";return {answer:{key:"-",label:"-"},options:[]};}
+    const x=pool[Math.random()*pool.length|0];$("#exSQ").textContent="«"+x.title+"» · "+x.artist;
+    const others=shuffle(MAQAMAT.filter(m=>m.id!==x.maqam)).slice(0,3);
+    return {answer:{key:x.maqam,label:maqName(x.maqam)},options:shuffle([byId(x.maqam),...others]).map(m=>({key:m.id,label:m.name})),x,why:(x.maqamText&&x.maqamText!==maqName(x.maqam)?"المقام بدقة: "+x.maqamText+". ":"")+(x.status==="e"?"(مقدّر من تحليل مقطع)":"")};},
+  play(q){if(q.x)playPhrase(byId(q.x.maqam),"oud",true);}
+});
 
 /* ---------------- Recording & upload ---------------- */
 let mediaRec=null,recTimer=null,recStart=0,recLiveStop=null,recUrl=null;
@@ -1688,6 +1978,8 @@ function analysisSummary(R){
     is_generated_example:!!S.lastIsExample,
     maqam_detection:R.autoMaq?{auto_detected:true,candidates:R.cands.map(c=>({name:c.name,relative_fit:+c.rel.toFixed(2)})),alternative_reading:R.alt||null}:{auto_detected:false,chosen_by_user:true},
     pitch_problem_spots:(R.issues||[]).map((i,k)=>({n:k+1,time_s:+i.t.toFixed(1),note:i.name,kind:i.kind==="scoop"?"دخول بطيء على النغمة":"نشاز",deviation_cents:Math.round(i.dev),duration_ms:Math.round(i.dur*1000),scoop_ms:i.ms?Math.round(i.ms):undefined})),
+    song:S.activeSong&&!S.lastIsExample?{title:S.activeSong.title,artist:S.activeSong.artist,documented_maqam:S.activeSong.maqamText||null,iqa:S.activeSong.iqa||null,modulations:S.activeSong.mods||[]}:null,
+    comparison_with_original_singer:S.lastOrigCmp||null,
     previous_attempt_same_maqam:S.baseline&&S.currentRec&&!S.lastIsExample?{date:new Date(S.baseline.t).toISOString().slice(0,10),metrics:S.baseline.m,degrees:S.baseline.degs}:null,
     tonic:{auto_detected:R.auto,offset_from_app_tonic_cents:Math.round(R.tonicOffset)},
     closest_maqamat_by_pitch_content:R.cands.map(c=>c.name),
@@ -1782,7 +2074,7 @@ async function sendChat(){
   const chat=$("#chat");chat.append(el("div",{class:"msg u",text:q}));
   const a=el("div",{class:"msg a"});a.innerHTML='<span class="thinking">يفكّر</span>';chat.append(a);a.scrollIntoView({block:"nearest"});
   chatTurns.push({role:"user",content:q});
-  const ctxTxt=COACH_ROLE+"\n\nسياق التطبيق: المقام المختار حالياً "+byId(S.maqam).name+" (الدرجات بالسنت من القرار: "+byId(S.maqam).steps.join("، ")+"). أدوات التطبيق المتاحة للمتدرب: مستكشف المقامات بصوت العود والصوت البشري، قرار مستمر، تمارين (تعرّف على المقام، أي درجة، أذن الربع تون)، مؤشر طبقة مباشر، تسجيل وتحليل بالسنت، مكتبة إيقاعات (مقسوم، بلدي، سعيدي، ملفوف، أيوب، خليجي، عدني، جورجينا، فالس، مصمودي كبير، دور هندي، سماعي ثقيل، وإيقاعات يضيفها المتدرب بنفسه) ومترونوم وتمارين نقر تقيس الدقة بالملّي ثانية وتمرين الصمت. "+(S.lastTiming?"آخر نتيجة تمرين زمن: "+JSON.stringify(S.lastTiming)+". ":"")+""+(S.lastAnalysis?"آخر تحليل لتسجيله: "+JSON.stringify(analysisSummary(S.lastAnalysis)):"لا يوجد تحليل تسجيل بعد.")+"\nأجب بإيجاز (حتى 200 كلمة) ما لم يطلب التفصيل، وبنقاط عند الحاجة.";
+  const ctxTxt=COACH_ROLE+(S.activeSong?"\nالمتدرب يتدرّب الآن على أغنية «"+S.activeSong.title+"» لـ"+S.activeSong.artist+" (بياناتها الموثّقة إن وجدت: "+JSON.stringify({composer:S.activeSong.composer,maqam:S.activeSong.maqamText,iqa:S.activeSong.iqa,mods:S.activeSong.mods})+"). لا تكتب كلمات الأغنية.":"")+"\n\nسياق التطبيق: المقام المختار حالياً "+byId(S.maqam).name+" (الدرجات بالسنت من القرار: "+byId(S.maqam).steps.join("، ")+"). أدوات التطبيق المتاحة للمتدرب: مستكشف المقامات بصوت العود والصوت البشري، قرار مستمر، تمارين (تعرّف على المقام، أي درجة، أذن الربع تون)، مؤشر طبقة مباشر، تسجيل وتحليل بالسنت، مكتبة إيقاعات (مقسوم، بلدي، سعيدي، ملفوف، أيوب، خليجي، عدني، جورجينا، فالس، مصمودي كبير، دور هندي، سماعي ثقيل، وإيقاعات يضيفها المتدرب بنفسه) ومترونوم وتمارين نقر تقيس الدقة بالملّي ثانية وتمرين الصمت. "+(S.lastTiming?"آخر نتيجة تمرين زمن: "+JSON.stringify(S.lastTiming)+". ":"")+""+(S.lastAnalysis?"آخر تحليل لتسجيله: "+JSON.stringify(analysisSummary(S.lastAnalysis)):"لا يوجد تحليل تسجيل بعد.")+"\nأجب بإيجاز (حتى 200 كلمة) ما لم يطلب التفصيل، وبنقاط عند الحاجة.";
   const turns=[{role:"user",content:ctxTxt},...chatTurns.slice(-12)];
   $("#chatSend").disabled=true;
   try{const r=await ask(turns,{onText:({text})=>{a.innerHTML=md(text);}});chatTurns.push({role:"assistant",content:r.text});}
@@ -1862,14 +2154,14 @@ $("#playDown").addEventListener("click",()=>playScale(true));
 $("#playPhrase").addEventListener("click",()=>playPhrase(byId(S.maqam),S.timbre));
 $("#stopBtn").addEventListener("click",()=>{stopAll();if(S.drone){S.drone=false;stopDrone();$("#droneBtn").setAttribute("aria-pressed","false");}});
 $("#droneBtn").addEventListener("click",()=>{S.drone=!S.drone;$("#droneBtn").setAttribute("aria-pressed",String(S.drone));if(S.drone)startDrone();else stopDrone();});
-const rs=$("#recMaqam");rs.append(el("option",{value:"auto"},"اكتشف المقام تلقائياً"));MAQAMAT.forEach(m=>rs.append(el("option",{value:m.id},m.name)));rs.value="auto";syncRecMaqam();loadLib();
+const rs=$("#recMaqam");rs.append(el("option",{value:"auto"},"اكتشف المقام تلقائياً"));MAQAMAT.forEach(m=>rs.append(el("option",{value:m.id},m.name)));rs.value="auto";syncRecMaqam();loadLib().then(loadSongs);
 window.addEventListener("resize",()=>{if(S.lastAnalysis&&!$("#v-rec").hidden)drawPlot(S.lastAnalysis);});
 window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{if(S.lastAnalysis){drawPlot(S.lastAnalysis);renderDevBars(S.lastAnalysis);}});
 
 renderTr();renderChips();renderMaqam();renderIqaChips();renderIqa();renderDots();edSetMeter(false);ED.steps="D..D..T.";renderEd();setTmMode("pulse");if(TM.calib)$("#calibTxt").textContent="المعايرة الحالية: "+Math.round(TM.calib)+" مث.";renderStrings();renderPath();renderSuggest();$("#exDMaqam").textContent=byId(S.maqam).name;
 renderExample().then(prev=>{if(prev){$("#recMaqam").value="auto";syncRecMaqam();}}).catch(()=>{});
 initSample();
-window.__dozan={transcribe,ED,runAnalysis,loadLib,playVoice,LIBCACHE:()=>LIBCACHE,openRec,analyze,MAQAMAT,S,phraseEvents,playOud,makeBus,C3,RHY,TM,IQAAT,onTap,drumHit,getCtx};
+window.__dozan={SONGS:()=>SONGS,openSong,compareWithOriginal,trainSong,runAnalysis,loadLib,playVoice,LIBCACHE:()=>LIBCACHE,openRec,analyze,MAQAMAT,S,phraseEvents,playOud,makeBus,C3,RHY,TM,IQAAT,onTap,drumHit,getCtx};
 })();
 </script>
 
