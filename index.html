@@ -1727,7 +1727,7 @@ async function apiResearch(prompt,maxUses){
   const base={"content-type":"application/json","anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true","authorization":"Bearer "+key};
   let messages=[{role:"user",content:prompt}],content=[],usage={in:0,out:0,search:0};
   for(let round=0;round<3;round++){
-    const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:base,body:JSON.stringify({model:"claude-sonnet-5-5",max_tokens:4000,messages,tools:[{type:"web_search_20250305",name:"web_search",max_uses:maxUses||5}]})});
+    const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:base,body:JSON.stringify({model:"claude-sonnet-5-5",max_tokens:16000,output_config:{effort:"medium"},messages,tools:[{type:"web_search_20250305",name:"web_search",max_uses:maxUses||5}]})});
     if(!res.ok){let msg="";try{msg=(await res.json()).error.message;}catch(e){}throw {code:res.status===401||res.status===403?"bad_key":res.status===429?"rate_limited":"upstream_error",message:"HTTP "+res.status+(msg?": "+msg:"")};}
     const j=await res.json();content=content.concat(j.content||[]);
     if(j.usage){usage.in+=(j.usage.input_tokens||0)+(j.usage.cache_read_input_tokens||0);usage.out+=j.usage.output_tokens||0;usage.search+=(j.usage.server_tool_use&&j.usage.server_tool_use.web_search_requests)||0;}
@@ -2003,13 +2003,13 @@ const COACH_ROLE="أنت «دوزان»، مدرّب محترف ومتعمق ف�
 const inClaude=!!window.claude;
 const apiKey=()=>store.get("apikey","");
 const aiReady=()=>!!sample||!!apiKey();
-async function ask(input,{onText,signal}={}){
+async function ask(input,{onText,signal,onThinking,maxTokens}={}){
   if(sample)return await sample(input,{signal,cache:false,onText});
   const key=apiKey();if(!key)throw {code:"no_key"};
   const msgs=[];(typeof input==="string"?[{role:"user",content:input}]:input).forEach(t=>{const l=msgs[msgs.length-1];if(l&&l.role===t.role)l.content+="\n\n"+t.content;else msgs.push({role:t.role,content:t.content});});
   let text="",stop=null,inTok=0,outTok=0;
   try{
-    const body=JSON.stringify({model:"claude-sonnet-5-5",max_tokens:3000,stream:true,messages:msgs});
+    const body=JSON.stringify({model:"claude-sonnet-5-5",max_tokens:maxTokens||16000,stream:true,output_config:{effort:"medium"},messages:msgs});
     const base={"content-type":"application/json","anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"};
     let res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",signal,headers:Object.assign({"authorization":"Bearer "+key},base),body});
     if(res.status===401)res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",signal,headers:Object.assign({"x-api-key":key},base),body});
@@ -2017,12 +2017,13 @@ async function ask(input,{onText,signal}={}){
     const rd=res.body.getReader(),dec=new TextDecoder();let pend="";
     for(;;){const {done,value}=await rd.read();if(done)break;pend+=dec.decode(value,{stream:true});const lines=pend.split("\n");pend=lines.pop();
       for(const ln of lines){if(!ln.startsWith("data:"))continue;let j;try{j=JSON.parse(ln.slice(5));}catch(e){continue;}
+        if(j.type==="content_block_start"&&j.content_block&&j.content_block.type==="thinking"&&onThinking)onThinking();
         if(j.type==="content_block_delta"&&j.delta&&j.delta.type==="text_delta"){text+=j.delta.text;onText&&onText({text,delta:j.delta.text});}
         else if(j.type==="message_start"&&j.message&&j.message.usage)inTok=(j.message.usage.input_tokens||0)+(j.message.usage.cache_read_input_tokens||0);
         else if(j.type==="message_delta"){if(j.delta)stop=j.delta.stop_reason;if(j.usage&&j.usage.output_tokens)outTok=j.usage.output_tokens;}
         else if(j.type==="error")throw {code:"upstream_error",message:j.error&&j.error.message,text};}}
   }catch(e){if(e&&e.name==="AbortError")throw {code:"cancelled",text};if(e&&e.code)throw Object.assign(e,{text:e.text||text||undefined});throw {code:"upstream_error",message:"شبكة: "+((e&&e.message)||"تعذّر الوصول إلى api.anthropic.com"),text:text||undefined};}
-  if(!text)throw {code:"empty_completion"};
+  if(!text)throw {code:"empty_completion",message:"وصل الرد بلا نص (stop_reason: "+(stop||"؟")+")"};
   const cost=inTok*2/1e6+outTok*10/1e6;const mk=new Date().toISOString().slice(0,7);const sp=store.get("spend",{});sp[mk]=(sp[mk]||0)+cost;store.set("spend",sp);
   return {text,truncated:stop==="max_tokens",cost,month:sp[mk]};
 }
@@ -2044,7 +2045,7 @@ $("#saveKey").addEventListener("click",async()=>{const v=cleanKey($("#apiKey").v
   const st=$("#keyState");st.textContent="جارٍ اختبار المفتاح…";
   try{await ask("ردّ بكلمة واحدة: جاهز");st.textContent="المفتاح يعمل ومحفوظ في هذا الجهاز ("+v.slice(0,10)+"…"+v.slice(-4)+").";}
   catch(e){st.textContent="المفتاح محفوظ لكن الاختبار فشل: "+(sampleErr(e)||"")+(e&&e.message?" ["+e.message+"]":"")+" · طول المفتاح "+v.length+" حرفاً، يبدأ بـ "+v.slice(0,10)+"…";}});
-function sampleErr(e){const c=e&&e.code;return c==="not_granted"?"لم يُسمح للصفحة باستخدام Claude.":c==="rate_limited"?"طلبات كثيرة الآن. حاول بعد قليل.":c==="session_expired"?"انتهت الجلسة. سجّل الدخول مجدداً.":c==="bad_key"?"مفتاح API غير صحيح أو لا يملك صلاحية. راجعه في «الضبط».":c==="no_key"?"أضف مفتاح API من «الضبط».":c==="cancelled"?"":"تعذّر الاتصال بالمدرب. حاول مرة أخرى.";}
+function sampleErr(e){const c=e&&e.code;return c==="not_granted"?"لم يُسمح للصفحة باستخدام Claude.":c==="rate_limited"?"طلبات كثيرة الآن. حاول بعد قليل.":c==="session_expired"?"انتهت الجلسة. سجّل الدخول مجدداً.":c==="bad_key"?"مفتاح API غير صحيح أو لا يملك صلاحية. راجعه في «الضبط».":c==="no_key"?"أضف مفتاح API من «الضبط».":c==="cancelled"?"":c==="empty_completion"?"وصل رد المدرب فارغاً. حاول مرة أخرى.":"تعذّر الاتصال بالمدرب. حاول مرة أخرى.";}
 const sampleErrFull=e=>{const b=sampleErr(e);return b&&e&&e.message&&!sample?b+" ["+e.message+"]":b;};
 function reportPrompt(R,note){return COACH_ROLE+"\n\nأمامك قياسات استُخرجت آلياً من تسجيل "+(R.mode==="oud"?"عزف على العود":"غناء")+" في مقام "+R.maqam.name+". طريقة القياس: تتبّع طبقة الصوت بخوارزمية YIN كل 12 ملّي ثانية، ثم مقارنة كل لحظة بأقرب درجة في المقام بالسنت (100 سنت = نصف تون، 50 = ربع تون). الانحراف الموجب يعني أعلى من الدرجة (حاد)، والسالب أخفض.\n\nمعلومات المقام: الدرجات بالسنت من القرار: "+R.maqam.steps.join("، ")+(R.maqam.desc?" (وفي النزول: "+Object.entries(R.maqam.desc).map(([i,c])=>"الدرجة "+(+i+1)+" = "+c).join("، ")+")":"")+". الأجناس: "+R.maqam.ajnas.map(j=>j[0]).join(" + ")+". الغماز: "+noteName(R.maqam.tonic+R.maqam.steps[R.maqam.gh])+".\n\nقواعد صارمة:\n- اعتمد على هذه الأرقام فقط. لا تحكم على جمال الخامة أو مخارج الحروف أو التعبير لأنها غير مقاسة، واذكر ذلك في سطر واحد.\n- اذكر الرقم مع كل ملاحظة.\n- ميّز بين الخطأ والتلوين المقبول في الأداء العربي (مثل خفض سيكاه البياتي قليلاً، أو رفع الحجاز في الصعود). الانحراف الثابت في اتجاه واحد على نفس الدرجة غالباً خطأ في الأذن، والتذبذب الكبير غالباً ضعف في التحكم.\n- الدرجات التي لم تُؤدَّ لا تحكم عليها.\n- إذا كان المقام مكتشفاً تلقائياً والمرشحان الأولان متقاربان، اذكر ذلك ووضّح أي درجة تفرق بينهما وكيف يتأكد المتدرب.\n"+(R.mode==="oud"?"- العود بلا دساتين: اربط أخطاء الضبط بموضع الأصابع، والإيقاع بالريشة.\n":"- اربط ضعف الثبات بالنفس والدعم، والدخول البطيء على النغمة بالتمهيد (الزحلقة).\n")+(S.lastIsExample?"- هذا تسجيل تجريبي مولّد آلياً وليس أداء المستخدم؛ نبّه لذلك في أول سطر.\n":"")+"\nالصيغة (Markdown بالعربية، 250 إلى 450 كلمة):\n## الخلاصة\nسطران وتقييم من 10.\n## نقاط القوة\n## نقاط الضعف\nمرتبة حسب الأهمية.\n## مواضع النشاز وتعديلها\nلكل موضع في pitch_problem_spots (اذكر رقمه ووقته بالثواني): ماذا حدث بالضبط، وكيف يعدّله عملياً في تلك النغمة تحديداً. اجمع المواضع المتكررة على نفس الدرجة في سطر واحد.\n"+(S.baseline&&!S.lastIsExample?"## مقارنة بمحاولتك السابقة\nقارن الأرقام بـ previous_attempt_same_maqam: ما الذي تحسن وما الذي لم يتحسن، بالأرقام، وهل التمرين السابق نجح.\n":"")+"## خطة التدريب خطوة بخطوة\n5 خطوات مرقمة. كل خطوة: التمرين بالتحديد (اذكر أدوات التطبيق عند الحاجة: القرار المستمر، مؤشر الطبقة، تمرين أي درجة، أذن الربع تون، المترونوم، الإيقاعات، تمرين النقر على النبض، تمرين الصمت)، المدة اليومية، وعلامة نجاح رقمية.\n## هدف التسجيل القادم\nرقم واحد أو رقمان تريد أن تراهما.\n\n"+(note?"ملاحظة المتدرب: "+note+"\n\n":"")+"القياسات:\n"+JSON.stringify(analysisSummary(R));}
 let aiCtl=null;
@@ -2054,7 +2055,7 @@ $("#aiBtn").addEventListener("click",async()=>{
   const prompt=reportPrompt(R,$("#aiNote").value.trim());
   aiCtl=new AbortController();$("#aiBtn").disabled=true;$("#aiStop").hidden=false;
   try{
-    const r=await ask(prompt,{signal:aiCtl.signal,onText:({text})=>{out.innerHTML=md(text);}});
+    const r=await ask(prompt,{signal:aiCtl.signal,onThinking:()=>{if(out.querySelector(".thinking"))out.innerHTML='<p class="thinking">المدرب يفكّر في قياساتك (قد يأخذ 20 إلى 60 ثانية)</p>';},onText:({text})=>{out.innerHTML=md(text);}});
     if(r.truncated)out.append(el("p",{class:"small muted",text:"انقطع الرد قبل نهايته."}));
     if(r.cost!=null)out.append(el("p",{class:"small muted",text:"تكلفة هذا التحليل تقريباً $"+r.cost.toFixed(3)+" · هذا الشهر $"+r.month.toFixed(2)}));
     if(S.currentRec&&!S.lastIsExample){S.currentRec.report=r.text;S.currentRec.reportT=Date.now();await updateRec(S.currentRec);}
