@@ -190,6 +190,35 @@ a.btn{text-decoration:none;color:inherit;display:inline-block}
 .composer textarea{min-height:46px;flex:1}
 .suggest{display:flex;flex-wrap:wrap;gap:6px}
 .suggest button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 12px;cursor:pointer;font-size:13px}
+/* issues, library, comparison */
+.issues{display:grid;gap:10px}
+.issue{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:grid;gap:6px;background:var(--surface)}
+.issue .h{display:flex;gap:10px;align-items:baseline;flex-wrap:wrap}
+.issue .num{font-family:var(--f-mono);font-size:12px;background:var(--bad);color:var(--bg);border-radius:999px;padding:0 7px}
+.issue .num.w{background:var(--warn)}
+.issue b{font-family:var(--f-display);font-size:17px;font-weight:500}
+.issue .dv{font-size:13px;unicode-bidi:plaintext}
+.issue .tm{font-size:12px;color:var(--muted);margin-inline-start:auto}
+.issue p{font-size:14px}
+.issue .row{display:flex;gap:8px;flex-wrap:wrap}
+.issue .row button{border:1px solid var(--line);background:var(--surface-2);border-radius:8px;padding:5px 10px;cursor:pointer;font-size:13px}
+.alt{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.alt button{border:1px solid var(--line);background:var(--surface-2);border-radius:999px;padding:3px 10px;cursor:pointer;font-size:12.5px}
+.alt button[aria-pressed="true"]{background:var(--brass);border-color:var(--brass);color:var(--on-brass)}
+.cmp{width:100%;border-collapse:collapse;font-size:14px}
+.cmp th,.cmp td{padding:7px 6px;border-bottom:1px solid var(--line);text-align:start}
+.cmp th{font-size:12px;color:var(--muted);font-weight:500}
+.cmp td.n{font-family:var(--f-mono);direction:ltr;text-align:right;white-space:nowrap}
+.up{color:var(--good)} .down{color:var(--bad)} .same{color:var(--muted)}
+.verdict{font-weight:600;font-size:15px}
+.lib{display:grid;gap:8px}
+.libitem{display:grid;grid-template-columns:1fr auto;gap:4px 10px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--surface);cursor:pointer;text-align:start;width:100%}
+.libitem.cur{border-color:var(--brass);box-shadow:0 0 0 2px var(--brass-soft)}
+.libitem b{font-family:var(--f-display);font-size:16px;font-weight:500}
+.libitem .sc{font-family:var(--f-mono);font-size:18px;grid-row:span 2;text-align:center}
+.libitem .sc small{display:block;font-size:11px;font-family:var(--f-body);direction:ltr;unicode-bidi:isolate}
+.libitem span.m{font-size:12px;color:var(--muted)}
+.spark{width:100%;height:70px;display:block}
 /* rhythm */
 .steps{display:flex;flex-wrap:wrap;gap:6px;direction:rtl;padding-block:4px}
 .beatgrp{display:flex;gap:3px;padding:6px 5px;border-radius:12px;background:var(--surface-2);align-items:flex-end}
@@ -441,14 +470,14 @@ a.btn{text-decoration:none;color:inherit;display:inline-block}
         <div><label for="recMode">نوع الأداء</label><select id="recMode"><option value="voice">غناء</option><option value="oud">عزف عود (لحن منفرد)</option></select></div>
       </div>
       <label class="small" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="recWithIqa"> شغّل الإيقاع المختار أثناء التسجيل وقِس التزامي به (استخدم سماعات حتى لا يدخل صوت الطبلة في التسجيل)</label>
-      <label class="small" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="autoTonic" checked> اكتشف القرار تلقائياً (إن غنّيت على طبقة مختلفة عن التطبيق)</label>
+      <label class="small" id="autoTonicRow" style="display:flex;gap:8px;align-items:center"><input type="checkbox" id="autoTonic" checked> اكتشف القرار تلقائياً (إن غنّيت على طبقة مختلفة عن التطبيق)</label>
       <div class="btns">
         <button class="btn primary" id="recBtn">ابدأ التسجيل</button>
         <label class="btn" for="fileIn" style="display:inline-block">ارفع تسجيلاً</label>
         <input type="file" id="fileIn" accept="audio/*,video/*,.m4a,.mp3,.wav,.aac,.ogg" hidden>
         <button class="btn" id="sampleBtn">حلّل المثال</button>
       </div>
-      <p class="small muted" id="recHint">يبدأ التسجيل بعد سماع نغمة القرار. سجّل 20 إلى 60 ثانية في مكان هادئ.</p>
+      <p class="small muted" id="recHint">سجّل 20 إلى 60 ثانية في مكان هادئ. في وضع الاكتشاف التلقائي غنِّ أو اعزف بحرية واختم على القرار.</p>
       <div class="live" id="recLive" hidden>
         <div class="note" id="recLiveNote">—</div>
         <div class="mono small" id="recLiveCents">&nbsp;</div>
@@ -457,6 +486,15 @@ a.btn{text-decoration:none;color:inherit;display:inline-block}
       <p class="status" id="recStatus"></p>
       <div class="btns" id="saveRow" hidden><a class="btn" id="saveRec" download="dozan-recording">احفظ التسجيل في جهازك</a></div>
       <p class="notice" id="micNotice" hidden>إن لم يعمل الميكروفون داخل هذه الصفحة: سجّل بتطبيق «مذكرات صوتية» في جوالك (20 إلى 60 ثانية، في مكان هادئ)، ثم اضغط «ارفع تسجيلاً».</p>
+    </div>
+
+    <div class="card" id="libCard">
+      <div class="maqam-head"><h3>تسجيلاتي</h3><span class="score" id="libCount"></span></div>
+      <div class="alt" id="libFilter"></div>
+      <svg class="spark" id="libSpark" viewBox="0 0 300 70" preserveAspectRatio="none" aria-label="تطور التقييم" hidden></svg>
+      <p class="small muted" id="libSparkTxt" hidden></p>
+      <div class="lib" id="libList"></div>
+      <p class="small muted" id="libEmpty">كل تسجيل يُحفظ هنا تلقائياً مع تحليله وتقرير المدرب، في جهازك فقط.</p>
     </div>
 
     <div id="results" hidden>
@@ -471,7 +509,21 @@ a.btn{text-decoration:none;color:inherit;display:inline-block}
               <p class="small" id="sumTonic"></p>
             </div>
           </div>
+          <div class="alt" id="altMaqam"></div>
+          <div class="btns" id="recActions" hidden><button class="btn primary" id="retryBtn">أعد المحاولة وقارن</button><button class="btn" id="playRecBtn">استمع لتسجيلك</button><button class="btn" id="delRecBtn">احذف التسجيل</button></div>
           <div class="metrics" id="metrics"></div>
+        </div>
+        <div class="card" id="cmpCard" hidden>
+          <h3 id="cmpTitle">مقارنة بمحاولتك السابقة</h3>
+          <p class="verdict" id="cmpVerdict"></p>
+          <div style="overflow-x:auto"><table class="cmp" id="cmpTable"></table></div>
+          <div id="cmpDegs" class="small"></div>
+          <div class="btns"><button class="btn" id="cmpPlayPrev">استمع للمحاولة السابقة</button><button class="btn" id="cmpOpenPrev">افتح السابقة</button></div>
+        </div>
+        <div class="card" id="issuesCard">
+          <h3>مواضع النشاز وكيف تعدّلها</h3>
+          <p class="small muted" id="issuesLead"></p>
+          <div class="issues" id="issues"></div>
         </div>
         <div class="card">
           <h3>منحنى الطبقة مقابل درجات المقام</h3>
@@ -723,7 +775,7 @@ function renderChips(){
 }
 function selectMaqam(id){
   S.maqam=id;store.set("maqam",id);stopAll();renderChips();renderMaqam();
-  $("#exDMaqam").textContent=byId(id).name;$("#recMaqam").value=id;
+  $("#exDMaqam").textContent=byId(id).name;
   if(S.drone){startDrone();}
 }
 function renderMaqam(){
@@ -1175,18 +1227,27 @@ const mod=(a,n)=>((a%n)+n)%n;
 const wrap=c=>{let v=mod(c+600,1200)-600;return v;};
 function pcsOf(m){const set=new Map();m.steps.forEach((c,i)=>{const pc=mod(c,1200);if(!set.has(pc))set.set(pc,{i,c});});if(m.desc)for(const k in m.desc){const pc=mod(m.desc[k],1200);if(!set.has(pc))set.set(pc,{i:+k,c:m.desc[k],alt:true});}return [...set.entries()].map(([pc,v])=>({pc,...v}));}
 function hist(frames){const h=new Float32Array(240);let tot=0;frames.forEach(f=>{if(f.v){h[Math.round(mod(f.c,1200)/5)%240]+=1;tot++;}});return {h,tot};}
-function bestShift(h,pcs,prior,hint){
-  let best=-1,bs=0;const sig=20;
+function bestShift(h,pcs,prior,hint,sigma,hintW){
+  let best=-1,bs=0;const sig=sigma||20;
   for(let s=0;s<1200;s+=5){let sc=0;
     for(let b=0;b<240;b++){if(!h[b])continue;let m=0;for(const p of pcs){const dd=wrap(b*5-s-p.pc);const w=Math.exp(-dd*dd/(2*sig*sig));if(w>m)m=w;}sc+=h[b]*m;}
-    if(hint!=null){const dd=wrap(hint-s);sc*=1+0.12*Math.exp(-dd*dd/(2*30*30));}
+    if(hint!=null){const dd=wrap(hint-s);sc*=1+(hintW||0.12)*Math.exp(-dd*dd/(2*30*30));}
     if(prior!=null){const dd=wrap(prior-s);sc*=1+0.05*Math.exp(-dd*dd/(2*120*120));}
     if(sc>best){best=sc;bs=s;}}
   return {s:bs,score:best};
 }
-async function analyze(data,sr,maqamId,mode,auto,onProg,grid){
-  const m=byId(maqamId);
-  const {frames,hopS}=await trackPitch(data,sr,mode,onProg);
+function detectMaqam(h,tot,hint){
+  return MAQAMAT.map(mm=>{const pc=pcsOf(mm);const r=bestShift(h,pc,null,hint,26);
+    const core=pc.filter(p=>!p.alt);
+    const used=core.filter(p=>{let ms=0;for(let d=-30;d<=30;d+=5)ms+=h[Math.round(mod(r.s+p.pc+d,1200)/5)%240];return ms>=tot*0.03;}).length;
+    return {id:mm.id,name:mm.name,s:r.s,raw:r.score/tot,used,core:core.length,score:(r.score/tot)*(0.8+0.2*used/core.length)};}).sort((a,b)=>b.score-a.score);
+}
+async function analyze(data,sr,maqamId,mode,auto,onProg,grid,pre){
+  const autoMaq=maqamId==="auto";
+  let m=byId(autoMaq?"bayati":maqamId);
+  const tp=pre?{frames:pre.frames.map(f=>Object.assign({},f)),hopS:pre.hopS}:await trackPitch(data,sr,mode,onProg);
+  const frames=tp.frames,hopS=tp.hopS;
+  const raw={frames:frames.map(f=>({t:f.t,f:f.f,ap:f.ap,rms:f.rms,v:f.v,c:f.c})),hopS};
   const voiced=frames.filter(f=>f.v);
   if(voiced.length<20)return {error:"لم نلتقط صوتاً واضحاً كافياً. سجّل نغمات أطول وأوضح، وقرّب الجوال قليلاً."};
   const expectedPC=mod(m.tonic+S.transpose*100,1200);
@@ -1194,10 +1255,13 @@ async function analyze(data,sr,maqamId,mode,auto,onProg,grid){
   // provisional note segmentation (by raw stability) to find the final note → tonic hint
   let hint=null;{let end=frames.length-1;while(end>0&&!frames[end].v)end--;const seg=[];for(let i=end;i>=0&&seg.length<60;i--){if(!frames[i].v)break;seg.push(frames[i].c);}if(seg.length>=15){seg.sort((a,b)=>a-b);hint=mod(seg[seg.length>>1],1200);}}
   // maqam detection across all
-  const cands=MAQAMAT.map(mm=>{const pc=pcsOf(mm);const r=bestShift(h,pc,null,hint);return {id:mm.id,name:mm.name,score:r.score/tot,s:r.s};}).sort((a,b)=>b.score-a.score);
+  const cands=detectMaqam(h,tot,hint);
+  const top=cands[0].score||1;cands.forEach(c=>c.rel=c.score/top);
+  let shift;
+  if(autoMaq){m=byId(cands[0].id);shift=cands[0].s;}
   const pcs=pcsOf(m);
-  const shift=auto?bestShift(h,pcs,expectedPC,hint).s:expectedPC;
-  const tonicOffset=wrap(shift-expectedPC);
+  if(!autoMaq)shift=auto?bestShift(h,pcs,expectedPC,hint,20,0.45).s:expectedPC;
+  const tonicOffset=wrap(shift-mod(m.tonic+S.transpose*100,1200));
   // octave of tonic: pick tonic absolute near the lower part of the voiced range
   const cs=voiced.map(f=>f.c).sort((a,b)=>a-b);const low=cs[Math.floor(cs.length*0.03)],high=cs[Math.floor(cs.length*0.97)];
   let tonicAbs=shift+1200*Math.round((low-shift)/1200);if(tonicAbs>low+250)tonicAbs-=1200;
@@ -1246,10 +1310,14 @@ async function analyze(data,sr,maqamId,mode,auto,onProg,grid){
   if(grid&&ons.length>=4){const offs=[];ons.forEach(t=>{const k=Math.round((t-grid.offset)/grid.step);if(k<0)return;const d=t-(grid.offset+k*grid.step);if(Math.abs(d)<=grid.step*0.4)offs.push(d*1000);});
     if(offs.length>=4){const mean=offs.reduce((a,b)=>a+b,0)/offs.length;const sd=Math.sqrt(offs.reduce((a,b)=>a+(b-mean)**2,0)/offs.length);
       const rel=offs.map(o=>o-mean);timing={iqa:grid.name,bpm:grid.bpm,n:offs.length,mean,sd,within40:rel.filter(o=>Math.abs(o)<=40).length/offs.length};}}
+  // pitch problems worth fixing: notes held long enough and clearly off, plus slow scoops into a note
+  let issues=N.filter(n=>n.dur>=0.15&&Math.abs(n.dev)>25).map(n=>({kind:"pitch",t:n.start,dur:n.dur,name:n.name,dev:n.dev,rel:n.deg.c+n.oct*1200,abs:tonicAbs+n.deg.c+n.oct*1200,degC:n.deg.c,oct:n.oct,quarter:isQuarter(m.tonic+n.deg.c)}));
+  N.filter(n=>n.dur>=0.3&&Math.abs(n.dev)<=25&&n.onsetMs>=230).forEach(n=>issues.push({kind:"scoop",t:n.start,dur:n.dur,name:n.name,dev:n.dev,rel:n.deg.c+n.oct*1200,abs:tonicAbs+n.deg.c+n.oct*1200,degC:n.deg.c,oct:n.oct,ms:n.onsetMs}));
+  issues=issues.sort((a,b)=>(b.kind==="pitch"?Math.abs(b.dev)*b.dur:b.ms/8*b.dur)-(a.kind==="pitch"?Math.abs(a.dev)*a.dur:a.ms/8*a.dur)).slice(0,12).sort((a,b)=>a.t-b.t);
   const score=Math.round(100*(0.5*within25+0.2*Math.max(0,1-mad/50)+0.15*(stab==null?0.5:Math.max(0,1-stab/40))+0.15*(1-outside)));
   const dur=frames.length?frames[frames.length-1].t:0;
-  return {maqam:m,mode,frames,notes:N,hopS,score,within25,outside,mad,stab,degs,tonicAbs,tonicOffset,auto,
-    rangeLow:low-tonicAbs,rangeHigh:high-tonicAbs,voicedRatio:vf.length/frames.length,dur,cands:cands.slice(0,3),
+  return {raw,maqam:m,autoMaq,issues,mode,frames,notes:N,hopS,score,within25,outside,mad,stab,degs,tonicAbs,tonicOffset,auto,
+    rangeLow:low-tonicAbs,rangeHigh:high-tonicAbs,voicedRatio:vf.length/frames.length,dur,cands:cands.slice(0,4),
     vib:{present:vibOk.length>0,share:vib.length?vibOk.length/vib.length:0,rate:vibOk.length?vibOk.reduce((a,v)=>a+v.rate,0)/vibOk.length:null,ext:vibOk.length?vibOk.reduce((a,v)=>a+v.ext,0)/vibOk.length:null},
     timing,onsets:ons.length,scoop,ioiCv,notesPerSec:N.length/Math.max(1,dur),avgNoteMs:N.length?N.reduce((a,n)=>a+n.dur,0)/N.length*1000:0};
 }
@@ -1261,8 +1329,9 @@ function cssVar(n){return getComputedStyle(document.documentElement).getProperty
 function renderResults(R,isExample){
   $("#results").hidden=false;$("#exampleTag").hidden=!isExample;
   const fg=$("#ringFg");fg.style.strokeDashoffset=String(264*(1-R.score/100));$("#ringTxt").textContent=R.score;
-  $("#sumTitle").textContent=(R.mode==="oud"?"عزف":"غناء")+" في مقام "+R.maqam.name+" · "+(R.score>=80?"أداء متمكّن":R.score>=60?"أداء جيد يحتاج ضبطاً":R.score>=40?"بداية تحتاج تدريباً منتظماً":"يحتاج عملاً أساسياً على الضبط");
-  $("#sumLine").textContent="المدة "+R.dur.toFixed(1)+" ث · "+R.notes.length+" نغمة · أقرب المقامات لمحتوى الدرجات: "+R.cands.map(c=>c.name).join("، ");
+  $("#sumTitle").textContent=(R.mode==="oud"?"عزف":"غناء")+" في مقام "+R.maqam.name+(R.autoMaq?" (اكتُشف تلقائياً)":"")+" · "+(R.score>=80?"أداء متمكّن":R.score>=60?"أداء جيد يحتاج ضبطاً":R.score>=40?"بداية تحتاج تدريباً منتظماً":"يحتاج عملاً أساسياً على الضبط");
+  $("#sumLine").textContent="المدة "+R.dur.toFixed(1)+" ث · "+R.notes.length+" نغمة"+(R.issues.length?" · "+R.issues.length+" موضع يحتاج تعديلاً":" · لا مواضع نشاز واضحة");
+  renderAltMaqam(R,isExample);
   const off=Math.round(R.tonicOffset);
   $("#sumTonic").textContent=R.auto?(Math.abs(off)<=20?"قرارك مطابق تقريباً لقرار التطبيق.":"غنّيت على قرار "+(off>0?"أعلى":"أخفض")+" من قرار التطبيق بـ "+Math.abs(off)+" سنت، وضُبط التحليل على قرارك."):"التحليل مضبوط على قرار التطبيق.";
   const M=$("#metrics");M.innerHTML="";
@@ -1277,9 +1346,63 @@ function renderResults(R,isExample){
   if(R.timing){met("الالتزام بالإيقاع",Math.round(R.timing.within40*100)+"%","من الضربات ضمن ±40 مث · "+R.timing.iqa+" "+R.timing.bpm,R.timing.within40>=.7?"good":R.timing.within40>=.45?"warn":"bad");
     met("الثبات على النبض","±"+Math.round(R.timing.sd)+" مث","تشتت بدايات النغمات",R.timing.sd<=30?"good":R.timing.sd<=55?"warn":"bad");}
   else met("انتظام الإيقاع",R.ioiCv==null?"—":Math.round(Math.max(0,1-R.ioiCv)*100)+"%","انتظام المسافات بين النغمات");
-  drawPlot(R);renderDevBars(R);
+  drawPlot(R);renderDevBars(R);renderIssues(R);
   $("#aiOut").innerHTML="";
 }
+function renderAltMaqam(R,isExample){
+  const box=$("#altMaqam");box.innerHTML="";
+  if(R.alt){const w=R.alt.worst.map(d=>d.name+" "+(d.dev>0?"+":"")+d.dev+"¢").join("، ");
+    box.append(el("p",{class:"notice",style:"width:100%"},"قراءة أخرى ممكنة: إن كنت تقصد «"+R.alt.name+"»"+(w?"، فالانحرافات الأكبر عنه: "+w+".":"، فأداؤك قريب منه أيضاً.")+" المقامات المتقاربة تختلف أحياناً بربع تون في درجة واحدة، فاختر المقام الذي قصدته ليكون التحليل دقيقاً."));}
+  const c2=R.cands[1];const close=c2&&c2.rel>0.93;
+  box.append(el("span",{class:"small muted",text:R.autoMaq?(close?"قريب أيضاً من «"+c2.name+"». ليس هذا مقامك؟ اختر:":"ليس هذا مقامك؟ اختر:"):"أعد التحليل على مقام آخر:"}));
+  const ids=[...new Set(R.cands.map(c=>c.id).concat(MAQAMAT.map(m=>m.id)))].slice(0,8);
+  ids.forEach(id=>box.append(el("button",{"aria-pressed":String(id===R.maqam.id),onclick:()=>reanalyzeAs(id)},byId(id).name)));
+}
+async function reanalyzeAs(id){
+  if(!S.lastAudio||!S.lastAnalysis||id===S.lastAnalysis.maqam.id)return;
+  const ex=S.lastIsExample;
+  await runAnalysis(S.lastAudio.data,S.lastAudio.sr,ex,S.lastGrid,{maqamId:id,mode:S.lastAnalysis.mode,existing:S.currentRec,updateMetrics:true,pre:S.lastAnalysis.raw});
+}
+function issueAdvice(R,i){
+  const a=Math.abs(i.dev);
+  if(i.kind==="scoop")return "تدخل النغمة من تحت وتصل لها بعد "+Math.round(i.ms)+" مث. ابدأ النغمة على درجتها مباشرة: تخيّلها قبل أن تفتح فمك، وخذ نفساً قبلها.";
+  const dir=i.dev>0?"أعلى من المطلوب، فاخفض صوتك":"أخفض من المطلوب، فارفع صوتك";
+  let amt=a<40?"قليلاً (أقل من ربع تون)":a<65?"بمقدار ربع تون تقريباً":"بأكثر من ربع تون";
+  let near="";if(a>=40){const nb=noteName(R.maqam.tonic+i.degC+Math.round(i.dev/50)*50);if(nb&&nb!=="—"&&nb!==i.name)near=" صوتك اقترب من «"+nb+"» بدل «"+i.name+"».";}
+  const fix=i.quarter?" تمرين: شغّل القرار المستمر، واسمع «"+i.name+"» بالعود، ثم غنِّها ببطء ثلاث مرات مع مؤشر الطبقة حتى يستقر المؤشر في الأخضر.":" تمرين: اسمع النغمة الصحيحة، ثم غنِّ من القرار صعوداً إليها ببطء.";
+  return "غنّيتها "+dir+" "+amt+"."+near+fix;
+}
+function renderIssues(R){
+  const box=$("#issues");box.innerHTML="";
+  if(!R.issues.length){$("#issuesLead").textContent="لم نجد نغمات طويلة بعيدة عن درجات المقام بأكثر من 25 سنت. ركّز على الثبات والانتقالات.";return;}
+  // group repeated mistakes on the same note in the same direction
+  const groups=[];R.issues.forEach((i,k)=>{i.n=k+1;const key=i.kind+"|"+i.name+"|"+(i.kind==="scoop"?"":Math.sign(i.dev));let g=groups.find(x=>x.key===key);if(!g){g={key,items:[],kind:i.kind,name:i.name};groups.push(g);}g.items.push(i);});
+  groups.forEach(g=>{g.avg=g.items.reduce((a,i)=>a+i.dev,0)/g.items.length;g.sev=g.items.reduce((a,i)=>a+(i.kind==="pitch"?Math.abs(i.dev):i.ms/8)*i.dur,0);});
+  groups.sort((a,b)=>b.sev-a.sev);
+  $("#issuesLead").textContent=R.issues.length+" موضعاً في "+groups.length+(groups.length===1?" مشكلة":" مشكلات")+"، الأهم أولاً. اضغط وقت أي موضع لتسمع تسجيلك ثم النغمة الصحيحة. الأرقام نفسها على المنحنى.";
+  groups.forEach(g=>{
+    const rep=Object.assign({},g.items[0],{dev:g.avg,ms:g.items.reduce((a,i)=>a+(i.ms||0),0)/g.items.length});
+    const sev=g.kind==="pitch"&&Math.abs(g.avg)>45;
+    const card=el("div",{class:"issue"},
+      el("div",{class:"h"},el("span",{class:"num"+(sev?"":" w"),text:g.items.length>1?"×"+g.items.length:"#"+g.items[0].n}),el("b",{text:g.name}),
+        el("span",{class:"dv",text:g.kind==="scoop"?"دخول بطيء":(g.avg>0?"+":"")+Math.round(g.avg)+"¢ "+(g.avg>0?"أعلى":"أخفض")+(g.items.length>1?" (متوسط)":"")})),
+      el("p",{text:issueAdvice(R,rep)}));
+    const row=el("div",{class:"row"});
+    g.items.forEach(i=>{const mm=Math.floor(i.t/60),ss=Math.floor(i.t%60);
+      row.append(el("button",{title:"تسجيلك ثم الصحيح",onclick:()=>{playSegment(i.t-0.1,i.t+Math.min(i.dur,1.8)+0.1).then(()=>playTargetNote(R,i));}},"#"+i.n+" · "+mm+":"+String(ss).padStart(2,"0")+(g.kind==="pitch"&&g.items.length>1?" ("+(i.dev>0?"+":"")+Math.round(i.dev)+")":"")));});
+    row.append(el("button",{onclick:()=>playTargetNote(R,g.items[0])},"النغمة الصحيحة"));
+    card.append(row);box.append(card);
+  });
+}
+function playSegment(t0,t1){
+  return new Promise(res=>{const A=S.lastAudio;if(!A){res();return;}const ctx=getCtx();
+    const a=Math.max(0,Math.floor(t0*A.sr)),b=Math.min(A.data.length,Math.floor(t1*A.sr));if(b<=a){res();return;}
+    const buf=ctx.createBuffer(1,b-a,A.sr);buf.getChannelData(0).set(A.data.subarray(a,b));
+    let pk=0;const d=buf.getChannelData(0);for(let i=0;i<d.length;i++){const v=Math.abs(d[i]);if(v>pk)pk=v;}const gn=pk>0?Math.min(8,0.8/pk):1;
+    const src=ctx.createBufferSource();src.buffer=buf;const g=ctx.createGain();g.gain.value=gn;src.connect(g);g.connect(bus.master);src.onended=()=>res();src.start();});
+}
+function playTargetNote(R,i){const ctx=getCtx();const f=C3*Math.pow(2,i.abs/1200);const d=Math.max(0.8,Math.min(i.dur,2));
+  if(R.mode==="oud")playOud(ctx,bus,f,ctx.currentTime+0.05,d);else playVoice(ctx,bus,f,ctx.currentTime+0.05,d,{female:f>320});}
 function drawPlot(R){
   const cv=$("#plot");const dpr=window.devicePixelRatio||1;const W=cv.clientWidth||600,H=cv.clientHeight||260;
   cv.width=W*dpr;cv.height=H*dpr;const g=cv.getContext("2d");g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,W,H);
@@ -1296,6 +1419,10 @@ function drawPlot(R){
   g.setLineDash([]);
   const good=cssVar("--good"),warn=cssVar("--warn"),bad=cssVar("--bad");
   vf.forEach(f=>{const a=Math.abs(f.dev);g.fillStyle=a<=25?good:a<=50?warn:bad;g.fillRect(X(f.t)-1.2,Y(f.rel)-1.2,2.4,2.4);});
+  (R.issues||[]).forEach((i,k)=>{const x=X(i.t+Math.min(i.dur,1)/2),y=Math.max(padT+9,Math.min(H-padB-9,Y(i.rel+i.dev)-14));
+    g.beginPath();g.arc(x,y,8,0,Math.PI*2);g.fillStyle=(i.kind==="pitch"&&Math.abs(i.dev)>45)?bad:warn;g.fill();
+    g.fillStyle=cssVar("--bg");g.font="bold 10px "+cssVar("--f-mono");g.textAlign="center";g.textBaseline="middle";g.fillText(String(k+1),x,y+0.5);});
+  g.font="12px "+cssVar("--f-body");
   g.fillStyle=muted;g.textAlign="center";g.textBaseline="alphabetic";
   const step=T>40?10:T>15?5:T>6?2:1;for(let t=0;t<=T;t+=step){g.fillText(t+"ث",X(t),H-5);}
 }
@@ -1329,6 +1456,7 @@ function livePitch(stream,onPitch){
   return ()=>{cancelAnimationFrame(raf);try{src.disconnect();}catch(e){}};
 }
 function nearestDeg(c,maqamId,forced){
+  if(maqamId==="auto"){const a=c-S.transpose*100;const r=Math.round(a/50)*50;return {name:noteName(r),dev:a-r,p:null};}
   const m=byId(maqamId);const pc=mod(c-(m.tonic+S.transpose*100),1200);
   let best=null,bd=1e9;
   if(forced){best=forced;bd=wrap(pc-forced.pc);}
@@ -1348,30 +1476,130 @@ function micErrorText(e){
   return "الميكروفون غير متاح هنا. ارفع تسجيلاً بدلاً من ذلك.";
 }
 
+
+/* ---------------- Saved recordings (IndexedDB) ---------------- */
+const DB={db:null,ok:true,
+  open(){if(this.db)return Promise.resolve(this.db);return new Promise((res,rej)=>{try{const r=indexedDB.open("dozan",1);r.onupgradeneeded=()=>{r.result.createObjectStore("recs",{keyPath:"id"});};r.onsuccess=()=>{this.db=r.result;res(r.result);};r.onerror=()=>rej(r.error);}catch(e){rej(e);}});},
+  async tx(mode,fn){const db=await this.open();return new Promise((res,rej)=>{const t=db.transaction("recs",mode);const st=t.objectStore("recs");const out=fn(st);t.oncomplete=()=>res(out&&out.result!==undefined?out.result:undefined);t.onerror=()=>rej(t.error);});},
+  put(o){return this.tx("readwrite",st=>st.put(o));},
+  get(id){return this.tx("readonly",st=>st.get(id));},
+  all(){return this.tx("readonly",st=>st.getAll());},
+  del(id){return this.tx("readwrite",st=>st.delete(id));}
+};
+let LIBCACHE=[];S.libFilter="all";
+function recFields(R){return {maqamId:R.maqam.id,maqamName:R.maqam.name,autoMaq:!!R.autoMaq,mode:R.mode,dur:+R.dur.toFixed(1),
+  m:{score:R.score,acc:Math.round(R.within25*100),mad:Math.round(R.mad),stab:R.stab==null?null:Math.round(R.stab),out:Math.round(R.outside*100),scoop:Math.round(R.scoop),tWithin:R.timing?Math.round(R.timing.within40*100):null,tSd:R.timing?Math.round(R.timing.sd):null},
+  degs:R.degs.filter(d=>d.dev!=null).map(d=>({name:d.name,dev:Math.round(d.dev),n:d.notes})),issues:R.issues.length};}
+async function loadLib(){try{LIBCACHE=(await DB.all()||[]).sort((a,b)=>b.t-a.t);}catch(e){DB.ok=false;LIBCACHE=[];}renderLib();}
+function prevOf(rec,list){return (list||LIBCACHE).filter(x=>x.id!==rec.id&&x.maqamId===rec.maqamId&&x.mode===rec.mode&&x.t<rec.t).sort((a,b)=>b.t-a.t)[0]||null;}
+function fmtDate(t){try{return new Date(t).toLocaleString("ar-u-ca-gregory-nu-latn",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});}catch(e){return new Date(t).toISOString().slice(0,16).replace("T"," ");}}
+function renderLib(){
+  const list=$("#libList"),fl=$("#libFilter");list.innerHTML="";fl.innerHTML="";
+  if(!DB.ok){$("#libEmpty").textContent="الحفظ غير متاح في هذا المتصفح (قد يكون وضع التصفح الخاص).";$("#libCount").textContent="";return;}
+  $("#libCount").textContent=LIBCACHE.length?LIBCACHE.length+" تسجيل":"";$("#libEmpty").hidden=LIBCACHE.length>0;
+  const maqs=[...new Set(LIBCACHE.map(r=>r.maqamId))];
+  if(S.libFilter!=="all"&&!maqs.includes(S.libFilter))S.libFilter="all";
+  if(maqs.length>1){fl.append(el("button",{"aria-pressed":String(S.libFilter==="all"),onclick:()=>{S.libFilter="all";renderLib();}},"الكل"));
+    maqs.forEach(id=>fl.append(el("button",{"aria-pressed":String(S.libFilter===id),onclick:()=>{S.libFilter=id;renderLib();}},(byId(id)||{name:id}).name)));}
+  const shown=LIBCACHE.filter(r=>S.libFilter==="all"||r.maqamId===S.libFilter);
+  shown.slice(0,40).forEach(r=>{const pv=prevOf(r);const d=pv?r.m.score-pv.m.score:null;
+    const btn=el("button",{class:"libitem"+(S.currentRec&&S.currentRec.id===r.id?" cur":""),onclick:()=>openRec(r.id)},
+      el("span",{},el("b",{text:r.maqamName+(r.autoMaq?" ✦":"")}),el("span",{class:"m",text:" · "+(r.mode==="oud"?"عود":"غناء")+" · "+r.dur+" ث"+(r.issues?" · "+r.issues+" نشاز":"")})),
+      el("span",{class:"sc"},String(r.m.score),el("small",{class:d==null?"same":d>=3?"up":d<=-3?"down":"same",text:d==null?"أول محاولة":(d>0?"▲ +":d<0?"▼ ":"= ")+(d===0?"":d)})),
+      el("span",{class:"m",text:fmtDate(r.t)+(r.report?" · فيه تقرير":"")}));
+    list.append(btn);});
+  // sparkline for one maqam (or the most recorded one)
+  const sel=S.libFilter!=="all"?S.libFilter:(maqs.map(id=>[id,LIBCACHE.filter(r=>r.maqamId===id).length]).sort((a,b)=>b[1]-a[1])[0]||[])[0];
+  const pts=LIBCACHE.filter(r=>r.maqamId===sel).sort((a,b)=>a.t-b.t).map(r=>r.m.score);
+  const sp=$("#libSpark"),st=$("#libSparkTxt");
+  if(pts.length>=2){sp.removeAttribute("hidden");st.hidden=false;const n=pts.length;const xs=i=>8+i*(284/(n-1));const ys=v=>62-v/100*54;
+    sp.innerHTML='<line x1="0" x2="300" y1="'+ys(80)+'" y2="'+ys(80)+'" stroke="var(--line)" stroke-dasharray="3 4"/><polyline fill="none" stroke="var(--brass)" stroke-width="2.5" points="'+pts.map((v,i)=>xs(i)+","+ys(v)).join(" ")+'"/>'+pts.map((v,i)=>'<circle cx="'+xs(i)+'" cy="'+ys(v)+'" r="'+(i===n-1?4.5:3)+'" fill="'+(i===n-1?'var(--ink)':'var(--brass)')+'"/>').join("");
+    const first=pts[0],last=pts[n-1];st.textContent="تطورك في "+(byId(sel)||{name:sel}).name+": من "+first+" إلى "+last+" خلال "+n+" محاولات. الخط المتقطع = 80.";}
+  else{sp.setAttribute("hidden","");st.hidden=true;}
+}
+async function saveNewRec(R,opts){
+  const rec=Object.assign({id:"r"+Date.now(),t:Date.now(),parent:opts.parentId||null,blob:opts.blob||null,mime:opts.mime||"",grid:S.lastGrid||null,report:null},recFields(R));
+  try{await DB.put(rec);}catch(e){try{const r2=Object.assign({},rec,{blob:null});await DB.put(r2);rec.blob=null;}catch(e2){DB.ok=false;}}
+  await loadLib();return rec;
+}
+async function updateRec(rec){if(!rec)return;try{await DB.put(rec);}catch(e){}const i=LIBCACHE.findIndex(x=>x.id===rec.id);if(i>=0)LIBCACHE[i]=rec;renderLib();}
+async function openRec(id){
+  const rec=LIBCACHE.find(r=>r.id===id)||await DB.get(id);if(!rec)return;
+  if(!rec.blob){setStatus("هذا التسجيل محفوظ بلا صوت، فلا يمكن إعادة تحليله.",true);return;}
+  setStatus("جارٍ فتح التسجيل…");
+  try{const audio=await decodeBlob(await rec.blob.arrayBuffer());
+    await runAnalysis(mono(audio),audio.sampleRate,false,rec.grid||null,{existing:rec,maqamId:rec.maqamId,mode:rec.mode});
+    setStatus("تسجيل "+fmtDate(rec.t)+".");setTimeout(()=>$("#results").scrollIntoView({behavior:"smooth",block:"start"}),60);}
+  catch(e){setStatus("تعذّر فتح التسجيل.",true);}
+}
+function renderCompare(rec,base){
+  const card=$("#cmpCard");if(!rec||!base){card.hidden=true;return;}card.hidden=false;S.baseline=base;
+  $("#cmpTitle").textContent="مقارنة بمحاولة "+fmtDate(base.t);
+  const rows=[["التقييم","score",1,""],["دقة الدرجات","acc",1,"%"],["متوسط الانحراف","mad",-1,"¢"],["ثبات النغمة","stab",-1,"¢"],["خارج المقام","out",-1,"%"],["الدخول على النغمة","scoop",-1," مث"],["الالتزام بالإيقاع","tWithin",1,"%"]];
+  const tb=$("#cmpTable");tb.innerHTML="";tb.append(el("tr",{},el("th",{text:"المقياس"}),el("th",{text:"قبل"}),el("th",{text:"الآن"}),el("th",{text:"التغيّر"})));
+  rows.forEach(([lab,k,dir,u])=>{const a=base.m[k],b=rec.m[k];if(a==null&&b==null)return;
+    let cls="same",txt="—";if(a!=null&&b!=null){const d=b-a;const better=d*dir;cls=Math.abs(d)<(k==="score"||k==="acc"||k==="tWithin"?3:k==="scoop"?20:2)?"same":better>0?"up":"down";txt=(cls==="same"?"≈ ":cls==="up"?"▲ ":"▼ ")+(d>0?"+":"")+d+u;}
+    tb.append(el("tr",{},el("td",{text:lab}),el("td",{class:"n",text:a==null?"—":a+u}),el("td",{class:"n",text:b==null?"—":b+u}),el("td",{class:"n "+cls,text:txt})));});
+  const d=rec.m.score-base.m.score;
+  $("#cmpVerdict").textContent=d>=5?"تحسّن واضح (+"+d+" نقطة). استمر على نفس التمرين حتى تتجاوز 80.":d>=2?"تحسّن بسيط (+"+d+"). كرر المحاولة مع التركيز على أول موضع نشاز.":d>-2?"مستوى ثابت تقريباً. غيّر التمرين: ركّز على الدرجة الأسوأ أدناه.":"تراجع ("+d+"). غالباً تعب أو طبقة مختلفة؛ ارتح ثم أعد على القرار المستمر.";
+  $("#cmpVerdict").className="verdict "+(d>=2?"up":d>-2?"same":"down");
+  const box=$("#cmpDegs");box.innerHTML="";
+  const lines=[];rec.degs.forEach(dg=>{const pb=base.degs.find(x=>x.name===dg.name);if(!pb)return;const ch=Math.abs(pb.dev)-Math.abs(dg.dev);if(Math.abs(ch)<6)return;
+    lines.push({t:dg.name+": من "+(pb.dev>0?"+":"")+pb.dev+"¢ إلى "+(dg.dev>0?"+":"")+dg.dev+"¢",c:ch>0?"up":"down",v:ch});});
+  lines.sort((a,b)=>Math.abs(b.v)-Math.abs(a.v)).slice(0,6).forEach(l=>box.append(el("p",{class:l.c,text:(l.c==="up"?"✓ تحسّنت ":"✗ تراجعت ")+l.t})));
+  $("#cmpPlayPrev").hidden=!base.blob;
+}
+$("#cmpPlayPrev").addEventListener("click",async()=>{const b=S.baseline;if(!b||!b.blob)return;try{const a=await decodeBlob(await b.blob.arrayBuffer());const ctx=getCtx();const src=ctx.createBufferSource();src.buffer=a;src.connect(bus.master);src.start();RHY.vis.push(setTimeout(()=>{try{src.stop();}catch(e){}},30000));}catch(e){}});
+$("#cmpOpenPrev").addEventListener("click",()=>{if(S.baseline)openRec(S.baseline.id);});
+$("#playRecBtn").addEventListener("click",()=>{const A=S.lastAudio;if(A)playSegment(0,A.data.length/A.sr);});
+$("#retryBtn").addEventListener("click",()=>{const rec=S.currentRec;if(!rec)return;$("#recMaqam").value=rec.maqamId;$("#recMode").value=rec.mode;$("#recWithIqa").checked=!!rec.grid;syncRecMaqam();
+  $("#v-rec").querySelector(".card").scrollIntoView({behavior:"smooth",block:"start"});startRec(rec.id);});
+let delArm=0;$("#delRecBtn").addEventListener("click",async()=>{const rec=S.currentRec;if(!rec)return;
+  if(Date.now()-delArm>4000){delArm=Date.now();$("#delRecBtn").textContent="اضغط مرة ثانية للحذف";setTimeout(()=>{$("#delRecBtn").textContent="احذف التسجيل";},4000);return;}
+  delArm=0;try{await DB.del(rec.id);}catch(e){}S.currentRec=null;$("#results").hidden=true;$("#delRecBtn").textContent="احذف التسجيل";setStatus("حُذف التسجيل.");await loadLib();});
+function syncRecMaqam(){const auto=$("#recMaqam").value==="auto";$("#autoTonicRow").hidden=auto;}
+$("#recMaqam").addEventListener("change",syncRecMaqam);
+
 /* ---------------- Recording & upload ---------------- */
 let mediaRec=null,recTimer=null,recStart=0,recLiveStop=null,recUrl=null;
 function setStatus(t,err){const s=$("#recStatus");s.textContent=t;s.className="status"+(err?" err":"");}
 async function decodeBlob(buf){const ctx=getCtx();return await new Promise((res,rej)=>{const p=ctx.decodeAudioData(buf,res,rej);if(p&&p.then)p.then(res,rej);});}
 function mono(ab){const n=ab.length,ch=ab.numberOfChannels;if(ch===1)return ab.getChannelData(0);const o=new Float32Array(n);for(let c=0;c<ch;c++){const d=ab.getChannelData(c);for(let i=0;i<n;i++)o[i]+=d[i]/ch;}return o;}
-async function runAnalysis(data,sr,isExample,grid){
+async function runAnalysis(data,sr,isExample,grid,opts){
+  opts=opts||{};
   const maxN=Math.floor(sr*120);if(data.length>maxN){data=data.subarray(0,maxN);}
   setStatus("جارٍ تتبّع طبقة الصوت…");
-  const R=await analyze(data,sr,$("#recMaqam").value,$("#recMode").value,$("#autoTonic").checked,p=>setStatus("جارٍ تتبّع طبقة الصوت… "+Math.round(p*100)+"%"),grid);
+  const maqSel=opts.maqamId||$("#recMaqam").value,mode=opts.mode||$("#recMode").value;
+  const R=await analyze(data,sr,maqSel,mode,maqSel==="auto"?true:$("#autoTonic").checked,p=>setStatus("جارٍ تتبّع طبقة الصوت… "+Math.round(p*100)+"%"),grid,opts.pre||null);
   if(R.error){setStatus(R.error,true);return;}
-  S.lastAnalysis=R;S.lastIsExample=!!isExample;renderResults(R,isExample);
-  setStatus(isExample?"":"اكتمل التحليل. النتائج بالأسفل.");
-  if(!isExample){const h=store.get("history",[]);h.push({d:Date.now(),m:R.maqam.id,s:R.score,acc:Math.round(R.within25*100)});store.set("history",h.slice(-50));renderPath();
+  R.alt=null;
+  if(R.autoMaq&&R.cands[1]&&R.cands[1].rel>0.86){try{const R2=await analyze(data,sr,R.cands[1].id,mode,true,null,grid,R.raw);
+    if(!R2.error)R.alt={id:R2.maqam.id,name:R2.maqam.name,score:R2.score,worst:R2.degs.filter(d=>d.dev!=null&&Math.abs(d.dev)>15).sort((a,b)=>Math.abs(b.dev)-Math.abs(a.dev)).slice(0,3).map(d=>({name:d.name,dev:Math.round(d.dev)}))};}catch(e){}}
+  S.lastAudio={data,sr};S.lastGrid=grid||null;S.lastAnalysis=R;S.lastIsExample=!!isExample;
+  if(isExample){S.currentRec=null;$("#recActions").hidden=true;renderResults(R,true);renderCompare(null,null);setStatus("");return;}
+  let rec,isNew=false;
+  if(opts.existing){rec=opts.existing;if(opts.updateMetrics){Object.assign(rec,recFields(R));await updateRec(rec);}}
+  else{rec=await saveNewRec(R,opts);isNew=true;}
+  S.currentRec=rec;$("#recActions").hidden=false;
+  renderResults(R,false);
+  const base=rec.parent?(LIBCACHE.find(x=>x.id===rec.parent)||await DB.get(rec.parent).catch(()=>null)):prevOf(rec);
+  renderCompare(rec,base);renderLib();
+  if(opts.existing&&rec.report){$("#aiOut").innerHTML=md(rec.report);$("#aiOut").append(el("p",{class:"small muted",text:"تقرير محفوظ من "+fmtDate(rec.reportT||rec.t)+". اضغط «حلّل أدائي» لتقرير جديد."}));}
+  if(isNew){setStatus("اكتمل التحليل وحُفظ التسجيل. النتائج بالأسفل.");
+    const h=store.get("history",[]);h.push({d:Date.now(),m:R.maqam.id,s:R.score,acc:Math.round(R.within25*100)});store.set("history",h.slice(-50));renderPath();
     setTimeout(()=>$("#results").scrollIntoView({behavior:"smooth",block:"start"}),60);
     if(!sample&&apiKey()&&store.get("autoAi",true))setTimeout(()=>{$("#aiBtn").click();},400);}
+  else if(!opts.updateMetrics)setStatus("");
 }
-async function handleArrayBuffer(ab,grid){
-  try{const audio=await decodeBlob(ab);await runAnalysis(mono(audio),audio.sampleRate,false,grid);}
+async function handleArrayBuffer(ab,grid,opts){
+  try{const audio=await decodeBlob(ab);await runAnalysis(mono(audio),audio.sampleRate,false,grid,opts||{});}
   catch(e){setStatus("تعذّرت قراءة الملف. جرّب تسجيلاً بصيغة m4a أو mp3 أو wav.",true);}
 }
-$("#fileIn").addEventListener("change",async e=>{const f=e.target.files[0];if(!f)return;setStatus("جارٍ قراءة "+f.name+"…");const ab=await f.arrayBuffer();e.target.value="";await handleArrayBuffer(ab);});
+$("#fileIn").addEventListener("change",async e=>{const f=e.target.files[0];if(!f)return;setStatus("جارٍ قراءة "+f.name+"…");const ab=await f.arrayBuffer();e.target.value="";await handleArrayBuffer(ab,null,{blob:f,mime:f.type});});
 function pickMime(){if(typeof MediaRecorder==="undefined"||!MediaRecorder.isTypeSupported)return "";return ["audio/mp4","audio/webm;codecs=opus","audio/webm","audio/ogg"].find(t=>{try{return MediaRecorder.isTypeSupported(t);}catch(e){return false;}})||"";}
 function stopRecUI(){clearInterval(recTimer);if(recLiveStop){recLiveStop();recLiveStop=null;}$("#recLive").hidden=true;$("#recBtn").textContent="ابدأ التسجيل";$("#recBtn").disabled=false;}
-$("#recBtn").addEventListener("click",async()=>{
+$("#recBtn").addEventListener("click",()=>startRec(null));
+async function startRec(parentId){
   if(mediaRec&&mediaRec.state==="recording"){mediaRec.stop();return;}
   const ctx=getCtx();
   if(!micAvailable()||typeof MediaRecorder==="undefined"){$("#micNotice").hidden=false;setStatus(micErrorText(null),true);return;}
@@ -1380,11 +1608,11 @@ $("#recBtn").addEventListener("click",async()=>{
   catch(e){$("#micNotice").hidden=false;setStatus(micErrorText(e),true);return;}
   $("#micNotice").hidden=true;$("#saveRow").hidden=true;
   // reference: play the tonic first, then start recording
-  const mid=$("#recMaqam").value,m=byId(mid);
-  $("#recBtn").disabled=true;setStatus("اسمع القرار…");
-  const mode=$("#recMode").value;playAbs(m.tonic,ctx.currentTime+0.05,1.3,"oud");
-  if(mode==="voice")playAbs(m.tonic,ctx.currentTime+0.05,1.3,"voice");
-  await new Promise(r=>setTimeout(r,1700));
+  const mid=$("#recMaqam").value,m=mid==="auto"?null:byId(mid);
+  $("#recBtn").disabled=true;
+  const mode=$("#recMode").value;
+  if(m){setStatus("اسمع القرار…");playAbs(m.tonic,ctx.currentTime+0.05,1.3,"oud");if(mode==="voice")playAbs(m.tonic,ctx.currentTime+0.05,1.3,"voice");await new Promise(r=>setTimeout(r,1700));}
+  else{setStatus("ابدأ بعد الإشارة…");drumHit(ctx,bus.drumIn,"c",ctx.currentTime+0.05);drumHit(ctx,bus.drumIn,"C",ctx.currentTime+0.55);await new Promise(r=>setTimeout(r,800));}
   const mime=pickMime();const chunks=[];
   try{mediaRec=mime?new MediaRecorder(stream,{mimeType:mime}):new MediaRecorder(stream);}catch(e){mediaRec=new MediaRecorder(stream);}
   mediaRec.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data);};
@@ -1394,13 +1622,13 @@ $("#recBtn").addEventListener("click",async()=>{
   mediaRec.onstop=async()=>{stream.getTracks().forEach(t=>t.stop());stopRecUI();if(RHY.kind==="rec")rhythmStop();
     const type=mediaRec.mimeType||mime||"audio/webm";const blob=new Blob(chunks,{type});
     if(!window.claude){try{if(recUrl)URL.revokeObjectURL(recUrl);recUrl=URL.createObjectURL(blob);const a=$("#saveRec");a.href=recUrl;a.download="dozan-"+mid+"-"+new Date().toISOString().slice(0,16).replace(/[:T]/g,"-")+(type.includes("mp4")?".m4a":type.includes("ogg")?".ogg":".webm");$("#saveRow").hidden=false;}catch(e){}}
-    await handleArrayBuffer(await blob.arrayBuffer(),grid);};
+    await handleArrayBuffer(await blob.arrayBuffer(),grid,{blob,mime:type,parentId});};
   mediaRec.start(250);recStart=Date.now();
   $("#recBtn").disabled=false;$("#recBtn").textContent="أوقف وحلّل";$("#recLive").hidden=false;
   let held=null;
   recLiveStop=livePitch(stream,(c)=>{if(c==null)return;showNeedle($("#recLiveNote"),$("#recLiveCents"),$("#recNeedle"),nearestDeg(c,mid));});
-  const s=$("#recStatus");recTimer=setInterval(()=>{const sec=Math.round((Date.now()-recStart)/1000);s.className="status";s.innerHTML="";s.append(el("span",{class:"rec-dot"}),"يسجّل… "+sec+" ث (الحد 120 ث)");if(sec>=120&&mediaRec.state==="recording")mediaRec.stop();},250);
-});
+  const s=$("#recStatus");recTimer=setInterval(()=>{const sec=Math.round((Date.now()-recStart)/1000);s.className="status";s.innerHTML="";s.append(el("span",{class:"rec-dot"}),(parentId?"محاولة جديدة… ":"يسجّل… ")+sec+" ث (الحد 120 ث)");if(sec>=120&&mediaRec.state==="recording")mediaRec.stop();},250);
+}
 async function renderExample(){
   // synthesize a sung Bayati phrase with deliberate errors: sikah +28c, one flat jaharkah, normal vibrato
   const sr=22050,m=byId("bayati");const seq=[[3,1.1],[2,.5],[1,.5],[2,.9],[1,.5],[0,.6],[1,.8],[2,.5],[3,.5],[4,1.4],[3,.5],[2,.5],[1,.6],[0,1.8]];
@@ -1458,6 +1686,9 @@ function analysisSummary(R){
   return {
     maqam:R.maqam.name,performance:R.mode==="oud"?"عزف عود منفرد":"غناء",duration_s:+R.dur.toFixed(1),
     is_generated_example:!!S.lastIsExample,
+    maqam_detection:R.autoMaq?{auto_detected:true,candidates:R.cands.map(c=>({name:c.name,relative_fit:+c.rel.toFixed(2)})),alternative_reading:R.alt||null}:{auto_detected:false,chosen_by_user:true},
+    pitch_problem_spots:(R.issues||[]).map((i,k)=>({n:k+1,time_s:+i.t.toFixed(1),note:i.name,kind:i.kind==="scoop"?"دخول بطيء على النغمة":"نشاز",deviation_cents:Math.round(i.dev),duration_ms:Math.round(i.dur*1000),scoop_ms:i.ms?Math.round(i.ms):undefined})),
+    previous_attempt_same_maqam:S.baseline&&S.currentRec&&!S.lastIsExample?{date:new Date(S.baseline.t).toISOString().slice(0,10),metrics:S.baseline.m,degrees:S.baseline.degs}:null,
     tonic:{auto_detected:R.auto,offset_from_app_tonic_cents:Math.round(R.tonicOffset)},
     closest_maqamat_by_pitch_content:R.cands.map(c=>c.name),
     overall_score_0_100:R.score,
@@ -1523,7 +1754,7 @@ $("#saveKey").addEventListener("click",async()=>{const v=cleanKey($("#apiKey").v
   catch(e){st.textContent="المفتاح محفوظ لكن الاختبار فشل: "+(sampleErr(e)||"")+(e&&e.message?" ["+e.message+"]":"")+" · طول المفتاح "+v.length+" حرفاً، يبدأ بـ "+v.slice(0,10)+"…";}});
 function sampleErr(e){const c=e&&e.code;return c==="not_granted"?"لم يُسمح للصفحة باستخدام Claude.":c==="rate_limited"?"طلبات كثيرة الآن. حاول بعد قليل.":c==="session_expired"?"انتهت الجلسة. سجّل الدخول مجدداً.":c==="bad_key"?"مفتاح API غير صحيح أو لا يملك صلاحية. راجعه في «الضبط».":c==="no_key"?"أضف مفتاح API من «الضبط».":c==="cancelled"?"":"تعذّر الاتصال بالمدرب. حاول مرة أخرى.";}
 const sampleErrFull=e=>{const b=sampleErr(e);return b&&e&&e.message&&!sample?b+" ["+e.message+"]":b;};
-function reportPrompt(R,note){return COACH_ROLE+"\n\nأمامك قياسات استُخرجت آلياً من تسجيل "+(R.mode==="oud"?"عزف على العود":"غناء")+" في مقام "+R.maqam.name+". طريقة القياس: تتبّع طبقة الصوت بخوارزمية YIN كل 12 ملّي ثانية، ثم مقارنة كل لحظة بأقرب درجة في المقام بالسنت (100 سنت = نصف تون، 50 = ربع تون). الانحراف الموجب يعني أعلى من الدرجة (حاد)، والسالب أخفض.\n\nمعلومات المقام: الدرجات بالسنت من القرار: "+R.maqam.steps.join("، ")+(R.maqam.desc?" (وفي النزول: "+Object.entries(R.maqam.desc).map(([i,c])=>"الدرجة "+(+i+1)+" = "+c).join("، ")+")":"")+". الأجناس: "+R.maqam.ajnas.map(j=>j[0]).join(" + ")+". الغماز: "+noteName(R.maqam.tonic+R.maqam.steps[R.maqam.gh])+".\n\nقواعد صارمة:\n- اعتمد على هذه الأرقام فقط. لا تحكم على جمال الخامة أو مخارج الحروف أو التعبير لأنها غير مقاسة، واذكر ذلك في سطر واحد.\n- اذكر الرقم مع كل ملاحظة.\n- ميّز بين الخطأ والتلوين المقبول في الأداء العربي (مثل خفض سيكاه البياتي قليلاً، أو رفع الحجاز في الصعود). الانحراف الثابت في اتجاه واحد على نفس الدرجة غالباً خطأ في الأذن، والتذبذب الكبير غالباً ضعف في التحكم.\n- الدرجات التي لم تُؤدَّ لا تحكم عليها.\n"+(R.mode==="oud"?"- العود بلا دساتين: اربط أخطاء الضبط بموضع الأصابع، والإيقاع بالريشة.\n":"- اربط ضعف الثبات بالنفس والدعم، والدخول البطيء على النغمة بالتمهيد (الزحلقة).\n")+(S.lastIsExample?"- هذا تسجيل تجريبي مولّد آلياً وليس أداء المستخدم؛ نبّه لذلك في أول سطر.\n":"")+"\nالصيغة (Markdown بالعربية، 250 إلى 450 كلمة):\n## الخلاصة\nسطران وتقييم من 10.\n## نقاط القوة\n## نقاط الضعف\nمرتبة حسب الأهمية.\n## خطة التدريب خطوة بخطوة\n5 خطوات مرقمة. كل خطوة: التمرين بالتحديد (اذكر أدوات التطبيق عند الحاجة: القرار المستمر، مؤشر الطبقة، تمرين أي درجة، أذن الربع تون، المترونوم، الإيقاعات، تمرين النقر على النبض، تمرين الصمت)، المدة اليومية، وعلامة نجاح رقمية.\n## هدف التسجيل القادم\nرقم واحد أو رقمان تريد أن تراهما.\n\n"+(note?"ملاحظة المتدرب: "+note+"\n\n":"")+"القياسات:\n"+JSON.stringify(analysisSummary(R));}
+function reportPrompt(R,note){return COACH_ROLE+"\n\nأمامك قياسات استُخرجت آلياً من تسجيل "+(R.mode==="oud"?"عزف على العود":"غناء")+" في مقام "+R.maqam.name+". طريقة القياس: تتبّع طبقة الصوت بخوارزمية YIN كل 12 ملّي ثانية، ثم مقارنة كل لحظة بأقرب درجة في المقام بالسنت (100 سنت = نصف تون، 50 = ربع تون). الانحراف الموجب يعني أعلى من الدرجة (حاد)، والسالب أخفض.\n\nمعلومات المقام: الدرجات بالسنت من القرار: "+R.maqam.steps.join("، ")+(R.maqam.desc?" (وفي النزول: "+Object.entries(R.maqam.desc).map(([i,c])=>"الدرجة "+(+i+1)+" = "+c).join("، ")+")":"")+". الأجناس: "+R.maqam.ajnas.map(j=>j[0]).join(" + ")+". الغماز: "+noteName(R.maqam.tonic+R.maqam.steps[R.maqam.gh])+".\n\nقواعد صارمة:\n- اعتمد على هذه الأرقام فقط. لا تحكم على جمال الخامة أو مخارج الحروف أو التعبير لأنها غير مقاسة، واذكر ذلك في سطر واحد.\n- اذكر الرقم مع كل ملاحظة.\n- ميّز بين الخطأ والتلوين المقبول في الأداء العربي (مثل خفض سيكاه البياتي قليلاً، أو رفع الحجاز في الصعود). الانحراف الثابت في اتجاه واحد على نفس الدرجة غالباً خطأ في الأذن، والتذبذب الكبير غالباً ضعف في التحكم.\n- الدرجات التي لم تُؤدَّ لا تحكم عليها.\n- إذا كان المقام مكتشفاً تلقائياً والمرشحان الأولان متقاربان، اذكر ذلك ووضّح أي درجة تفرق بينهما وكيف يتأكد المتدرب.\n"+(R.mode==="oud"?"- العود بلا دساتين: اربط أخطاء الضبط بموضع الأصابع، والإيقاع بالريشة.\n":"- اربط ضعف الثبات بالنفس والدعم، والدخول البطيء على النغمة بالتمهيد (الزحلقة).\n")+(S.lastIsExample?"- هذا تسجيل تجريبي مولّد آلياً وليس أداء المستخدم؛ نبّه لذلك في أول سطر.\n":"")+"\nالصيغة (Markdown بالعربية، 250 إلى 450 كلمة):\n## الخلاصة\nسطران وتقييم من 10.\n## نقاط القوة\n## نقاط الضعف\nمرتبة حسب الأهمية.\n## مواضع النشاز وتعديلها\nلكل موضع في pitch_problem_spots (اذكر رقمه ووقته بالثواني): ماذا حدث بالضبط، وكيف يعدّله عملياً في تلك النغمة تحديداً. اجمع المواضع المتكررة على نفس الدرجة في سطر واحد.\n"+(S.baseline&&!S.lastIsExample?"## مقارنة بمحاولتك السابقة\nقارن الأرقام بـ previous_attempt_same_maqam: ما الذي تحسن وما الذي لم يتحسن، بالأرقام، وهل التمرين السابق نجح.\n":"")+"## خطة التدريب خطوة بخطوة\n5 خطوات مرقمة. كل خطوة: التمرين بالتحديد (اذكر أدوات التطبيق عند الحاجة: القرار المستمر، مؤشر الطبقة، تمرين أي درجة، أذن الربع تون، المترونوم، الإيقاعات، تمرين النقر على النبض، تمرين الصمت)، المدة اليومية، وعلامة نجاح رقمية.\n## هدف التسجيل القادم\nرقم واحد أو رقمان تريد أن تراهما.\n\n"+(note?"ملاحظة المتدرب: "+note+"\n\n":"")+"القياسات:\n"+JSON.stringify(analysisSummary(R));}
 let aiCtl=null;
 $("#aiBtn").addEventListener("click",async()=>{
   const R=S.lastAnalysis;if(!R||!aiReady())return;
@@ -1534,7 +1765,7 @@ $("#aiBtn").addEventListener("click",async()=>{
     const r=await ask(prompt,{signal:aiCtl.signal,onText:({text})=>{out.innerHTML=md(text);}});
     if(r.truncated)out.append(el("p",{class:"small muted",text:"انقطع الرد قبل نهايته."}));
     if(r.cost!=null)out.append(el("p",{class:"small muted",text:"تكلفة هذا التحليل تقريباً $"+r.cost.toFixed(3)+" · هذا الشهر $"+r.month.toFixed(2)}));
-    const h=store.get("reports",[]);h.push({d:Date.now(),m:R.maqam.id,t:r.text.slice(0,4000)});store.set("reports",h.slice(-10));
+    if(S.currentRec&&!S.lastIsExample){S.currentRec.report=r.text;S.currentRec.reportT=Date.now();await updateRec(S.currentRec);}
   }catch(e){if(e&&e.text)out.innerHTML=md(e.text);const msg=sampleErrFull(e);if(msg)out.append(el("p",{class:"status err",text:msg}));}
   finally{$("#aiBtn").disabled=false;$("#aiStop").hidden=true;}
 });
@@ -1631,14 +1862,14 @@ $("#playDown").addEventListener("click",()=>playScale(true));
 $("#playPhrase").addEventListener("click",()=>playPhrase(byId(S.maqam),S.timbre));
 $("#stopBtn").addEventListener("click",()=>{stopAll();if(S.drone){S.drone=false;stopDrone();$("#droneBtn").setAttribute("aria-pressed","false");}});
 $("#droneBtn").addEventListener("click",()=>{S.drone=!S.drone;$("#droneBtn").setAttribute("aria-pressed",String(S.drone));if(S.drone)startDrone();else stopDrone();});
-const rs=$("#recMaqam");MAQAMAT.forEach(m=>rs.append(el("option",{value:m.id},m.name)));rs.value=S.maqam;
+const rs=$("#recMaqam");rs.append(el("option",{value:"auto"},"اكتشف المقام تلقائياً"));MAQAMAT.forEach(m=>rs.append(el("option",{value:m.id},m.name)));rs.value="auto";syncRecMaqam();loadLib();
 window.addEventListener("resize",()=>{if(S.lastAnalysis&&!$("#v-rec").hidden)drawPlot(S.lastAnalysis);});
 window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{if(S.lastAnalysis){drawPlot(S.lastAnalysis);renderDevBars(S.lastAnalysis);}});
 
 renderTr();renderChips();renderMaqam();renderIqaChips();renderIqa();renderDots();edSetMeter(false);ED.steps="D..D..T.";renderEd();setTmMode("pulse");if(TM.calib)$("#calibTxt").textContent="المعايرة الحالية: "+Math.round(TM.calib)+" مث.";renderStrings();renderPath();renderSuggest();$("#exDMaqam").textContent=byId(S.maqam).name;
-renderExample().then(prev=>{if(prev){$("#recMaqam").value=S.maqam;}}).catch(()=>{});
+renderExample().then(prev=>{if(prev){$("#recMaqam").value="auto";syncRecMaqam();}}).catch(()=>{});
 initSample();
-window.__dozan={transcribe,ED,analyze,MAQAMAT,S,phraseEvents,playOud,makeBus,C3,RHY,TM,IQAAT,onTap,drumHit,getCtx};
+window.__dozan={transcribe,ED,runAnalysis,loadLib,playVoice,LIBCACHE:()=>LIBCACHE,openRec,analyze,MAQAMAT,S,phraseEvents,playOud,makeBus,C3,RHY,TM,IQAAT,onTap,drumHit,getCtx};
 })();
 </script>
 
