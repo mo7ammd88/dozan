@@ -1396,11 +1396,11 @@ function makeDrumData(kind,seed,sr){
     burst("bp",240,1.0,0.7,0.012,0.05);burst("lp",3200,0.7,0.55,0.004,0.025);burst("bp",1200,0.9,0.18,0.006,0.03);
   }else if(kind==="T"){ // dry, bright rim crack with a brief membrane ring
     burst("hp",2600,0.7,1.0,0.0035,0.03);burst("bp",5200,1.2,0.5,0.003,0.025);
-    [[600,0.2,0.04],[880,0.24,0.035],[1270,0.22,0.032],[1545,0.18,0.03],[2360,0.12,0.03],[2700,0.1,0.028],[3500,0.07,0.025]].forEach(([f,a,d])=>mode(jit(f),a,d));
+    [[600,0.2,0.04],[880,0.24,0.035],[1270,0.22,0.032],[1545,0.18,0.03],[2360,0.12,0.03],[2700,0.1,0.028],[3500,0.07,0.025]].forEach(([f,a,d])=>mode(jit(f),a*0.55,d*0.85));
     mode(jit(160),0.08,0.05);
   }else{ // ka: softer, duller tek from the other hand
     burst("hp",1900,0.7,0.7,0.003,0.025);burst("bp",3800,1.1,0.35,0.0025,0.02);
-    [[880,0.14,0.022],[1270,0.12,0.02],[1545,0.1,0.018],[2360,0.06,0.016]].forEach(([f,a,d])=>mode(jit(f),a,d));
+    [[880,0.14,0.022],[1270,0.12,0.02],[1545,0.1,0.018],[2360,0.06,0.016]].forEach(([f,a,d])=>mode(jit(f),a*0.45,d*0.8));
   }
   let pk=0;const ramp=Math.floor(sr*0.0006),fo=Math.floor(n*0.3);for(let i=0;i<n;i++){if(i<ramp)out[i]*=i/ramp;if(i>n-fo){const x=(n-i)/fo;out[i]*=x*x;}const a=Math.abs(out[i]);if(a>pk)pk=a;}
   const g=(kind==="D"?0.8:kind==="T"?0.62:0.36)/(pk||1);for(let i=0;i<n;i++)out[i]*=g;return out;}
@@ -1447,7 +1447,7 @@ const IQAAT=[
  {id:"jurjina",cat:"g",name:"جورجينا",sig:"10/8",steps:"D.TT.D.T..",spb:1,groups:[3,2,2,3],bpm:200,unit:"ثُمن",region:"العراق",desc:"إيقاع عراقي من عشر وحدات بتقسيم 3+2+2+3.",use:"الأغنية العراقية والمقام العراقي."},
  {id:"chobi",cat:"g",name:"جوبي",sig:"4/4",steps:"DD.DT.T.",spb:2,bpm:100,unit:"ربع",region:"العراق",desc:"إيقاع رقصة الجوبي العراقية الجماعية.",use:"الأغنية العراقية الشعبية."},
  {id:"masmoudi",cat:"t",name:"مصمودي كبير",sig:"8/4",steps:"DD.TD.TT",spb:1,bpm:84,unit:"ربع",desc:"إيقاع ثقيل طويل الدورة (ثماني نبضات).",use:"الموشحات والقطع الآلية والأداء البطيء."},
- {id:"wahdakb",cat:"t",name:"واحدة كبيرة",sig:"8/4",steps:"D..T..T.D...T...",spb:2,bpm:90,unit:"ربع",desc:"إيقاع طربي بطيء طويل الدورة.",use:"الطرب الكلاسيكي."},
+ {id:"wahdakb",cat:"c",name:"واحدة كبيرة",sig:"4/4",steps:"D.KKKKT.KKKKT.TK",spb:4,bpm:90,unit:"ربع",desc:"دُم في أول المازورة، ثم تَك في منتصف النبضة الثانية، وتَكّان في النبضة الرابعة، وضربات «كا» خفيفة تملأ ما بينها. مضبوط على تسجيل مرجعي على سرعة 90.",use:"الطرب والأغاني المتوسطة والبطيئة."},
  {id:"chifte",cat:"t",name:"شفتتلي",sig:"8/4",steps:"D.TT.TT.D.D.T...",spb:2,bpm:90,unit:"ربع",desc:"إيقاع تركي الأصل يرافق التقاسيم والارتجال.",use:"التقاسيم والقطع الآلية."},
  {id:"samai",cat:"t",name:"سماعي ثقيل",sig:"10/8",steps:"D..T.DDT..",spb:1,groups:[3,2,2,3],bpm:180,unit:"ثُمن",desc:"إيقاع من عشر وحدات بتقسيم 3+2+2+3.",use:"قالب السماعي الآلي والموشحات."},
  {id:"samaidarij",cat:"t",name:"سماعي دارج",sig:"3/4",steps:"DTT",spb:1,bpm:120,unit:"ربع",desc:"إيقاع ثلاثي بسيط.",use:"الموشحات والأغاني الخفيفة."},
@@ -3187,7 +3187,7 @@ const rs=$("#recMaqam");rs.append(el("option",{value:"auto"},"اكتشف الم�
 window.addEventListener("resize",()=>{if(S.lastAnalysis&&!$("#p-result").hidden&&!$('[data-rp="plot"]').hidden)drawPlot(S.lastAnalysis);});
 window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{if(S.lastAnalysis){drawPlot(S.lastAnalysis);renderDevBars(S.lastAnalysis);}});
 
-const APP_VER="2026.10.14-3";
+const APP_VER="2026.10.14-4";
 $("#verTxt").textContent="الإصدار \u2066"+APP_VER+"\u2069";
 const hardReload=()=>{location.replace(location.pathname+"?v="+Date.now()+location.hash);};
 $("#updBtn").addEventListener("click",hardReload);$("#updNow").addEventListener("click",hardReload);
