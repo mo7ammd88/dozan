@@ -502,6 +502,7 @@ details.tip p{padding:0 16px 14px;font-size:15px;color:var(--muted);line-height:
 .sf-res{text-align:center;font-weight:600;color:var(--good)}
 .sf-res:empty{display:none}
 
+.micLine{font-size:12.5px;color:var(--muted);text-align:center}.micLine:empty{display:none}.micLine.warn{color:var(--bad);font-weight:600}
 /* sheets */
 .sheet{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.35);display:flex;align-items:flex-end;justify-content:center;animation:fadein .2s}
 .sheet-card{background:var(--bg);width:min(680px,100%);max-height:calc(100% - env(safe-area-inset-top,0px) - 24px);border-radius:14px 14px 0 0;overflow-y:auto;overscroll-behavior:contain;padding:0 16px calc(24px + env(safe-area-inset-bottom,0px));animation:sheetup .28s cubic-bezier(.2,.8,.2,1)}
@@ -698,7 +699,7 @@ details.tip p{padding:0 16px 14px;font-size:15px;color:var(--muted);line-height:
         <div class="meter"><div class="zone"></div><div class="center"></div><div class="needle" id="recNeedle"></div></div>
       </div>
       <button class="recbtn" id="recBtn" aria-label="ابدأ التسجيل">ابدأ التسجيل</button>
-      <p class="status" id="recStatus"></p>
+      <p class="status" id="recStatus"></p><p class="micLine"></p>
       <div class="rec-sub">
         <button class="btn small" id="recPause" hidden>إيقاف مؤقت</button>
         <label class="btn small" for="fileIn">ارفع تسجيلاً</label>
@@ -811,7 +812,7 @@ details.tip p{padding:0 16px 14px;font-size:15px;color:var(--muted);line-height:
       <p class="small" id="sfGoal" style="text-align:center"></p>
       <p class="sf-res" id="sfResult"></p>
       <div class="btns" style="justify-content:center"><button class="btn primary" id="sfMic">شغّل الميكروفون</button><button class="btn" data-drone aria-pressed="false">قرار مستمر</button><button class="btn" id="sfPlay">اسمع السلم</button></div>
-      <p class="status" id="sfStatus"></p>
+      <p class="status" id="sfStatus"></p><p class="micLine"></p>
     </div>
     <p class="sf">«سهلة» تقبل فرق ربع نصف تون تقريباً (±25 سنت) وتناسب العود والبداية، و«دقيقة» للتلحين الدقيق. الأسماء حسب دوزانك في الضبط. «نصف بيمول» يعني ربع تون أخفض من النغمة، مثل مي نصف بيمول (السيكاه). المس أي نغمة في السلم لتسمعها. مع «القرار المستمر» استخدم سماعات.</p>
   </section>
@@ -829,7 +830,7 @@ details.tip p{padding:0 16px 14px;font-size:15px;color:var(--muted);line-height:
       <div class="seg full tolSeg"><button data-tol="easy">سهلة ±25</button><button data-tol="mid">متوسطة ±15</button><button data-tol="pro">دقيقة ±8</button></div>
       <div class="btns" style="justify-content:center"><button class="btn primary" id="tunerBtn">شغّل الميكروفون</button><button class="btn" id="targetBtn" disabled>أعطني هدفاً</button><button class="btn" data-drone aria-pressed="false">قرار مستمر</button></div>
       <button class="btn big" id="stageOpen">وضع العزف: شاشة كاملة تُقرأ من بعيد</button>
-      <p class="status" id="tunerStatus"></p>
+      <p class="status" id="tunerStatus"></p><p class="micLine"></p>
     </div>
     <p class="sf">غنِّ أو اعزف نغمة طويلة، ويخبرك المؤشر بأقرب درجة وبُعدك عنها بالسنت وبالهرتز، وتردد صوتك. السنت أدق للحكم: 100 سنت نصف تون و50 ربع تون، والأخضر ±10. مع «القرار المستمر» استخدم سماعات.</p>
   </section>
@@ -1922,7 +1923,7 @@ $("#rhyFile").addEventListener("change",async e=>{const f=e.target.files[0];e.ta
 let rhyRec=null;
 $("#rhyMic").addEventListener("click",async()=>{if(rhyRec){if(rhyRec.state==="recording")rhyRec.stop();return;}
   if(!micAvailable()||typeof MediaRecorder==="undefined"){renderDetect({error:micErrorText(null)});return;}
-  rhythmStop();aSess("play-and-record");let stream;try{stream=await openMic();}catch(e){aSess("playback");renderDetect({error:micErrorText(e)});return;}
+  rhythmStop();aSess("auto");let stream;try{stream=await openMic();}catch(e){aSess("playback");renderDetect({error:micErrorText(e)});return;}
   const mime=pickMime();const chunks=[];const rec=mime?new MediaRecorder(stream,{mimeType:mime}):new MediaRecorder(stream);rhyRec=rec;
   rec.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data);};const t0=Date.now();Awake.on("rhyrec");Haptic.tap();$("#rhyResult").hidden=true;$("#rhyStatus").textContent="";
   const tick=setInterval(()=>{const s=Math.floor((Date.now()-t0)/1000);$("#rhyMicTxt").textContent="يستمع… "+s+" من 20 ث · اضغط للإيقاف";if(s>=20&&rec.state==="recording")rec.stop();},250);
@@ -2280,20 +2281,30 @@ const BUILTIN_RE=/iphone|ipad|built-?in|internal|front|bottom|back|مدمج|دا
 async function micInputs(){try{return (await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==="audioinput");}catch(e){return [];}}
 function pickBuiltin(ins){const named=ins.filter(d=>d.label);if(!named.length)return null;
   return named.find(d=>BUILTIN_RE.test(d.label)&&!BT_RE.test(d.label))||named.find(d=>!BT_RE.test(d.label)&&d.deviceId!=="default"&&d.deviceId!=="communications")||null;}
+const isBT=t=>!!t&&BT_RE.test(t.label||"");
+const sleepMs=ms=>new Promise(r=>setTimeout(r,ms));
 async function openMic(){
+  aSess("auto");
   const pref=store.get("micPref","builtin");const withId=id=>({audio:Object.assign({},MIC.audio,{deviceId:{exact:id}})});
-  if(pref!=="builtin"&&pref!=="auto"){try{const s=await navigator.mediaDevices.getUserMedia(withId(pref));noteMic(s);return s;}catch(e){}}
   if(pref==="auto"){const s=await navigator.mediaDevices.getUserMedia(MIC);noteMic(s);return s;}
-  let ins=await micInputs(),d=pickBuiltin(ins),first=null;
-  if(!d){first=await navigator.mediaDevices.getUserMedia(MIC);ins=await micInputs();d=pickBuiltin(ins);
-    const cur=first.getAudioTracks()[0];const curId=cur&&cur.getSettings?cur.getSettings().deviceId:null;
-    if(!d||curId===d.deviceId||(cur&&!BT_RE.test(cur.label||""))){noteMic(first);return first;}
-    first.getTracks().forEach(t=>t.stop());}
-  try{const s=await navigator.mediaDevices.getUserMedia(withId(d.deviceId));noteMic(s);return s;}
-  catch(e){const s=first&&first.active?first:await navigator.mediaDevices.getUserMedia(MIC);noteMic(s);return s;}
+  if(pref!=="builtin"){try{const s=await navigator.mediaDevices.getUserMedia(withId(pref));noteMic(s);return s;}catch(e){}}
+  // built-in mic: ask for it by id and verify what iOS actually gave us; retry a few times if a headset mic came back
+  let s=null;
+  for(let attempt=0;attempt<3;attempt++){
+    let ins=await micInputs(),d=pickBuiltin(ins);
+    if(!d){s=s||await navigator.mediaDevices.getUserMedia(MIC);ins=await micInputs();d=pickBuiltin(ins);if(!d){noteMic(s);return s;}}
+    const t0=s&&s.getAudioTracks()[0];
+    if(t0&&!isBT(t0)&&(t0.getSettings?t0.getSettings().deviceId===d.deviceId||!t0.getSettings().deviceId:true)){noteMic(s);return s;}
+    if(s){s.getTracks().forEach(t=>t.stop());s=null;await sleepMs(attempt?350:120);}
+    try{s=await navigator.mediaDevices.getUserMedia(withId(d.deviceId));}catch(e){s=null;}
+    const t=s&&s.getAudioTracks()[0];
+    if(t&&!isBT(t)){noteMic(s);return s;}
+  }
+  if(!s)s=await navigator.mediaDevices.getUserMedia(MIC);
+  noteMic(s);return s;
 }
-function noteMic(s){const t=s&&s.getAudioTracks()[0];S.micLabel=t?t.label||"":"";const e=$("#micNow");if(e)e.textContent=S.micLabel?"آخر ميكروفون استُخدم: "+S.micLabel+(BT_RE.test(S.micLabel)?" (سماعة: الجودة أقل)":""):"";
-  if(t&&BT_RE.test(t.label||"")&&store.get("micPref","builtin")==="builtin")S.micWarn="الآيفون اختار ميكروفون السماعة. إن ضعفت الجودة افصل السماعة أو اختر الميكروفون من الضبط.";else S.micWarn="";}
+function noteMic(s){const t=s&&s.getAudioTracks()[0];S.micLabel=t?t.label||"":"";document.querySelectorAll(".micLine").forEach(e=>{e.textContent=S.micLabel?"🎙 "+S.micLabel+(BT_RE.test(S.micLabel)?" — ميكروفون السماعة":""):"";e.classList.toggle("warn",BT_RE.test(S.micLabel));});const e=$("#micNow");if(e)e.textContent=S.micLabel?"آخر ميكروفون استُخدم: "+S.micLabel+(BT_RE.test(S.micLabel)?" (سماعة: الجودة أقل)":""):"";
+  if(t&&BT_RE.test(t.label||"")&&store.get("micPref","builtin")==="builtin")S.micWarn="iOS فرض ميكروفون السماعة رغم طلب ميكروفون الآيفون. للجودة الأعلى: افصل السماعة أو سجّل بسماعة سلكية.";else S.micWarn="";}
 async function renderMicSel(){const sel=$("#micSel");if(!sel)return;const ins=await micInputs();const v=store.get("micPref","builtin");sel.innerHTML="";
   sel.append(el("option",{value:"builtin"},"ميكروفون الآيفون دائماً"),el("option",{value:"auto"},"تلقائي حسب iOS"));
   ins.filter(d=>d.label&&d.deviceId!=="default").forEach(d=>sel.append(el("option",{value:d.deviceId},d.label)));
@@ -2326,7 +2337,7 @@ async function liveMic(onPitch,onState){
       if(cl.length>=4){good=cl.reduce((a,b)=>a+b,0)/cl.length;goodT=lastFrame;onPitch(good,dt);return;}}
     if(good!=null&&lastFrame-goodT<400){onPitch(good,dt);return;}
     onPitch(null,dt);};
-  async function open(){aSess("play-and-record");stream=await openMic();stopLP=livePitch(stream,handle);lastFrame=performance.now();zeroMs=0;
+  async function open(){aSess("auto");stream=await openMic();stopLP=livePitch(stream,handle);lastFrame=performance.now();zeroMs=0;
     stream.getAudioTracks().forEach(t=>{t.onended=()=>heal();t.onmute=()=>setTimeout(()=>{if(alive&&t.muted)heal();},1200);});}
   async function heal(){if(!alive||healing)return;healing=true;onState&&onState("reconnect");
     try{stopLP&&stopLP();}catch(e){}try{stream&&stream.getTracks().forEach(t=>t.stop());}catch(e){}
@@ -2793,7 +2804,7 @@ async function startRec(parentId){
   const ctx=getCtx();
   if(!micAvailable()||typeof MediaRecorder==="undefined"){$("#micNotice").hidden=false;setStatus(micErrorText(null),true);return;}
   let stream;
-  aSess("play-and-record");try{stream=await openMic();}
+  aSess("auto");try{stream=await openMic();}
   catch(e){$("#micNotice").hidden=false;setStatus(micErrorText(e),true);return;}
   $("#micNotice").hidden=true;$("#saveRow").hidden=true;
   // reference: play the tonic first, then start recording
@@ -3340,7 +3351,7 @@ const rs=$("#recMaqam");rs.append(el("option",{value:"auto"},"اكتشف الم�
 window.addEventListener("resize",()=>{if(S.lastAnalysis&&!$("#p-result").hidden&&!$('[data-rp="plot"]').hidden)drawPlot(S.lastAnalysis);});
 window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{if(S.lastAnalysis){drawPlot(S.lastAnalysis);renderDevBars(S.lastAnalysis);}});
 
-const APP_VER="2026.10.14-7";
+const APP_VER="2026.10.14-8";
 $("#verTxt").textContent="الإصدار \u2066"+APP_VER+"\u2069";
 const hardReload=()=>{location.replace(location.pathname+"?v="+Date.now()+location.hash);};
 $("#updBtn").addEventListener("click",hardReload);$("#updNow").addEventListener("click",hardReload);
