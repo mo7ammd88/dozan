@@ -982,6 +982,7 @@ details.tip p{padding:0 16px 14px;font-size:15px;color:var(--muted);line-height:
       <div class="sec">
         <p class="sh">الصوت والاهتزاز واللمس</p>
         <div class="list">
+          <label class="row static"><span class="tx">الميكروفون<small id="micNow"></small></span><select id="micSel" style="max-width:55%"></select></label>
           <label class="row static"><span class="tx">أصوات التطبيق في الوضع الصامت<small>يعمل الصوت حتى لو مفتاح الصامت مفعّل</small></span><input type="checkbox" class="sw" id="optSilent"></label>
           <div class="row static"><span class="tx">الاهتزاز<small>عند الإجابة الصحيحة وضبط النغمة ونبض المترونوم</small></span><button class="btn small" id="hapticTest">جرّب</button><input type="checkbox" class="sw" id="optHaptic"></div>
           <label class="row static"><span class="tx">اقرأ ردود المدرب بصوت<small>تلقائياً بعد كل رد، ويداك على العود</small></span><input type="checkbox" class="sw" id="optAutoSpeak"></label>
@@ -1878,7 +1879,7 @@ $("#rhyFile").addEventListener("change",async e=>{const f=e.target.files[0];e.ta
 let rhyRec=null;
 $("#rhyMic").addEventListener("click",async()=>{if(rhyRec){if(rhyRec.state==="recording")rhyRec.stop();return;}
   if(!micAvailable()||typeof MediaRecorder==="undefined"){renderDetect({error:micErrorText(null)});return;}
-  rhythmStop();aSess("play-and-record");let stream;try{stream=await navigator.mediaDevices.getUserMedia(MIC);}catch(e){aSess("playback");renderDetect({error:micErrorText(e)});return;}
+  rhythmStop();aSess("play-and-record");let stream;try{stream=await openMic();}catch(e){aSess("playback");renderDetect({error:micErrorText(e)});return;}
   const mime=pickMime();const chunks=[];const rec=mime?new MediaRecorder(stream,{mimeType:mime}):new MediaRecorder(stream);rhyRec=rec;
   rec.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data);};const t0=Date.now();Awake.on("rhyrec");Haptic.tap();$("#rhyResult").hidden=true;$("#rhyStatus").textContent="";
   const tick=setInterval(()=>{const s=Math.floor((Date.now()-t0)/1000);$("#rhyMicTxt").textContent="يستمع… "+s+" من 20 ث · اضغط للإيقاف";if(s>=20&&rec.state==="recording")rec.stop();},250);
@@ -2229,6 +2230,31 @@ function renderDevBars(R){
 
 /* ---------------- Live pitch (microphone) ---------------- */
 const MIC={audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:false}};
+/* microphone choice: the iPhone's own mic by default, even when AirPods or other headphones are connected
+   (headset mics are narrow-band phone-call quality, and using them also drops the earphones to call quality) */
+const BT_RE=/airpods|bluetooth|beats|headset|hands-?free|سماع|بلوتوث|buds|\bbt\b/i;
+const BUILTIN_RE=/iphone|ipad|built-?in|internal|front|bottom|back|مدمج|داخلي|آيفون|ايفون|أيفون|الجهاز/i;
+async function micInputs(){try{return (await navigator.mediaDevices.enumerateDevices()).filter(d=>d.kind==="audioinput");}catch(e){return [];}}
+function pickBuiltin(ins){const named=ins.filter(d=>d.label);if(!named.length)return null;
+  return named.find(d=>BUILTIN_RE.test(d.label)&&!BT_RE.test(d.label))||named.find(d=>!BT_RE.test(d.label)&&d.deviceId!=="default"&&d.deviceId!=="communications")||null;}
+async function openMic(){
+  const pref=store.get("micPref","builtin");const withId=id=>({audio:Object.assign({},MIC.audio,{deviceId:{exact:id}})});
+  if(pref!=="builtin"&&pref!=="auto"){try{const s=await navigator.mediaDevices.getUserMedia(withId(pref));noteMic(s);return s;}catch(e){}}
+  if(pref==="auto"){const s=await navigator.mediaDevices.getUserMedia(MIC);noteMic(s);return s;}
+  let ins=await micInputs(),d=pickBuiltin(ins),first=null;
+  if(!d){first=await navigator.mediaDevices.getUserMedia(MIC);ins=await micInputs();d=pickBuiltin(ins);
+    const cur=first.getAudioTracks()[0];const curId=cur&&cur.getSettings?cur.getSettings().deviceId:null;
+    if(!d||curId===d.deviceId||(cur&&!BT_RE.test(cur.label||""))){noteMic(first);return first;}
+    first.getTracks().forEach(t=>t.stop());}
+  try{const s=await navigator.mediaDevices.getUserMedia(withId(d.deviceId));noteMic(s);return s;}
+  catch(e){const s=first&&first.active?first:await navigator.mediaDevices.getUserMedia(MIC);noteMic(s);return s;}
+}
+function noteMic(s){const t=s&&s.getAudioTracks()[0];S.micLabel=t?t.label||"":"";const e=$("#micNow");if(e)e.textContent=S.micLabel?"آخر ميكروفون استُخدم: "+S.micLabel+(BT_RE.test(S.micLabel)?" (سماعة: الجودة أقل)":""):"";
+  if(t&&BT_RE.test(t.label||"")&&store.get("micPref","builtin")==="builtin")S.micWarn="الآيفون اختار ميكروفون السماعة. إن ضعفت الجودة افصل السماعة أو اختر الميكروفون من الضبط.";else S.micWarn="";}
+async function renderMicSel(){const sel=$("#micSel");if(!sel)return;const ins=await micInputs();const v=store.get("micPref","builtin");sel.innerHTML="";
+  sel.append(el("option",{value:"builtin"},"ميكروفون الآيفون دائماً"),el("option",{value:"auto"},"تلقائي حسب iOS"));
+  ins.filter(d=>d.label&&d.deviceId!=="default").forEach(d=>sel.append(el("option",{value:d.deviceId},d.label)));
+  sel.value=[...sel.options].some(o=>o.value===v)?v:"builtin";}
 const micAvailable=()=>!!(navigator.mediaDevices&&navigator.mediaDevices.getUserMedia);
 function livePitch(stream,onPitch){
   const ctx=getCtx();const src=ctx.createMediaStreamSource(stream);const an=ctx.createAnalyser();an.fftSize=4096;src.connect(an);
@@ -2698,7 +2724,7 @@ async function startRec(parentId){
   const ctx=getCtx();
   if(!micAvailable()||typeof MediaRecorder==="undefined"){$("#micNotice").hidden=false;setStatus(micErrorText(null),true);return;}
   let stream;
-  aSess("play-and-record");try{stream=await navigator.mediaDevices.getUserMedia(MIC);}
+  aSess("play-and-record");try{stream=await openMic();}
   catch(e){$("#micNotice").hidden=false;setStatus(micErrorText(e),true);return;}
   $("#micNotice").hidden=true;$("#saveRow").hidden=true;
   // reference: play the tonic first, then start recording
@@ -2719,6 +2745,7 @@ async function startRec(parentId){
     const intr=S.recInterrupted;S.recInterrupted=false;
     await handleArrayBuffer(await blob.arrayBuffer(),grid,{blob,mime:type,parentId});
     if(intr){const st=$("#recStatus");const was=st.textContent;st.className="status err";st.textContent="توقف التسجيل لأن الشاشة انطفأت أو خرجت من التطبيق، وحُلّل ما سُجّل قبلها. "+was;}};
+  if(S.micWarn)setTimeout(()=>{const n=$("#recHint");if(n)n.textContent=S.micWarn;},50);
   mediaRec.start(250);Awake.on("rec");Haptic.tap();S.recInterrupted=false;stream.getAudioTracks().forEach(t=>t.addEventListener("ended",()=>{if(mediaRec&&mediaRec.state!=="inactive"){S.recInterrupted=true;try{mediaRec.stop();}catch(e){}}}));recStart=Date.now();S.recPausedMs=0;S.recPauseAt=0;
   const pb=$("#recPause");pb.hidden=typeof mediaRec.pause!=="function";pb.textContent="إيقاف مؤقت";
   $("#recBtn").disabled=false;$("#recBtn").textContent="أوقف وحلّل";$("#recBtn").classList.add("on");$("#recBtn").setAttribute("aria-label","أوقف وحلّل");$("#recLive").hidden=false;
@@ -2752,7 +2779,7 @@ $("#tunerBtn").addEventListener("click",async()=>{
   getCtx();const st=$("#tunerStatus");
   if(!micAvailable()){st.textContent=micErrorText(null);st.className="status err";return;}
   let stream;
-  aSess("play-and-record");try{stream=await navigator.mediaDevices.getUserMedia(MIC);}catch(e){st.textContent=micErrorText(e);st.className="status err";return;}
+  aSess("play-and-record");try{stream=await openMic();}catch(e){st.textContent=micErrorText(e);st.className="status err";return;}
   let hold=0;
   const stopLive=livePitch(stream,(c,dt)=>{stageUpdate(c,dt);if(c==null){return;}
     const r=nearestDeg(c,S.maqam,target);showNeedle($("#tNote"),$("#tCents"),$("#needle"),r);
@@ -3157,7 +3184,9 @@ function openSheet(id){$("#"+id).hidden=false;document.body.style.overflow="hidd
 function closeSheet(sh){sh.hidden=true;document.body.style.overflow="";}
 document.querySelectorAll(".sheet").forEach(sh=>sh.addEventListener("click",e=>{if(e.target===sh||e.target.closest("[data-close]"))closeSheet(sh);}));
 document.addEventListener("keydown",e=>{if(e.key==="Escape")document.querySelectorAll(".sheet:not([hidden])").forEach(closeSheet);});
-$("#setBtn").addEventListener("click",()=>{Awake.sync();openSheet("setSheet");});
+$("#setBtn").addEventListener("click",()=>{Awake.sync();renderMicSel();openSheet("setSheet");});
+$("#micSel").addEventListener("change",e=>{store.set("micPref",e.target.value);});
+try{navigator.mediaDevices&&navigator.mediaDevices.addEventListener&&navigator.mediaDevices.addEventListener("devicechange",renderMicSel);}catch(e){}
 $("#profBtn").addEventListener("click",()=>openSheet("profSheet"));
 // mirrors: exercise scores into hub rows, tempo into metronome / timing pages
 document.querySelectorAll("[data-mirror]").forEach(m=>{const src=$("#"+m.dataset.mirror);if(!src)return;const tile=m.closest(".tile");const bar=tile&&tile.querySelector(".bar i");
@@ -3187,7 +3216,7 @@ const rs=$("#recMaqam");rs.append(el("option",{value:"auto"},"اكتشف الم�
 window.addEventListener("resize",()=>{if(S.lastAnalysis&&!$("#p-result").hidden&&!$('[data-rp="plot"]').hidden)drawPlot(S.lastAnalysis);});
 window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{if(S.lastAnalysis){drawPlot(S.lastAnalysis);renderDevBars(S.lastAnalysis);}});
 
-const APP_VER="2026.10.14-4";
+const APP_VER="2026.10.14-5";
 $("#verTxt").textContent="الإصدار \u2066"+APP_VER+"\u2069";
 const hardReload=()=>{location.replace(location.pathname+"?v="+Date.now()+location.hash);};
 $("#updBtn").addEventListener("click",hardReload);$("#updNow").addEventListener("click",hardReload);
