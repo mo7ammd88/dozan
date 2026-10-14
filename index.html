@@ -802,6 +802,7 @@ details.tip p{padding:0 16px 14px;font-size:15px;color:var(--muted);line-height:
     <div class="chips maqpick" role="group" aria-label="المقام"></div>
     <div class="card">
       <div class="seg full" id="sfMode"><button data-m="free" aria-pressed="true">حر</button><button data-m="up" aria-pressed="false">اصعد السلم</button><button data-m="down" aria-pressed="false">انزل السلم</button></div>
+      <div class="seg full tolSeg"><button data-tol="easy">سهلة ±25</button><button data-tol="mid">متوسطة ±15</button><button data-tol="pro">دقيقة ±8</button></div>
       <div class="sf-big"><p class="small muted" id="sfMaq"></p><div class="sf-name" id="sfName">—</div><div class="sf-acc" id="sfAcc"></div><div class="sf-ar" id="sfAr"></div></div>
       <div class="sf-dev" id="sfDev">شغّل الميكروفون وابدأ</div>
       <div class="meter"><div class="zone"></div><div class="center"></div><div class="needle" id="sfNeedle"></div></div>
@@ -812,7 +813,7 @@ details.tip p{padding:0 16px 14px;font-size:15px;color:var(--muted);line-height:
       <div class="btns" style="justify-content:center"><button class="btn primary" id="sfMic">شغّل الميكروفون</button><button class="btn" data-drone aria-pressed="false">قرار مستمر</button><button class="btn" id="sfPlay">اسمع السلم</button></div>
       <p class="status" id="sfStatus"></p>
     </div>
-    <p class="sf">الأسماء حسب دوزانك في الضبط. «نصف بيمول» يعني ربع تون أخفض من النغمة، مثل مي نصف بيمول (السيكاه). المس أي نغمة في السلم لتسمعها. مع «القرار المستمر» استخدم سماعات.</p>
+    <p class="sf">«سهلة» تقبل فرق ربع نصف تون تقريباً (±25 سنت) وتناسب العود والبداية، و«دقيقة» للتلحين الدقيق. الأسماء حسب دوزانك في الضبط. «نصف بيمول» يعني ربع تون أخفض من النغمة، مثل مي نصف بيمول (السيكاه). المس أي نغمة في السلم لتسمعها. مع «القرار المستمر» استخدم سماعات.</p>
   </section>
 
   <section class="page" id="p-tuner" data-title="مؤشر الطبقة" hidden>
@@ -825,6 +826,7 @@ details.tip p{padding:0 16px 14px;font-size:15px;color:var(--muted);line-height:
         <div class="meter"><div class="zone"></div><div class="center"></div><div class="needle" id="needle"></div></div>
         <div class="meter-scale"><span>−50</span><span>0</span><span>+50</span></div>
       </div>
+      <div class="seg full tolSeg"><button data-tol="easy">سهلة ±25</button><button data-tol="mid">متوسطة ±15</button><button data-tol="pro">دقيقة ±8</button></div>
       <div class="btns" style="justify-content:center"><button class="btn primary" id="tunerBtn">شغّل الميكروفون</button><button class="btn" id="targetBtn" disabled>أعطني هدفاً</button><button class="btn" data-drone aria-pressed="false">قرار مستمر</button></div>
       <button class="btn big" id="stageOpen">وضع العزف: شاشة كاملة تُقرأ من بعيد</button>
       <p class="status" id="tunerStatus"></p>
@@ -2304,10 +2306,36 @@ function livePitch(stream,onPitch){
   const tauMin=Math.floor(sr2/1100),tauMax=Math.ceil(sr2/65),W=Math.min(x.length-tauMax-1,Math.ceil(sr2*0.04));const d=new Float32Array(tauMax+2);
   const loop=()=>{an.getFloatTimeDomainData(buf);for(let i=0;i<x.length;i++){let s=0;for(let j=0;j<k;j++)s+=buf[i*k+j];x[i]=s/k;}
     let e=0;for(let i=0;i<W;i++)e+=x[i]*x[i];const now=performance.now(),dt=now-lastT;lastT=now;let c=null;
-    if(Math.sqrt(e/W)>0.01){const r=yinFrame(x,0,W,tauMin,tauMax,sr2,d);if(r.f>0&&r.ap<0.25)c=1200*Math.log2(r.f/C3);}
-    onPitch(c,dt);raf=requestAnimationFrame(loop);};
+    const rms=Math.sqrt(e/W);if(rms>0.006){const r=yinFrame(x,0,W,tauMin,tauMax,sr2,d);if(r.f>0&&r.ap<0.3)c=1200*Math.log2(r.f/C3);}
+    onPitch(c,dt,rms);raf=requestAnimationFrame(loop);};
   loop();
   return ()=>{cancelAnimationFrame(raf);try{src.disconnect();}catch(e){}};
+}
+/* tolerance levels for "in tune" (cents) */
+const TOLS={easy:{ok:25,near:45},mid:{ok:15,near:30},pro:{ok:8,near:20}};
+const tol=()=>TOLS[store.get("tol","easy")]||TOLS.easy;
+function applyTol(){const t=tol();document.querySelectorAll(".meter .zone,.stage-meter .z").forEach(z=>{z.style.left=(50-t.ok)+"%";z.style.width=(2*t.ok)+"%";});
+  document.querySelectorAll(".tolSeg button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.tol===store.get("tol","easy"))));}
+/* live microphone that smooths plucked notes and repairs itself when iOS drops or freezes the stream */
+async function liveMic(onPitch,onState){
+  const ctx=getCtx();let stream=null,stopLP=null,alive=true,lastFrame=performance.now(),zeroMs=0,healing=false;
+  const hist=[];let good=null,goodT=0;
+  const handle=(c,dt,rms)=>{lastFrame=performance.now();if(rms===0)zeroMs+=dt;else zeroMs=0;
+    hist.push(c);if(hist.length>9)hist.shift();const v=hist.filter(x=>x!=null);
+    if(v.length>=4){const srt=[...v].sort((a,b)=>a-b),med=srt[srt.length>>1];const cl=v.filter(x=>Math.abs(x-med)<40);
+      if(cl.length>=4){good=cl.reduce((a,b)=>a+b,0)/cl.length;goodT=lastFrame;onPitch(good,dt);return;}}
+    if(good!=null&&lastFrame-goodT<400){onPitch(good,dt);return;}
+    onPitch(null,dt);};
+  async function open(){aSess("play-and-record");stream=await openMic();stopLP=livePitch(stream,handle);lastFrame=performance.now();zeroMs=0;
+    stream.getAudioTracks().forEach(t=>{t.onended=()=>heal();t.onmute=()=>setTimeout(()=>{if(alive&&t.muted)heal();},1200);});}
+  async function heal(){if(!alive||healing)return;healing=true;onState&&onState("reconnect");
+    try{stopLP&&stopLP();}catch(e){}try{stream&&stream.getTracks().forEach(t=>t.stop());}catch(e){}
+    try{if(ctx.state!=="running")await ctx.resume();}catch(e){}
+    try{await open();onState&&onState("ok");}catch(e){onState&&onState("fail");}healing=false;}
+  const dog=setInterval(()=>{if(!alive||document.hidden)return;if(ctx.state!=="running"){try{ctx.resume();}catch(e){}}
+    if(performance.now()-lastFrame>1500||zeroMs>2500)heal();},1000);
+  try{await open();}catch(e){alive=false;clearInterval(dog);throw e;}
+  return {stop(){alive=false;clearInterval(dog);try{stopLP&&stopLP();}catch(e){}try{stream&&stream.getTracks().forEach(t=>t.stop());}catch(e){}aSess("playback");}};
 }
 function nearestDeg(c,maqamId,forced){
   if(maqamId==="auto"){const a=c-S.transpose*100;const r=Math.round(a/50)*50;return {name:noteName(r),dev:a-r,p:null,hz:C3*Math.pow(2,c/1200)};}
@@ -2321,7 +2349,7 @@ function showNeedle(noteEl,centsEl,needleEl,r){
   noteEl.textContent=r.name;const dHz=r.hz?r.hz*(1-Math.pow(2,-r.dev/1200)):null;
   centsEl.textContent="\u2066"+(r.dev>0?"+":"")+Math.round(r.dev)+"\u2069 سنت"+(dHz!=null?" · "+(Math.abs(dHz)<0.05?"مضبوط":(dHz>0?"أعلى ":"أخفض ")+Math.abs(dHz).toFixed(1)+" هرتز")+" · "+r.hz.toFixed(1)+" هرتز":"");
   needleEl.style.left=(50+Math.max(-50,Math.min(50,r.dev)))+"%";
-  needleEl.style.background=Math.abs(r.dev)<=10?cssVar("--good"):Math.abs(r.dev)<=25?cssVar("--warn"):cssVar("--ink");
+  needleEl.style.background=Math.abs(r.dev)<=tol().ok?cssVar("--good"):Math.abs(r.dev)<=tol().near?cssVar("--warn"):cssVar("--ink");
 }
 function micErrorText(e){
   const n=e&&e.name;
@@ -2819,14 +2847,14 @@ $("#tunerBtn").addEventListener("click",async()=>{
   if(tuner){tuner.stop();return;}
   getCtx();const st=$("#tunerStatus");
   if(!micAvailable()){st.textContent=micErrorText(null);st.className="status err";return;}
-  let stream;
-  aSess("play-and-record");try{stream=await openMic();}catch(e){st.textContent=micErrorText(e);st.className="status err";return;}
-  let hold=0;
-  const stopLive=livePitch(stream,(c,dt)=>{stageUpdate(c,dt);if(c==null){return;}
+  let hold=0,mic;
+  try{mic=await liveMic((c,dt)=>{stageUpdate(c,dt);if(c==null){return;}
     const r=nearestDeg(c,S.maqam,target);showNeedle($("#tNote"),$("#tCents"),$("#needle"),r);
-    if(target){if(Math.abs(r.dev)<=12){hold+=dt;if(hold>1200){$("#targetTxt").textContent="أحسنت! ثبّتَّ "+r.name+" أكثر من ثانية.";Haptic.double();target=null;hold=0;}}else hold=0;}});
+    if(target){if(Math.abs(r.dev)<=tol().ok){hold+=dt;if(hold>1000){$("#targetTxt").textContent="أحسنت! ثبّتَّ "+r.name+" ثانية كاملة.";Haptic.double();target=null;hold=0;}}else hold=Math.max(0,hold-dt);}},
+    state=>{st.className="status";st.textContent=state==="reconnect"?"انقطع الميكروفون، أعيد توصيله…":state==="fail"?"تعذّر إعادة الميكروفون. أوقفه وشغّله.":"";});}
+  catch(e){st.textContent=micErrorText(e);st.className="status err";return;}
   Awake.on("tuner");$("#tunerBtn").textContent="أوقف الميكروفون";$("#targetBtn").disabled=false;st.textContent="";st.className="status";
-  tuner={stop(){Awake.off("tuner");aSess("playback");stopLive();stream.getTracks().forEach(t=>t.stop());tuner=null;$("#tunerBtn").textContent="شغّل الميكروفون";$("#targetBtn").disabled=true;}};
+  tuner={stop(){Awake.off("tuner");mic.stop();tuner=null;$("#tunerBtn").textContent="شغّل الميكروفون";$("#targetBtn").disabled=true;}};
 });
 $("#targetBtn").addEventListener("click",()=>{const m=byId(S.maqam);const ps=pcsOf(m).filter(p=>!p.alt);target=ps[Math.random()*ps.length|0];
   $("#targetTxt").textContent="الهدف: غنِّ "+noteName(m.tonic+target.c)+" وثبّتها ثانية كاملة";const ctx=getCtx();playAbs(m.tonic,ctx.currentTime+0.02,0.8,"oud");playAbs(m.tonic+target.c,ctx.currentTime+0.9,1.4,S.timbre==="oud"?"oud":"voice");});
@@ -3152,13 +3180,13 @@ $("#stageTarget").addEventListener("click",()=>{const m=byId(S.maqam);const ps=p
 function stageUpdate(c,dt){if(!STAGE.open)return;const st=$("#stage");
   if(Voice.speaking)return;
   if(c==null){STAGE.inMs=0;st.classList.remove("in","near");return;}
-  const r=nearestDeg(c,S.maqam,STAGE.target);const dv=Math.round(r.dev),a=Math.abs(dv);
-  $("#stageNote").textContent=r.name;$("#stageDev").textContent=a<=10?"مضبوط ✓":(dv>0?"أعلى ":"أخفض ")+a+" سنت";
+  const r=nearestDeg(c,S.maqam,STAGE.target);const dv=Math.round(r.dev),a=Math.abs(dv),T=tol();
+  $("#stageNote").textContent=r.name;$("#stageDev").textContent=a<=T.ok?"مضبوط ✓":(dv>0?"أعلى ":"أخفض ")+a+" سنت";
   $("#stageNeedle").style.left=(50+Math.max(-50,Math.min(50,dv)))+"%";
-  st.classList.toggle("in",a<=10);st.classList.toggle("near",a>10&&a<=25);
-  if(a<=10){STAGE.inMs+=dt;if(STAGE.inMs>350&&STAGE.inMs-dt<=350)Haptic.tap();}else STAGE.inMs=0;
-  if(STAGE.target){if(a<=12){STAGE.hold+=dt;if(STAGE.hold>1000){STAGE.target=null;STAGE.hold=0;$("#stageTargetTxt").textContent="أحسنت! ثبّتَّ "+r.name;Haptic.double();if($("#stageSpeak").checked)Voice.say("أحسنت");}}else STAGE.hold=0;}
-  if($("#stageSpeak").checked){const state=a<=10?"ok":dv>0?"hi":"lo";const now=performance.now();
+  st.classList.toggle("in",a<=T.ok);st.classList.toggle("near",a>T.ok&&a<=T.near);
+  if(a<=T.ok){STAGE.inMs+=dt;if(STAGE.inMs>350&&STAGE.inMs-dt<=350)Haptic.tap();}else STAGE.inMs=0;
+  if(STAGE.target){if(a<=T.ok){STAGE.hold+=dt;if(STAGE.hold>1000){STAGE.target=null;STAGE.hold=0;$("#stageTargetTxt").textContent="أحسنت! ثبّتَّ "+r.name;Haptic.double();if($("#stageSpeak").checked)Voice.say("أحسنت");}}else STAGE.hold=0;}
+  if($("#stageSpeak").checked){const state=a<=T.ok?"ok":dv>0?"hi":"lo";const now=performance.now();
     if(state!==STAGE.lastState&&now-STAGE.lastSay>2500&&(state==="ok"?STAGE.inMs>400:true)){STAGE.lastState=state;STAGE.lastSay=now;Voice.say(state==="ok"?"مضبوط":state==="hi"?"انزل قليلاً":"اطلع قليلاً",{rate:1.1});}}
 }
 /* settings bindings */
@@ -3185,7 +3213,7 @@ const SF={on:false,stream:null,stop:null,mode:"free",target:0,hold:0,done:[],buf
 function sfLadder(){const m=byId(S.maqam);const tAbs=m.tonic+S.transpose*100;const tl=tonicLetter(mod(tAbs,1200));
   const st=m.steps.slice();if(st[st.length-1]<1200)st.push(1200);
   return st.map((c,j)=>{const sp=spell(tAbs+c,c>=1200?tl:(tl+j)%7);return {c,j,abs:tAbs+c,...sp,ar:noteName(m.tonic+c),octave:c>=1200};});}
-function sfRender(){const L=sfLadder();const box=$("#sfLadder");box.innerHTML="";box.style.gridTemplateColumns="repeat("+L.length+",1fr)";
+function sfRender(){const L=sfLadder();SF.L=L;const box=$("#sfLadder");box.innerHTML="";box.style.gridTemplateColumns="repeat("+L.length+",1fr)";
   L.forEach((n,k)=>{const b=el("button",{class:"sfp"+(SF.done[k]?" done":"")+(SF.mode!=="free"&&k===SF.target?" tgt":""),"data-k":String(k),onclick:()=>{const ctx=getCtx();playAbs(n.abs-S.transpose*100,ctx.currentTime+0.02,1.2,S.timbre==="voice"?"voice":"oud");}},
     el("b",{text:n.name}),el("i",{text:n.sym||" "}),el("small",{text:n.octave?"جواب":n.ar}));box.append(b);});
   $("#sfMaq").textContent="مقام "+byId(S.maqam).name;
@@ -3195,22 +3223,22 @@ function sfSetMode(md){SF.mode=md;SF.done=[];SF.stats=[];SF.hold=0;const L=sfLad
 function sfFrame(c,dt){
   const ladder=$("#sfLadder");
   if(c==null){SF.buf=[];SF.hold=0;$("#sfDev").className="sf-dev";ladder.querySelectorAll(".sfp.on").forEach(e=>e.classList.remove("on","ok","near","off"));return;}
-  SF.buf.push(c);if(SF.buf.length>5)SF.buf.shift();const cm=[...SF.buf].sort((a,b)=>a-b)[SF.buf.length>>1];
+  const cm=c;
   const m=byId(S.maqam);const tAbs=m.tonic+S.transpose*100;const r=nearestDeg(cm,S.maqam);if(!r.p)return;
-  const L=sfLadder();const rel=cm-tAbs;const oct=Math.round((rel-r.p.c)/1200);const cents=r.p.c+1200*oct;
+  const L=SF.L||sfLadder();const rel=cm-tAbs;const oct=Math.round((rel-r.p.c)/1200);const cents=r.p.c+1200*oct;
   let k=L.findIndex(n=>Math.abs(n.c-cents)<1);
   const tl=tonicLetter(mod(tAbs,1200));const sp=spell(tAbs+r.p.c,(tl+r.p.i)%7);
   const reg=k>=0?(L[k].octave?"جواب":""):(oct<0?"قرار":oct>0?"جواب":"");
   $("#sfName").textContent=sp.name;$("#sfAcc").textContent=(sp.acc?sp.acc:"")+(reg?(sp.acc?" · ":"")+reg:"");{const nm=noteName(m.tonic+cents);$("#sfAr").textContent=(nm&&nm!=="—"?nm:r.name)+(r.p.alt?" (في النزول)":"");}
-  const dv=Math.round(r.dev),a=Math.abs(dv);const state=a<=10?"ok":a<=25?"near":"off";
-  $("#sfDev").textContent=a<=10?"مضبوطة ✓":(dv>0?"بعدها، أعلى ":"قبلها، أخفض ")+a+" سنت";$("#sfDev").className="sf-dev "+state;
+  const dv=Math.round(r.dev),a=Math.abs(dv),T=tol();const state=a<=T.ok?"ok":a<=T.near?"near":"off";
+  $("#sfDev").textContent=a<=T.ok?"مضبوطة ✓":(dv>0?"بعدها، أعلى ":"قبلها، أخفض ")+a+" سنت";$("#sfDev").className="sf-dev "+state;
   $("#sfNeedle").style.left=(50+Math.max(-50,Math.min(50,dv)))+"%";
   ladder.querySelectorAll(".sfp").forEach(e=>{const on=+e.dataset.k===k;e.classList.toggle("on",on);e.classList.toggle("ok",on&&state==="ok");e.classList.toggle("near",on&&state==="near");e.classList.toggle("off",on&&state==="off");});
   if(SF.mode!=="free"&&SF.target>=0&&SF.target<L.length){
     if(!SF.t0)SF.t0=performance.now();
-    if(k===SF.target){if(a<=15){SF.hold+=dt;(SF.stats[k]=SF.stats[k]||[]).push(dv);}else SF.hold=Math.max(0,SF.hold-dt);}else SF.hold=Math.max(0,SF.hold-dt*2);
-    const fill=Math.min(1,SF.hold/700);const tp=ladder.querySelector('.sfp[data-k="'+SF.target+'"]');if(tp)tp.style.setProperty("--fill",Math.round(fill*100)+"%");
-    if(SF.hold>=700){SF.done[SF.target]=true;SF.hold=0;Haptic.tap();SF.target+=SF.mode==="down"?-1:1;
+    if(k===SF.target){if(a<=T.ok){SF.hold+=dt;(SF.stats[k]=SF.stats[k]||[]).push(dv);}else SF.hold=Math.max(0,SF.hold-dt);}else SF.hold=Math.max(0,SF.hold-dt*2);
+    const fill=Math.min(1,SF.hold/500);const tp=ladder.querySelector('.sfp[data-k="'+SF.target+'"]');if(tp)tp.style.setProperty("--fill",Math.round(fill*100)+"%");
+    if(SF.hold>=500){SF.done[SF.target]=true;SF.hold=0;Haptic.tap();SF.target+=SF.mode==="down"?-1:1;
       if(SF.target<0||SF.target>=L.length){const secs=((performance.now()-SF.t0)/1000).toFixed(1);const avg=SF.stats.filter(Boolean).map(x=>x.reduce((p,q)=>p+q,0)/x.length);
         const worst=avg.map((v,i)=>[i,v]).filter(x=>x[1]!=null).sort((p,q)=>Math.abs(q[1])-Math.abs(p[1]))[0];
         $("#sfResult").textContent="أتممت السلم في "+secs+" ث."+(worst&&Math.abs(worst[1])>=6?" أبعد درجة عن الضبط: "+L[worst[0]].name+(L[worst[0]].acc?" "+L[worst[0]].acc:"")+" ("+(worst[1]>0?"أعلى":"أخفض")+" "+Math.abs(Math.round(worst[1]))+" سنت في المتوسط).":" كل الدرجات مضبوطة.");
@@ -3220,11 +3248,13 @@ function sfFrame(c,dt){
 }
 async function sfStart(){if(SF.on){sfStop();return;}const st=$("#sfStatus");
   if(!micAvailable()){st.textContent=micErrorText(null);st.className="status err";return;}getCtx();
-  aSess("play-and-record");let stream;try{stream=await openMic();}catch(e){aSess("playback");st.textContent=micErrorText(e);st.className="status err";return;}
-  SF.on=true;SF.stream=stream;SF.buf=[];SF.stop=livePitch(stream,sfFrame);Awake.on("solfa");$("#sfMic").textContent="أوقف الميكروفون";st.textContent=S.micLabel?"الميكروفون: "+S.micLabel:"";st.className="status";
+  let mic;try{mic=await liveMic(sfFrame,state=>{st.className="status";st.textContent=state==="reconnect"?"انقطع الميكروفون، أعيد توصيله…":state==="fail"?"تعذّر إعادة الميكروفون. أوقفه وشغّله.":(S.micLabel?"الميكروفون: "+S.micLabel:"");});}
+  catch(e){st.textContent=micErrorText(e);st.className="status err";return;}
+  SF.on=true;SF.mic=mic;Awake.on("solfa");$("#sfMic").textContent="أوقف الميكروفون";st.textContent=S.micLabel?"الميكروفون: "+S.micLabel:"";st.className="status";
   if(SF.mode!=="free"&&SF.target<0)sfSetMode(SF.mode);}
-function sfStop(){if(!SF.on)return;SF.on=false;try{SF.stop&&SF.stop();}catch(e){}try{SF.stream.getTracks().forEach(t=>t.stop());}catch(e){}aSess("playback");Awake.off("solfa");$("#sfMic").textContent="شغّل الميكروفون";$("#sfDev").textContent="شغّل الميكروفون وابدأ";$("#sfDev").className="sf-dev";}
+function sfStop(){if(!SF.on)return;SF.on=false;try{SF.mic&&SF.mic.stop();}catch(e){}Awake.off("solfa");$("#sfMic").textContent="شغّل الميكروفون";$("#sfDev").textContent="شغّل الميكروفون وابدأ";$("#sfDev").className="sf-dev";}
 $("#sfMic").addEventListener("click",sfStart);
+document.querySelectorAll(".tolSeg button").forEach(b=>b.addEventListener("click",()=>{store.set("tol",b.dataset.tol);applyTol();}));applyTol();
 document.querySelectorAll("#sfMode button").forEach(b=>b.addEventListener("click",()=>sfSetMode(b.dataset.m)));
 $("#sfPlay").addEventListener("click",()=>{if(SF.on){$("#sfStatus").textContent="أوقف الميكروفون أولاً حتى لا يسمع صوت التطبيق.";return;}const L=sfLadder();const ctx=getCtx();let t=ctx.currentTime+0.05;L.forEach((n,k)=>{playAbs(n.abs-S.transpose*100,t,0.55,"oud");RHY.vis.push(setTimeout(()=>{document.querySelectorAll("#sfLadder .sfp").forEach(e=>e.classList.toggle("on",+e.dataset.k===k));$("#sfName").textContent=n.name;$("#sfAcc").textContent=n.acc+(n.octave?(n.acc?" · ":"")+"جواب":"");$("#sfAr").textContent=n.ar;},(t-ctx.currentTime)*1000));t+=0.6;});});
 
@@ -3310,7 +3340,7 @@ const rs=$("#recMaqam");rs.append(el("option",{value:"auto"},"اكتشف الم�
 window.addEventListener("resize",()=>{if(S.lastAnalysis&&!$("#p-result").hidden&&!$('[data-rp="plot"]').hidden)drawPlot(S.lastAnalysis);});
 window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{if(S.lastAnalysis){drawPlot(S.lastAnalysis);renderDevBars(S.lastAnalysis);}});
 
-const APP_VER="2026.10.14-6";
+const APP_VER="2026.10.14-7";
 $("#verTxt").textContent="الإصدار \u2066"+APP_VER+"\u2069";
 const hardReload=()=>{location.replace(location.pathname+"?v="+Date.now()+location.hash);};
 $("#updBtn").addEventListener("click",hardReload);$("#updNow").addEventListener("click",hardReload);
@@ -3319,7 +3349,7 @@ renderTr();renderA4();renderChips();renderMaqam();renderIqaChips();renderIqa();r
 renderExample().then(prev=>{if(prev){$("#recMaqam").value="auto";syncRecMaqam();}}).catch(()=>{});
 setLearn(store.get("learnPane","maqam"));navRender();
 initSample();
-window.__dozan={sfFrame,sfLadder,sfSetMode,SF,detectRhythm,IQAAT,rhythmOnsets,rhythmTatums,quantizeOns,rhythmCycle,matchLibrary,CAL,go,push,navBack,switchTab,setResPane,stageUpdate,stageOpen,stageClose,resultSpeech,Voice,Haptic,setA4,getC3:()=>C3,SONGS:()=>SONGS,openSong,compareWithOriginal,trainSong,runAnalysis,loadLib,playVoice,LIBCACHE:()=>LIBCACHE,openRec,analyze,MAQAMAT,S,phraseEvents,playOud,makeBus,C3,RHY,TM,IQAAT,onTap,drumHit,getCtx};
+window.__dozan={liveMic,tol,sfFrame,sfLadder,sfSetMode,SF,detectRhythm,IQAAT,rhythmOnsets,rhythmTatums,quantizeOns,rhythmCycle,matchLibrary,CAL,go,push,navBack,switchTab,setResPane,stageUpdate,stageOpen,stageClose,resultSpeech,Voice,Haptic,setA4,getC3:()=>C3,SONGS:()=>SONGS,openSong,compareWithOriginal,trainSong,runAnalysis,loadLib,playVoice,LIBCACHE:()=>LIBCACHE,openRec,analyze,MAQAMAT,S,phraseEvents,playOud,makeBus,C3,RHY,TM,IQAAT,onTap,drumHit,getCtx};
 })();
 </script>
 
