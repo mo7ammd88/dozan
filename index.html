@@ -632,6 +632,7 @@ details.tip p{padding:0 16px 14px;font-size:15px;color:var(--muted);line-height:
           <p class="feel" id="iqaDesc"></p>
           <div class="legend"><span><i class="dum"></i>دُم: وسط الطبلة</span><span><i class="tak"></i>تَك: الحافة</span><span><i class="ka"></i>زخرفة</span></div>
           <div class="list" style="background:var(--surface-2)">
+            <div class="row static"><span class="tx">صوت الطبلة</span><div class="seg" id="drumSnd"><button data-s="darbuka">دربكة</button><button data-s="classic">الصوت السابق</button></div></div>
             <label class="row static"><span class="tx">زخرفة</span><input type="checkbox" class="sw" id="iqaOrn"></label>
             <label class="row static"><span class="tx">نقرة المترونوم معه</span><input type="checkbox" class="sw" id="iqaClick"></label>
           </div>
@@ -1383,30 +1384,31 @@ function bqf(type,f,Q,sr){const w=2*Math.PI*f/sr,cs=Math.cos(w),sn=Math.sin(w),a
   if(type==="lp"){b0=(1-cs)/2;b1=1-cs;b2=(1-cs)/2;}else if(type==="hp"){b0=(1+cs)/2;b1=-(1+cs);b2=(1+cs)/2;}else{b0=al;b1=0;b2=-al;}
   const a0=1+al,a1=-2*cs,a2=1-al;let x1=0,x2=0,y1=0,y2=0;return x=>{const y=(b0*x+b1*x1+b2*x2-a1*y1-a2*y2)/a0;x2=x1;x1=x;y2=y1;y1=y;return y;};}
 function makeDrumData(kind,seed,sr){
-  let rs=seed*7919%233280;const rnd=()=>{rs=(rs*9301+49297)%233280;return rs/233280;};const jit=v=>v*(1+(rnd()-0.5)*0.04);
-  const dur=kind==="D"?1.0:0.5,n=Math.floor(sr*dur),out=new Float32Array(n);
-  const mode=(f,a,d,glide)=>{let p=rnd()*6.283;for(let i=0;i<n;i++){const t=i/sr;const ff=f*(1+(glide||0)*Math.exp(-t/0.03));p+=6.283185*ff/sr;out[i]+=a*Math.sin(p)*Math.exp(-t/d);}};
-  if(kind==="D"){const f0=jit(90);
-    [[1,1,0.36],[1.59,0.34,0.17],[2.14,0.2,0.12],[2.3,0.18,0.1],[2.65,0.1,0.08],[2.92,0.07,0.065],[3.5,0.04,0.05]].forEach(([r,a,d])=>mode(f0*r,a,d,0.08));
-    const lp=bqf("lp",1100,0.7,sr),bp=bqf("bp",330,1.4,sr);for(let i=0;i<Math.floor(sr*0.045);i++){const t=i/sr;const x=(rnd()*2-1)*Math.exp(-t/0.007);out[i]+=0.3*lp(x)+0.55*bp(x);}
-    for(let i=0;i<n;i++)out[i]=Math.tanh(out[i]*1.35);
-  }else{const k=kind==="K";const f0=jit(k?410:450);
-    [[1,0.16,0.07],[1.59,0.3,0.055],[2.14,0.27,0.048],[2.65,0.22,0.04],[3.5,0.15,0.032],[5.2,0.09,0.026]].forEach(([r,a,d])=>mode(f0*r,a*(k?0.8:1),d*(k?0.75:1)));
-    mode(jit(92),k?0.04:0.07,0.06);
-    const hp=bqf("hp",k?1700:2300,0.7,sr),bp=bqf("bp",k?3600:5000,0.9,sr);
-    for(let i=0;i<Math.floor(sr*0.05);i++){const t=i/sr;const x=(rnd()*2-1)*Math.exp(-t/(k?0.006:0.0045));out[i]+=(k?0.45:0.9)*hp(x)+(k?0.25:0.55)*bp(x);}
-    if(!k){mode(jit(2950),0.028,0.22);mode(jit(4420),0.018,0.17);}
+  let rs=seed*7919%233280;const rnd=()=>{rs=(rs*9301+49297)%233280;return rs/233280;};const jit=v=>v*(1+(rnd()-0.5)*0.03);
+  const dur=kind==="D"?0.5:0.25,n=Math.floor(sr*dur),out=new Float32Array(n);
+  const mode=(f,a,d,glide)=>{let p=rnd()*6.283;for(let i=0;i<n;i++){const t=i/sr;const ff=f*(1+(glide||0)*Math.exp(-t/0.02));p+=6.283185*ff/sr;out[i]+=a*Math.sin(p)*Math.exp(-t/d);}};
+  const burst=(type,f,Q,a,d,len)=>{const flt=bqf(type,f,Q,sr);const m=Math.floor(sr*len);for(let i=0;i<m&&i<n;i++){const t=i/sr;out[i]+=a*flt((rnd()*2-1)*Math.exp(-t/d));}};
+  if(kind==="D"){ // deep, short boom: fundamental with a small pitch drop, a few membrane modes, a soft skin attack
+    const f0=jit(82);mode(f0,1,0.13,0.12);mode(f0*1.59,0.32,0.07,0.08);mode(f0*2.14,0.16,0.05);mode(f0*2.65,0.08,0.04);
+    burst("bp",260,1.1,0.55,0.012,0.05);burst("bp",1400,0.8,0.12,0.004,0.02);
+  }else if(kind==="T"){ // dry, bright rim crack with a brief membrane ring
+    burst("hp",2600,0.7,1.0,0.0035,0.03);burst("bp",5200,1.2,0.5,0.003,0.025);
+    const f1=jit(620);mode(f1,0.22,0.025);mode(f1*1.59,0.26,0.02);mode(f1*2.14,0.2,0.017);mode(f1*2.65,0.14,0.014);
+    mode(jit(3100),0.035,0.05);
+  }else{ // ka: softer, duller tek from the other hand
+    burst("hp",1900,0.7,0.7,0.003,0.025);burst("bp",3800,1.1,0.35,0.0025,0.02);
+    const f1=jit(560);mode(f1*1.59,0.16,0.015);mode(f1*2.14,0.12,0.012);
   }
-  let pk=0;const ramp=Math.floor(sr*0.0008),fo=Math.floor(n*0.35);for(let i=0;i<n;i++){if(i<ramp)out[i]*=i/ramp;if(i>n-fo){const x=(n-i)/fo;out[i]*=x*x;}const a=Math.abs(out[i]);if(a>pk)pk=a;}
-  const g=(kind==="D"?0.95:kind==="T"?0.8:0.48)/(pk||1);for(let i=0;i<n;i++)out[i]*=g;return out;}
+  let pk=0;const ramp=Math.floor(sr*0.0006),fo=Math.floor(n*0.3);for(let i=0;i<n;i++){if(i<ramp)out[i]*=i/ramp;if(i>n-fo){const x=(n-i)/fo;out[i]*=x*x;}const a=Math.abs(out[i]);if(a>pk)pk=a;}
+  const g=(kind==="D"?0.8:kind==="T"?0.62:0.36)/(pk||1);for(let i=0;i<n;i++)out[i]*=g;return out;}
 function drumBufs(ctx){if(DRUM.bufs)return DRUM.bufs;const sr=44100;
   const mk=(k,s)=>{const d=makeDrumData(k,s,sr);const b=ctx.createBuffer(1,d.length,sr);b.getChannelData(0).set(d);return b;};
   DRUM.bufs={D:[1,2,3].map(s=>mk("D",s)),T:[4,5,6].map(s=>mk("T",s)),K:[7,8,9].map(s=>mk("K",s))};return DRUM.bufs;}
 function drumHit(ctx,dest,type,t,vel){
   vel=vel==null?1:vel;
-  if(type==="D"||type==="T"||type==="K"){const bs=drumBufs(ctx)[type];const src=ctx.createBufferSource();src.buffer=bs[Math.random()*bs.length|0];src.playbackRate.value=1+(Math.random()-0.5)*0.012;
+  if((type==="D"||type==="T"||type==="K")&&store.get("drumSound","darbuka")!=="classic"){const bs=drumBufs(ctx)[type];const src=ctx.createBufferSource();src.buffer=bs[Math.random()*bs.length|0];src.playbackRate.value=1+(Math.random()-0.5)*0.012;
     const g=ctx.createGain();g.gain.value=vel*(0.94+Math.random()*0.06);src.connect(g);g.connect(dest);src.start(t);return;}
-  if(type==="D_old"){
+  if(type==="D"){
     const o=ctx.createOscillator();o.type="sine";o.frequency.setValueAtTime(130,t);o.frequency.exponentialRampToValueAtTime(58,t+0.18);
     const g=ctx.createGain();g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(0.95*vel,t+0.004);g.gain.exponentialRampToValueAtTime(0.0001,t+0.5);
     o.connect(g);g.connect(dest);o.start(t);o.stop(t+0.52);
@@ -1504,6 +1506,10 @@ function renderIqaChips(){if(!S.iqaCat){const cur=iqaById(S.iqa);S.iqaCat=cur?(c
   const c=$("#iqaChips");c.innerHTML="";allIqaat().filter(q=>S.iqaCat==="my"?q.custom:(q.cat||"c")===S.iqaCat).forEach(q=>c.append(el("button",{class:"chip","aria-pressed":String(q.id===S.iqa),onclick:()=>selectIqa(q.id)},(q.custom?"★ ":"")+q.name)));
   document.querySelectorAll(".iqaPick").forEach(sel=>{sel.innerHTML="";allIqaat().forEach(q=>sel.append(el("option",{value:q.id},(q.custom?"★ ":"")+q.name)));sel.value=S.iqa;});}
 document.querySelectorAll(".iqaPick").forEach(sel=>sel.addEventListener("change",()=>selectIqa(sel.value)));
+function renderDrumSnd(){const v=store.get("drumSound","darbuka");document.querySelectorAll("#drumSnd button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.s===v)));}
+document.querySelectorAll("#drumSnd button").forEach(b=>b.addEventListener("click",()=>{store.set("drumSound",b.dataset.s);renderDrumSnd();if(RHY.on&&RHY.kind==="iqa")playIqa();else{const ctx=getCtx();const t=ctx.currentTime+0.05;drumHit(ctx,bus.drumIn,"D",t,1);drumHit(ctx,bus.drumIn,"T",t+0.3,0.86);drumHit(ctx,bus.drumIn,"T",t+0.6,0.86);}}));
+renderDrumSnd();
+setTimeout(()=>{try{const OAC=window.OfflineAudioContext||window.webkitOfflineAudioContext;drumBufs(new OAC(1,1,44100));}catch(e){}},1200);
 function selectIqa(id){const was=RHY.kind==="iqa";S.iqa=id;{const qq=iqaById(id);if(qq)S.iqaCat=qq.custom?"my":qq.cat||"c";}store.set("iqa",id);S.bpm=store.get("bpm."+id,iqaById(id).bpm);renderIqaChips();renderIqa();const dl=$("#edDelete");if(dl)dl.hidden=!iqaById(id).custom;if(was)playIqa();}
 function renderIqa(){
   const q=iqaById(S.iqa);$("#iqaName").textContent=q.name;
@@ -3174,7 +3180,7 @@ const rs=$("#recMaqam");rs.append(el("option",{value:"auto"},"اكتشف الم�
 window.addEventListener("resize",()=>{if(S.lastAnalysis&&!$("#p-result").hidden&&!$('[data-rp="plot"]').hidden)drawPlot(S.lastAnalysis);});
 window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{if(S.lastAnalysis){drawPlot(S.lastAnalysis);renderDevBars(S.lastAnalysis);}});
 
-const APP_VER="2026.10.14-1";
+const APP_VER="2026.10.14-2";
 $("#verTxt").textContent="الإصدار \u2066"+APP_VER+"\u2069";
 const hardReload=()=>{location.replace(location.pathname+"?v="+Date.now()+location.hash);};
 $("#updBtn").addEventListener("click",hardReload);$("#updNow").addEventListener("click",hardReload);
