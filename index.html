@@ -1215,6 +1215,9 @@ function makeBus(ctx,dest){
   oudIn.connect(p1);p1.connect(p2);p2.connect(lp);lp.connect(master);
   const voiceIn=ctx.createGain();voiceIn.gain.value=1;voiceIn.connect(master);
   const drumIn=ctx.createGain();drumIn.gain.value=1;drumIn.connect(master);
+  // a small room around the drum: short, dark reverb tail
+  try{const sr=ctx.sampleRate,n=Math.floor(sr*0.45),ir=ctx.createBuffer(2,n,sr);for(let c=0;c<2;c++){const d=ir.getChannelData(c);let lp=0;for(let i=0;i<n;i++){lp=lp*0.6+(Math.random()*2-1)*0.4;d[i]=lp*Math.exp(-i/(sr*0.11))*(i<sr*0.004?i/(sr*0.004):1);}}
+    const conv=ctx.createConvolver();conv.buffer=ir;const wet=ctx.createGain();wet.gain.value=0.22;drumIn.connect(conv);conv.connect(wet);wet.connect(master);}catch(e){}
   return {master,oudIn,voiceIn,drumIn,live:new Set()};
 }
 const oudCache=new Map();
@@ -1389,15 +1392,15 @@ function makeDrumData(kind,seed,sr){
   const mode=(f,a,d,glide)=>{let p=rnd()*6.283;for(let i=0;i<n;i++){const t=i/sr;const ff=f*(1+(glide||0)*Math.exp(-t/0.02));p+=6.283185*ff/sr;out[i]+=a*Math.sin(p)*Math.exp(-t/d);}};
   const burst=(type,f,Q,a,d,len)=>{const flt=bqf(type,f,Q,sr);const m=Math.floor(sr*len);for(let i=0;i<m&&i<n;i++){const t=i/sr;out[i]+=a*flt((rnd()*2-1)*Math.exp(-t/d));}};
   if(kind==="D"){ // deep, short boom: fundamental with a small pitch drop, a few membrane modes, a soft skin attack
-    const f0=jit(82);mode(f0,1,0.13,0.12);mode(f0*1.59,0.32,0.07,0.08);mode(f0*2.14,0.16,0.05);mode(f0*2.65,0.08,0.04);
-    burst("bp",260,1.1,0.55,0.012,0.05);burst("bp",1400,0.8,0.12,0.004,0.02);
+    const f0=jit(72);mode(f0,0.3,0.24,0.12);mode(f0,0.6,0.035,0.15);mode(f0*1.59,0.28,0.05,0.08);mode(f0*2.14,0.13,0.035);mode(f0*2.65,0.07,0.03);
+    burst("bp",240,1.0,0.7,0.012,0.05);burst("lp",3200,0.7,0.55,0.004,0.025);burst("bp",1200,0.9,0.18,0.006,0.03);
   }else if(kind==="T"){ // dry, bright rim crack with a brief membrane ring
     burst("hp",2600,0.7,1.0,0.0035,0.03);burst("bp",5200,1.2,0.5,0.003,0.025);
-    const f1=jit(620);mode(f1,0.22,0.025);mode(f1*1.59,0.26,0.02);mode(f1*2.14,0.2,0.017);mode(f1*2.65,0.14,0.014);
-    mode(jit(3100),0.035,0.05);
+    [[600,0.2,0.04],[880,0.24,0.035],[1270,0.22,0.032],[1545,0.18,0.03],[2360,0.12,0.03],[2700,0.1,0.028],[3500,0.07,0.025]].forEach(([f,a,d])=>mode(jit(f),a,d));
+    mode(jit(160),0.08,0.05);
   }else{ // ka: softer, duller tek from the other hand
     burst("hp",1900,0.7,0.7,0.003,0.025);burst("bp",3800,1.1,0.35,0.0025,0.02);
-    const f1=jit(560);mode(f1*1.59,0.16,0.015);mode(f1*2.14,0.12,0.012);
+    [[880,0.14,0.022],[1270,0.12,0.02],[1545,0.1,0.018],[2360,0.06,0.016]].forEach(([f,a,d])=>mode(jit(f),a,d));
   }
   let pk=0;const ramp=Math.floor(sr*0.0006),fo=Math.floor(n*0.3);for(let i=0;i<n;i++){if(i<ramp)out[i]*=i/ramp;if(i>n-fo){const x=(n-i)/fo;out[i]*=x*x;}const a=Math.abs(out[i]);if(a>pk)pk=a;}
   const g=(kind==="D"?0.8:kind==="T"?0.62:0.36)/(pk||1);for(let i=0;i<n;i++)out[i]*=g;return out;}
@@ -1439,8 +1442,8 @@ const IQAAT=[
  {id:"zaffa",cat:"c",name:"زفة",sig:"4/4",steps:"DT.TDTT.",spb:2,bpm:104,unit:"ربع",desc:"إيقاع مواكب الأفراح.",use:"الزفات والأفراح."},
  {id:"dabke",cat:"c",name:"دبكة (نوري)",sig:"4/4",steps:".D.TD.T.",spb:2,bpm:112,unit:"ربع",desc:"إيقاع الدبكة الشامية، يبدأ بسكتة قبل الدُم.",use:"الدبكة والأغنية الشعبية الشامية."},
  {id:"karachi",cat:"c",name:"كراتشي",sig:"2/4",steps:"T.TD",spb:2,bpm:100,unit:"ربع",desc:"إيقاع قصير يبدأ بتَك.",use:"الأغاني الخفيفة."},
- {id:"khaleeji",cat:"g",name:"خليجي",sig:"2/4",steps:"D..D..T.",spb:4,bpm:100,unit:"ربع",region:"الخليج",desc:"الإيقاع الخليجي الأساسي ويسمى «سعودي»: دُم، دُم، تَك بتقسيم 3+3+2 داخل نبضتين. تُعزف حوله زخارف «كا» خفيفة.",use:"الأغنية الخليجية والسعودية بأنواعها."},
- {id:"adani",cat:"g",name:"عدني",sig:"4/4",steps:"D.....T.D.D.....",spb:4,bpm:92,unit:"ربع",region:"اليمن والخليج",desc:"إيقاع منسوب إلى عدن، شائع في الغناء اليمني والخليجي.",use:"الأغاني العدنية والخليجية الراقصة."},
+ {id:"khaleeji",cat:"g",name:"خليجي",sig:"2/4",steps:"DKKDKKTK",spb:4,bpm:70,unit:"ربع",region:"الخليج",desc:"الإيقاع الخليجي ويسمى «سعودي»: دُم، دُم، تَك بتقسيم 3+3+2 داخل نبضتين، وتملأ ضربات «كا» الخفيفة ما بينها كما يعزفه عازفو الدربكة.",use:"الأغنية الخليجية والسعودية بأنواعها."},
+ {id:"khaleejib",cat:"g",name:"خليجي أساسي",sig:"2/4",steps:"D..D..T.",spb:4,bpm:70,unit:"ربع",region:"الخليج",desc:"هيكل الخليجي بلا زخارف: دُم، دُم، تَك. مفيد للتعلم أول مرة.",use:"تعلّم الإيقاع الخليجي."},
  {id:"jurjina",cat:"g",name:"جورجينا",sig:"10/8",steps:"D.TT.D.T..",spb:1,groups:[3,2,2,3],bpm:200,unit:"ثُمن",region:"العراق",desc:"إيقاع عراقي من عشر وحدات بتقسيم 3+2+2+3.",use:"الأغنية العراقية والمقام العراقي."},
  {id:"chobi",cat:"g",name:"جوبي",sig:"4/4",steps:"DD.DT.T.",spb:2,bpm:100,unit:"ربع",region:"العراق",desc:"إيقاع رقصة الجوبي العراقية الجماعية.",use:"الأغنية العراقية الشعبية."},
  {id:"masmoudi",cat:"t",name:"مصمودي كبير",sig:"8/4",steps:"DD.TD.TT",spb:1,bpm:84,unit:"ربع",desc:"إيقاع ثقيل طويل الدورة (ثماني نبضات).",use:"الموشحات والقطع الآلية والأداء البطيء."},
@@ -1469,6 +1472,7 @@ const IQA_CATS=[["c","شائعة"],["g","خليجية وعراقية"],["t","ط�
 let CUSTOM=store.get("customIqa",[]).filter(q=>q&&q.id&&/^[DTK.]+$/.test(q.steps||"")).map(q=>Object.assign(q,{custom:true}));
 const allIqaat=()=>IQAAT.concat(CUSTOM);
 const iqaById=id=>allIqaat().find(q=>q.id===id);
+if(!store.get("mig.kh2",false)){try{localStorage.removeItem("dozan.bpm.khaleeji");}catch(e){}store.set("mig.kh2",true);}
 S.iqa=store.get("iqa","maqsum");if(!iqaById(S.iqa))S.iqa="maqsum";
 S.bpm=store.get("bpm."+S.iqa,iqaById(S.iqa).bpm);
 const SYL={D:"دُم",T:"تَك",K:"كَ",".":"·"};
@@ -1804,8 +1808,11 @@ function rhythmCycle(q){
 }
 const STROKE_W={D:1,T:0.8,K:0.3,".":0};
 function patSim(a,b){let s=0,w=0;for(let i=0;i<a.length;i++){const x=a[i],y=b[i];if(x===y){s+=STROKE_W[x];w+=STROKE_W[x];continue;}
-    if(x==="K"&&y==="."){continue;} // ornaments around the skeleton are fine
-    const m=Math.max(STROKE_W[x],STROKE_W[y]);w+=m;if((x==="T"&&y==="K")||(x==="K"&&y==="T"))s+=0.3;else if(x==="."||y===".")s-=0.5*m;else s-=0.2*m;}
+    if(x==="K"&&y==="."||x==="."&&y==="K"){continue;} // light ka fills are optional on both sides
+    const m=Math.max(STROKE_W[x],STROKE_W[y]);
+    if(y==="."){w+=0.5*m;s-=0.2*m;}            // the player added a stroke: a fill, mild cost
+    else if(x==="."){w+=m;s-=0.6*m;}           // a skeleton stroke of the rhythm is missing: strong cost
+    else{w+=m;if((x==="T"&&y==="K")||(x==="K"&&y==="T"))s+=0.3*m;else s-=0.2*m;}}
   return w?s/w:0;}
 const expandPat=(p,f)=>[...p].map(c=>c+".".repeat(f-1)).join("");
 const rotPat=(p,r)=>p.slice(r)+p.slice(0,r);
@@ -3180,7 +3187,7 @@ const rs=$("#recMaqam");rs.append(el("option",{value:"auto"},"اكتشف الم�
 window.addEventListener("resize",()=>{if(S.lastAnalysis&&!$("#p-result").hidden&&!$('[data-rp="plot"]').hidden)drawPlot(S.lastAnalysis);});
 window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{if(S.lastAnalysis){drawPlot(S.lastAnalysis);renderDevBars(S.lastAnalysis);}});
 
-const APP_VER="2026.10.14-2";
+const APP_VER="2026.10.14-3";
 $("#verTxt").textContent="الإصدار \u2066"+APP_VER+"\u2069";
 const hardReload=()=>{location.replace(location.pathname+"?v="+Date.now()+location.hash);};
 $("#updBtn").addEventListener("click",hardReload);$("#updNow").addEventListener("click",hardReload);
