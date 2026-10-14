@@ -614,6 +614,7 @@ details.tip p{padding:0 16px 14px;font-size:15px;color:var(--muted);line-height:
   <!-- ===== TAB: RHYTHM ===== -->
   <section class="view" id="t-rhythm" data-title="الإيقاع" hidden>
     <h1 class="lt">الإيقاع</h1>
+    <div class="chips alt" id="iqaCat" role="tablist" style="flex-wrap:nowrap"></div>
     <div class="chips" id="iqaChips" role="group" aria-label="الإيقاعات"></div>
     <div class="card hero" id="v-rhythm">
       <div style="display:grid;gap:2px"><div class="maqam-name" id="iqaName">مقسوم</div><p class="muted small" id="iqaSub"></p></div>
@@ -636,13 +637,14 @@ details.tip p{padding:0 16px 14px;font-size:15px;color:var(--muted);line-height:
           </div>
           <button class="btn" id="tapTempo">انقر هنا بالسرعة التي تريدها</button>
           <p class="small muted" id="iqaUse"></p>
+          <p class="small muted">أنماط الإيقاعات مطابقة لمرجع playdarbuka.com، والخليجي «سعودي» بتقسيم 3+3+2.</p>
         </div>
       </details>
     </div>
     <div class="tiles">
       <button class="tile k-time" data-push="metro"><span class="tg"><svg viewBox="0 0 24 24"><path d="M8 21h8l-3-17h-2zM12 14l5-6"/></svg></span><span class="tt">المترونوم</span><span class="ts" data-def="موازين وتقسيمات">موازين وتقسيمات</span><span class="bar"><i></i></span></button>
       <button class="tile k-time" data-push="timing"><span class="tg"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></svg></span><span class="tt">التدريب على الزمن</span><span class="ts" data-def="دقتك بالملّي ثانية">دقتك بالملّي ثانية</span><span class="bar"><i></i></span></button>
-      <button class="tile k-voice" data-push="editor"><span class="tg"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span><span class="tt">أضف إيقاعاً</span><span class="ts" data-def="سامري، خبيتي، دوسري…">سامري، خبيتي، دوسري…</span><span class="bar"><i></i></span></button>
+      <button class="tile k-voice" data-push="editor"><span class="tg"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg></span><span class="tt">اكتشف إيقاعاً</span><span class="ts" data-def="من الميكروفون أو تسجيل، تلقائياً">من الميكروفون أو تسجيل، تلقائياً</span><span class="bar"><i></i></span></button>
       <button class="tile k-ear" data-push="exr"><span class="tg"><svg viewBox="0 0 24 24"><path d="M9 9a3 3 0 1 1 4 2.8c-.7.3-1 .9-1 1.6V15M12 19h.01"/></svg></span><span class="tt">تعرّف على الإيقاع</span><span class="ts" data-mirror="exRScore" data-def="اختبر أذنك">اختبر أذنك</span><span class="bar"><i></i></span></button>
     </div>
   </section>
@@ -836,7 +838,18 @@ details.tip p{padding:0 16px 14px;font-size:15px;color:var(--muted);line-height:
     <p class="sf">المعايرة مرة واحدة لكل جهاز وسماعة: تقيس تأخير الصوت حتى تكون النتيجة عادلة.</p>
   </section>
 
-  <section class="page" id="p-editor" data-title="أضف إيقاعاً" hidden>
+  <section class="page" id="p-editor" data-title="اكتشف إيقاعاً" hidden>
+    <div class="sec">
+      <div class="list">
+        <button class="row" id="rhyMic"><span class="tx" style="color:var(--brass)"><span id="rhyMicTxt">استمع من الميكروفون</span><small>اعزف أو شغّل الإيقاع قرب الجوال 10 إلى 20 ثانية</small></span></button>
+        <label class="row" for="rhyFile"><span class="tx" style="color:var(--brass)">اختر تسجيلاً أو فيديو<small>من الملفات أو تسجيل الشاشة</small></span></label>
+      </div>
+      <input type="file" id="rhyFile" accept="audio/*,video/*" hidden>
+      <p class="sf">يكتشف التطبيق وحده السرعة وطول الدورة والميزان والدُم والتَك، ثم يقارنها بكل إيقاعات المكتبة. الأفضل أن يكون الإيقاع وحده بلا غناء.</p>
+    </div>
+    <p class="status" id="rhyStatus"></p>
+    <div class="card" id="rhyResult" hidden></div>
+    <p class="sh">تعديل يدوي وحفظ</p>
     <div class="card" id="editorCard">
       <div class="formrow">
         <div><label for="edName">اسم الإيقاع</label><input id="edName" class="field" style="direction:rtl;width:100%" placeholder="مثال: سامري"></div>
@@ -855,15 +868,6 @@ details.tip p{padding:0 16px 14px;font-size:15px;color:var(--muted);line-height:
       </div>
       <p class="status" id="edStatus"></p>
       <p class="small muted" id="edConfirm" hidden></p>
-    </div>
-    <div class="sec">
-      <p class="sh">أو استخرجه من تسجيل</p>
-      <div class="list">
-        <label class="row" for="rhyFile"><span class="tx" style="color:var(--brass)">اختر تسجيلاً للإيقاع</span></label>
-        <label class="row static"><span class="tx">قدّر السرعة تلقائياً</span><input type="checkbox" class="sw" id="edAutoBpm" checked></label>
-      </div>
-      <input type="file" id="rhyFile" accept="audio/*,video/*" hidden>
-      <p class="sf">سجّل 10 إلى 30 ثانية من الإيقاع وحده (تسجيل الشاشة بالصوت يكفي) واختر الميزان أولاً. إن كانت السرعة معروفة فاضبطها وألغِ التقدير التلقائي.</p>
     </div>
   </section>
 
@@ -1373,9 +1377,36 @@ function playPhrase(m,timbre,onlySound){
 
 
 /* ---------------- Rhythm: drums, iqaat, scheduler ---------------- */
+/* darbuka sound: modal synthesis rendered once into sample buffers (3 variations per stroke) */
+const DRUM={bufs:null};
+function bqf(type,f,Q,sr){const w=2*Math.PI*f/sr,cs=Math.cos(w),sn=Math.sin(w),al=sn/(2*Q);let b0,b1,b2;
+  if(type==="lp"){b0=(1-cs)/2;b1=1-cs;b2=(1-cs)/2;}else if(type==="hp"){b0=(1+cs)/2;b1=-(1+cs);b2=(1+cs)/2;}else{b0=al;b1=0;b2=-al;}
+  const a0=1+al,a1=-2*cs,a2=1-al;let x1=0,x2=0,y1=0,y2=0;return x=>{const y=(b0*x+b1*x1+b2*x2-a1*y1-a2*y2)/a0;x2=x1;x1=x;y2=y1;y1=y;return y;};}
+function makeDrumData(kind,seed,sr){
+  let rs=seed*7919%233280;const rnd=()=>{rs=(rs*9301+49297)%233280;return rs/233280;};const jit=v=>v*(1+(rnd()-0.5)*0.04);
+  const dur=kind==="D"?1.0:0.5,n=Math.floor(sr*dur),out=new Float32Array(n);
+  const mode=(f,a,d,glide)=>{let p=rnd()*6.283;for(let i=0;i<n;i++){const t=i/sr;const ff=f*(1+(glide||0)*Math.exp(-t/0.03));p+=6.283185*ff/sr;out[i]+=a*Math.sin(p)*Math.exp(-t/d);}};
+  if(kind==="D"){const f0=jit(90);
+    [[1,1,0.36],[1.59,0.34,0.17],[2.14,0.2,0.12],[2.3,0.18,0.1],[2.65,0.1,0.08],[2.92,0.07,0.065],[3.5,0.04,0.05]].forEach(([r,a,d])=>mode(f0*r,a,d,0.08));
+    const lp=bqf("lp",1100,0.7,sr),bp=bqf("bp",330,1.4,sr);for(let i=0;i<Math.floor(sr*0.045);i++){const t=i/sr;const x=(rnd()*2-1)*Math.exp(-t/0.007);out[i]+=0.3*lp(x)+0.55*bp(x);}
+    for(let i=0;i<n;i++)out[i]=Math.tanh(out[i]*1.35);
+  }else{const k=kind==="K";const f0=jit(k?410:450);
+    [[1,0.16,0.07],[1.59,0.3,0.055],[2.14,0.27,0.048],[2.65,0.22,0.04],[3.5,0.15,0.032],[5.2,0.09,0.026]].forEach(([r,a,d])=>mode(f0*r,a*(k?0.8:1),d*(k?0.75:1)));
+    mode(jit(92),k?0.04:0.07,0.06);
+    const hp=bqf("hp",k?1700:2300,0.7,sr),bp=bqf("bp",k?3600:5000,0.9,sr);
+    for(let i=0;i<Math.floor(sr*0.05);i++){const t=i/sr;const x=(rnd()*2-1)*Math.exp(-t/(k?0.006:0.0045));out[i]+=(k?0.45:0.9)*hp(x)+(k?0.25:0.55)*bp(x);}
+    if(!k){mode(jit(2950),0.028,0.22);mode(jit(4420),0.018,0.17);}
+  }
+  let pk=0;const ramp=Math.floor(sr*0.0008),fo=Math.floor(n*0.35);for(let i=0;i<n;i++){if(i<ramp)out[i]*=i/ramp;if(i>n-fo){const x=(n-i)/fo;out[i]*=x*x;}const a=Math.abs(out[i]);if(a>pk)pk=a;}
+  const g=(kind==="D"?0.95:kind==="T"?0.8:0.48)/(pk||1);for(let i=0;i<n;i++)out[i]*=g;return out;}
+function drumBufs(ctx){if(DRUM.bufs)return DRUM.bufs;const sr=44100;
+  const mk=(k,s)=>{const d=makeDrumData(k,s,sr);const b=ctx.createBuffer(1,d.length,sr);b.getChannelData(0).set(d);return b;};
+  DRUM.bufs={D:[1,2,3].map(s=>mk("D",s)),T:[4,5,6].map(s=>mk("T",s)),K:[7,8,9].map(s=>mk("K",s))};return DRUM.bufs;}
 function drumHit(ctx,dest,type,t,vel){
   vel=vel==null?1:vel;
-  if(type==="D"){
+  if(type==="D"||type==="T"||type==="K"){const bs=drumBufs(ctx)[type];const src=ctx.createBufferSource();src.buffer=bs[Math.random()*bs.length|0];src.playbackRate.value=1+(Math.random()-0.5)*0.012;
+    const g=ctx.createGain();g.gain.value=vel*(0.94+Math.random()*0.06);src.connect(g);g.connect(dest);src.start(t);return;}
+  if(type==="D_old"){
     const o=ctx.createOscillator();o.type="sine";o.frequency.setValueAtTime(130,t);o.frequency.exponentialRampToValueAtTime(58,t+0.18);
     const g=ctx.createGain();g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(0.95*vel,t+0.004);g.gain.exponentialRampToValueAtTime(0.0001,t+0.5);
     o.connect(g);g.connect(dest);o.start(t);o.stop(t+0.52);
@@ -1396,19 +1427,43 @@ function drumHit(ctx,dest,type,t,vel){
   }
 }
 const IQAAT=[
- {id:"maqsum",name:"مقسوم",sig:"4/4",steps:"DT.TD.T.",spb:2,bpm:100,unit:"ربع",desc:"أكثر الإيقاعات شيوعاً في الأغنية العربية والطرب. دورته أربع نبضات.",use:"الأغاني الطربية والخفيفة، وكثير من الأغنية المصرية والشامية."},
- {id:"baladi",name:"بلدي",sig:"4/4",steps:"DD.TD.T.",spb:2,bpm:100,unit:"ربع",desc:"قريب من المقسوم لكنه يبدأ بدُمّتين متتاليتين، فيعطي ثقلاً شعبياً.",use:"الأغنية الشعبية والرقص البلدي."},
- {id:"saidi",name:"سعيدي",sig:"4/4",steps:"DT.DD.T.",spb:2,bpm:104,unit:"ربع",desc:"إيقاع صعيد مصر، فيه دُمّتان متتاليتان في منتصف الدورة.",use:"الأغاني الصعيدية."},
- {id:"malfuf",name:"ملفوف",sig:"2/4",steps:"D..T..T.",spb:4,bpm:104,unit:"ربع",desc:"إيقاع قصير سريع بتقسيم 3+3+2.",use:"المقدمات السريعة والانتقالات."},
- {id:"ayyub",name:"أيوب",sig:"2/4",steps:"D...D.T.",spb:4,bpm:100,unit:"ربع",desc:"إيقاع دائري قصير متكرر.",use:"الذكر والحضرة وبعض الأغاني الشعبية."},
- {id:"khaleeji",name:"خليجي",sig:"4/4",steps:"D..D..T.",spb:2,bpm:100,unit:"ربع",region:"الخليج",desc:"الإيقاع الخليجي الأساسي بتقسيم 3+3+2، ويسمى أيضاً «سعودي». تُعزف حوله زخارف كثيرة.",use:"الأغنية الخليجية والسعودية بأنواعها."},
- {id:"adani",name:"عدني",sig:"4/4",steps:"D.....T.D.D.....",spb:4,bpm:92,unit:"ربع",region:"اليمن والخليج",desc:"إيقاع منسوب إلى عدن، شائع في الغناء اليمني والخليجي.",use:"الأغاني العدنية والخليجية الراقصة."},
- {id:"jurjina",name:"جورجينا",sig:"10/8",steps:"D..T.D.T..",spb:1,groups:[3,2,2,3],bpm:200,unit:"ثُمن",region:"العراق",desc:"إيقاع عراقي شعبي من عشر وحدات بتقسيم 3+2+2+3.",use:"الأغنية العراقية الشعبية والمقام العراقي."},
- {id:"waltz",name:"فالس",sig:"3/4",steps:"D.T.T.",spb:2,bpm:120,unit:"ربع",desc:"إيقاع ثلاثي: دُم ثم تَكّان.",use:"عدد من الأغاني والقطع الحديثة."},
- {id:"masmoudi",name:"مصمودي كبير",sig:"8/4",steps:"DD.TD.T.",spb:1,bpm:84,unit:"ربع",desc:"إيقاع ثقيل طويل الدورة (ثماني نبضات).",use:"الموشحات والقطع الآلية والأداء البطيء."},
- {id:"dawr",name:"دور هندي",sig:"7/8",steps:"DTTD.T.",spb:1,groups:[3,2,2],bpm:200,unit:"ثُمن",desc:"إيقاع أعرج من سبع وحدات.",use:"الموشحات."},
- {id:"samai",name:"سماعي ثقيل",sig:"10/8",steps:"D..T.DDT..",spb:1,groups:[3,2,2,3],bpm:180,unit:"ثُمن",desc:"إيقاع من عشر وحدات بتقسيم 3+2+2+3.",use:"قالب السماعي الآلي والموشحات."}
+ {id:"maqsum",cat:"c",name:"مقسوم",sig:"4/4",steps:"DT.TD.T.",spb:2,bpm:100,unit:"ربع",desc:"أكثر الإيقاعات شيوعاً في الأغنية العربية والطرب، دورته أربع نبضات.",use:"الأغاني الطربية والخفيفة، والأغنية المصرية والشامية."},
+ {id:"baladi",cat:"c",name:"بلدي",sig:"4/4",steps:"DD.TD.T.",spb:2,bpm:100,unit:"ربع",desc:"قريب من المقسوم لكنه يبدأ بدُمّتين متتاليتين، فيعطي ثقلاً شعبياً.",use:"الأغنية الشعبية والرقص البلدي."},
+ {id:"saidi",cat:"c",name:"سعيدي",sig:"4/4",steps:"DT.DD.T.",spb:2,bpm:104,unit:"ربع",desc:"إيقاع صعيد مصر، فيه دُمّتان متتاليتان في منتصف الدورة.",use:"الأغاني الصعيدية."},
+ {id:"malfuf",cat:"c",name:"ملفوف",sig:"2/4",steps:"D..T..T.",spb:4,bpm:104,unit:"ربع",desc:"إيقاع قصير سريع بتقسيم 3+3+2.",use:"المقدمات السريعة والانتقالات."},
+ {id:"ayyub",cat:"c",name:"أيوب",sig:"2/4",steps:"D.DT",spb:2,bpm:90,unit:"ربع",desc:"إيقاع دائري قصير متكرر.",use:"الذكر والحضرة وبعض الأغاني الشعبية."},
+ {id:"wahda",cat:"c",name:"واحدة",sig:"4/4",steps:"D..T..T.",spb:2,bpm:96,unit:"ربع",desc:"إيقاع هادئ بدُمّة واحدة في أول الدورة.",use:"الطرب والأغاني البطيئة."},
+ {id:"fallahi",cat:"c",name:"فلاحي",sig:"2/4",steps:"DKTKD.T.",spb:4,bpm:110,unit:"ربع",desc:"إيقاع ريفي سريع قريب من المقسوم المضغوط.",use:"الأغاني الفلاحية والشعبية السريعة."},
+ {id:"zaffa",cat:"c",name:"زفة",sig:"4/4",steps:"DT.TDTT.",spb:2,bpm:104,unit:"ربع",desc:"إيقاع مواكب الأفراح.",use:"الزفات والأفراح."},
+ {id:"dabke",cat:"c",name:"دبكة (نوري)",sig:"4/4",steps:".D.TD.T.",spb:2,bpm:112,unit:"ربع",desc:"إيقاع الدبكة الشامية، يبدأ بسكتة قبل الدُم.",use:"الدبكة والأغنية الشعبية الشامية."},
+ {id:"karachi",cat:"c",name:"كراتشي",sig:"2/4",steps:"T.TD",spb:2,bpm:100,unit:"ربع",desc:"إيقاع قصير يبدأ بتَك.",use:"الأغاني الخفيفة."},
+ {id:"khaleeji",cat:"g",name:"خليجي",sig:"2/4",steps:"D..D..T.",spb:4,bpm:100,unit:"ربع",region:"الخليج",desc:"الإيقاع الخليجي الأساسي ويسمى «سعودي»: دُم، دُم، تَك بتقسيم 3+3+2 داخل نبضتين. تُعزف حوله زخارف «كا» خفيفة.",use:"الأغنية الخليجية والسعودية بأنواعها."},
+ {id:"adani",cat:"g",name:"عدني",sig:"4/4",steps:"D.....T.D.D.....",spb:4,bpm:92,unit:"ربع",region:"اليمن والخليج",desc:"إيقاع منسوب إلى عدن، شائع في الغناء اليمني والخليجي.",use:"الأغاني العدنية والخليجية الراقصة."},
+ {id:"jurjina",cat:"g",name:"جورجينا",sig:"10/8",steps:"D.TT.D.T..",spb:1,groups:[3,2,2,3],bpm:200,unit:"ثُمن",region:"العراق",desc:"إيقاع عراقي من عشر وحدات بتقسيم 3+2+2+3.",use:"الأغنية العراقية والمقام العراقي."},
+ {id:"chobi",cat:"g",name:"جوبي",sig:"4/4",steps:"DD.DT.T.",spb:2,bpm:100,unit:"ربع",region:"العراق",desc:"إيقاع رقصة الجوبي العراقية الجماعية.",use:"الأغنية العراقية الشعبية."},
+ {id:"masmoudi",cat:"t",name:"مصمودي كبير",sig:"8/4",steps:"DD.TD.TT",spb:1,bpm:84,unit:"ربع",desc:"إيقاع ثقيل طويل الدورة (ثماني نبضات).",use:"الموشحات والقطع الآلية والأداء البطيء."},
+ {id:"wahdakb",cat:"t",name:"واحدة كبيرة",sig:"8/4",steps:"D..T..T.D...T...",spb:2,bpm:90,unit:"ربع",desc:"إيقاع طربي بطيء طويل الدورة.",use:"الطرب الكلاسيكي."},
+ {id:"chifte",cat:"t",name:"شفتتلي",sig:"8/4",steps:"D.TT.TT.D.D.T...",spb:2,bpm:90,unit:"ربع",desc:"إيقاع تركي الأصل يرافق التقاسيم والارتجال.",use:"التقاسيم والقطع الآلية."},
+ {id:"samai",cat:"t",name:"سماعي ثقيل",sig:"10/8",steps:"D..T.DDT..",spb:1,groups:[3,2,2,3],bpm:180,unit:"ثُمن",desc:"إيقاع من عشر وحدات بتقسيم 3+2+2+3.",use:"قالب السماعي الآلي والموشحات."},
+ {id:"samaidarij",cat:"t",name:"سماعي دارج",sig:"3/4",steps:"DTT",spb:1,bpm:120,unit:"ربع",desc:"إيقاع ثلاثي بسيط.",use:"الموشحات والأغاني الخفيفة."},
+ {id:"yuruk",cat:"t",name:"يورك سماعي",sig:"6/8",steps:"DTTDT.",spb:1,groups:[3,3],bpm:200,unit:"ثُمن",desc:"إيقاع سداسي تركي الأصل.",use:"الموشحات والسماعيات."},
+ {id:"dawr",cat:"t",name:"دور هندي",sig:"7/8",steps:"DTTD.T.",spb:1,groups:[3,2,2],bpm:200,unit:"ثُمن",desc:"إيقاع أعرج من سبع وحدات.",use:"الموشحات."},
+ {id:"nawakht",cat:"t",name:"نواخت",sig:"7/4",steps:"D.TD.TT",spb:1,bpm:110,unit:"ربع",desc:"إيقاع موشحات من سبع نبضات.",use:"الموشحات."},
+ {id:"muhajjar",cat:"t",name:"محجّر",sig:"14/4",steps:"DDD.T.D.T.T.TT",spb:1,bpm:110,unit:"ربع",desc:"إيقاع موشحات طويل من أربع عشرة نبضة.",use:"الموشحات."},
+ {id:"murabba",cat:"t",name:"مربّع",sig:"13/4",steps:"DTTD.T.T.TTD.",spb:1,bpm:110,unit:"ربع",desc:"إيقاع موشحات من ثلاث عشرة نبضة.",use:"الموشحات."},
+ {id:"mukhammas",cat:"t",name:"مخمّس",sig:"16/4",steps:"D.D.D.T.T.TTD.TT",spb:1,bpm:110,unit:"ربع",desc:"إيقاع موشحات من ست عشرة نبضة.",use:"الموشحات."},
+ {id:"thurayya",cat:"t",name:"ثريّا",sig:"5/8",steps:"D.T.T",spb:1,groups:[2,3],bpm:200,unit:"ثُمن",desc:"أقصاق من خمس وحدات بتقسيم 2+3.",use:"الموشحات."},
+ {id:"waltz",cat:"o",name:"فالس",sig:"3/4",steps:"D.T.T.",spb:2,bpm:120,unit:"ربع",desc:"إيقاع ثلاثي: دُم ثم تَكّان.",use:"عدد من الأغاني والقطع الحديثة."},
+ {id:"fox",cat:"o",name:"فوكس",sig:"2/4",steps:"DTDT",spb:2,bpm:100,unit:"ربع",desc:"دُم وتَك متناوبان.",use:"اللونغا والقطع الآلية السريعة."},
+ {id:"rumba",cat:"o",name:"رومبا",sig:"4/4",steps:"D..T..D.",spb:2,bpm:100,unit:"ربع",desc:"إيقاع بتقسيم 3+3+2 متأثر بالموسيقى اللاتينية.",use:"أغانٍ عربية حديثة."},
+ {id:"bambi",cat:"o",name:"بمبي",sig:"4/4",steps:"D..T..DD",spb:2,bpm:100,unit:"ربع",desc:"إيقاع مصري قريب من الرومبا ينتهي بدُمّتين.",use:"الأغنية المصرية الخفيفة."},
+ {id:"sombati",cat:"o",name:"سنباطي",sig:"4/4",steps:"D..T..T.D...T...",spb:4,bpm:100,unit:"ربع",desc:"إيقاع مصري من موسيقى الرقص.",use:"موسيقى الرقص المصرية."},
+ {id:"bayou",cat:"o",name:"بايو",sig:"2/4",steps:"D..DD.T.",spb:4,bpm:90,unit:"ربع",desc:"قريب من أيوب.",use:"موسيقى الرقص."},
+ {id:"hacha",cat:"o",name:"هجع",sig:"4/4",steps:"D.TTT.TT",spb:2,bpm:100,unit:"ربع",desc:"إيقاع صوفي متكرر.",use:"الإنشاد الصوفي."},
+ {id:"sudasi",cat:"o",name:"سداسي",sig:"6/4",steps:"D.TDD.TDD.T.",spb:2,bpm:100,unit:"ربع",desc:"إيقاع دبكة لبناني فلسطيني من ست نبضات.",use:"الدبكة."},
+ {id:"karsilama",cat:"o",name:"كارسيلاما",sig:"9/8",steps:"D.T.D.TTT",spb:1,groups:[2,2,2,3],bpm:260,unit:"ثُمن",desc:"إيقاع تركي من تسع وحدات بتقسيم 2+2+2+3.",use:"الأغاني التركية والبلقانية."}
 ];
+const IQA_CATS=[["c","شائعة"],["g","خليجية وعراقية"],["t","طرب وموشحات"],["o","أخرى"],["my","إيقاعاتي"]];
 let CUSTOM=store.get("customIqa",[]).filter(q=>q&&q.id&&/^[DTK.]+$/.test(q.steps||"")).map(q=>Object.assign(q,{custom:true}));
 const allIqaat=()=>IQAAT.concat(CUSTOM);
 const iqaById=id=>allIqaat().find(q=>q.id===id);
@@ -1430,7 +1485,7 @@ function rhythmStart(kind,seq,stepDur,opts={}){
     while(RHY.next<ctx.currentTime+0.15){
       if(RHY.bar>=RHY.bars){const endAt=RHY.next;const cb=RHY.onEnd;RHY.vis.push(setTimeout(()=>{rhythmStop();cb&&cb();},Math.max(0,(endAt-ctx.currentTime)*1000)+150));clearInterval(RHY.timer);RHY.timer=null;return;}
       const hits=seq[RHY.i],t=RHY.next,mute=RHY.muted?RHY.muted(RHY.bar):false;
-      if(!mute)hits.forEach(h=>drumHit(ctx,bus.drumIn,h,t));
+      if(!mute)hits.forEach(h=>drumHit(ctx,bus.drumIn,h,t,h==="K"?0.75:RHY.i===0?1:0.86));
       const ev={t,i:RHY.i,bar:RHY.bar,hits,mute};RHY.events.push(ev);if(RHY.events.length>600)RHY.events.shift();
       if(RHY.onStep){const d=Math.max(0,(t-ctx.currentTime)*1000);RHY.vis.push(setTimeout(()=>RHY.onStep(ev),d));if(RHY.vis.length>64)RHY.vis.splice(0,32);}
       RHY.next+=stepDur;RHY.i++;if(RHY.i>=seq.length){RHY.i=0;RHY.bar++;}
@@ -1438,16 +1493,18 @@ function rhythmStart(kind,seq,stepDur,opts={}){
   tick();RHY.timer=setInterval(tick,25);
 }
 function iqaSeq(q,orn,click){
-  return [...q.steps].map((ch,i)=>{const h=[];if(ch==="D"||ch==="T")h.push(ch);else if(orn&&ch===".")h.push("K");
+  return [...q.steps].map((ch,i)=>{const h=[];if(ch==="D"||ch==="T"||ch==="K")h.push(ch);else if(orn&&ch===".")h.push("K");
     if(click&&i%q.spb===0)h.push(i===0?"C":"b");return h;});
 }
 function stepDurOf(q,bpm){return 60/bpm/q.spb;}
 
 /* ---------- iqa UI ---------- */
-function renderIqaChips(){const c=$("#iqaChips");c.innerHTML="";allIqaat().forEach(q=>c.append(el("button",{class:"chip","aria-pressed":String(q.id===S.iqa),onclick:()=>selectIqa(q.id)},(q.custom?"★ ":"")+q.name)));
+function renderIqaChips(){if(!S.iqaCat){const cur=iqaById(S.iqa);S.iqaCat=cur?(cur.custom?"my":cur.cat||"c"):"c";}
+  const cb=$("#iqaCat");cb.innerHTML="";IQA_CATS.forEach(([k,lab])=>{if(k==="my"&&!CUSTOM.length)return;cb.append(el("button",{"aria-pressed":String(S.iqaCat===k),onclick:()=>{S.iqaCat=k;renderIqaChips();}},lab));});
+  const c=$("#iqaChips");c.innerHTML="";allIqaat().filter(q=>S.iqaCat==="my"?q.custom:(q.cat||"c")===S.iqaCat).forEach(q=>c.append(el("button",{class:"chip","aria-pressed":String(q.id===S.iqa),onclick:()=>selectIqa(q.id)},(q.custom?"★ ":"")+q.name)));
   document.querySelectorAll(".iqaPick").forEach(sel=>{sel.innerHTML="";allIqaat().forEach(q=>sel.append(el("option",{value:q.id},(q.custom?"★ ":"")+q.name)));sel.value=S.iqa;});}
 document.querySelectorAll(".iqaPick").forEach(sel=>sel.addEventListener("change",()=>selectIqa(sel.value)));
-function selectIqa(id){const was=RHY.kind==="iqa";S.iqa=id;store.set("iqa",id);S.bpm=store.get("bpm."+id,iqaById(id).bpm);renderIqaChips();renderIqa();const dl=$("#edDelete");if(dl)dl.hidden=!iqaById(id).custom;if(was)playIqa();}
+function selectIqa(id){const was=RHY.kind==="iqa";S.iqa=id;{const qq=iqaById(id);if(qq)S.iqaCat=qq.custom?"my":qq.cat||"c";}store.set("iqa",id);S.bpm=store.get("bpm."+id,iqaById(id).bpm);renderIqaChips();renderIqa();const dl=$("#edDelete");if(dl)dl.hidden=!iqaById(id).custom;if(was)playIqa();}
 function renderIqa(){
   const q=iqaById(S.iqa);$("#iqaName").textContent=q.name;
   $("#iqaSub").textContent="الميزان "+q.sig+" · "+q.steps.length+" وحدات · النبضة = "+q.unit;
@@ -1686,17 +1743,139 @@ async function transcribe(buf,n,spb,bpmIn,auto){
     out+=ch;conf.push(Math.max(l,h));}
   return {steps:out,bpm:Math.round(bpm),cycles:Math.floor(k/n)};
 }
-$("#rhyFile").addEventListener("change",async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;const st=$("#edStatus");st.className="status";st.textContent="جارٍ تحليل الإيقاع…";
-  try{const ab=await f.arrayBuffer();const buf=await decodeBlob(ab);const m=edMeter();
-    if(buf.duration<4){st.textContent="التسجيل قصير. نحتاج 10 ثوانٍ على الأقل.";st.className="status err";return;}
-    const r=await transcribe(buf,m.n,m.spb,S.bpm,$("#edAutoBpm").checked);
-    edSetMeter(true);ED.steps=r.steps;renderEd();if($("#edAutoBpm").checked)setBpm(r.bpm);
-    st.textContent="استُخرج من "+r.cycles+" دورة على سرعة "+r.bpm+". اضغط «جرّب» وقارنه بالأصل، وصحّح أي خانة بالنقر عليها ثم احفظه.";}
-  catch(err){st.textContent="تعذّرت قراءة التسجيل. جرّب ملف m4a أو mp3.";st.className="status err";}});
+/* automatic rhythm detection: onsets → tatum (phase-free grid fit) → cycle length → folded pattern → library match */
+async function rhythmOnsets(buf){
+  const sr=22050,hop=128,hopS=hop/sr;
+  const LO=await bandEnvelope(buf,"lowpass",200,sr,hop),HI=await bandEnvelope(buf,"highpass",1500,sr,hop);
+  const N=Math.min(LO.env.length,HI.env.length,Math.floor(Math.min(buf.duration,60)/hopS));
+  let ml=1e-9,mh=1e-9;for(let i=0;i<N;i++){if(LO.odf[i]>ml)ml=LO.odf[i];if(HI.odf[i]>mh)mh=HI.odf[i];}
+  const comb=new Float32Array(N);for(let i=0;i<N;i++)comb[i]=LO.odf[i]/ml+HI.odf[i]/mh;
+  let cm=0;for(let i=0;i<N;i++)if(comb[i]>cm)cm=comb[i];
+  const W=Math.round(0.045/hopS),A=Math.round(0.4/hopS);const ons=[];
+  const rise=(e,i)=>{let mx=0,mn=1e9;for(let k=i;k<=Math.min(N-1,i+5);k++)if(e[k]>mx)mx=e[k];for(let k=Math.max(0,i-7);k<i;k++)if(e[k]<mn)mn=e[k];return Math.max(0,mx-(mn===1e9?0:mn));};
+  for(let i=1;i<N-1;i++){const v=comb[i];if(v<0.12*cm)continue;let isMax=true;for(let k=Math.max(0,i-W);k<=Math.min(N-1,i+W);k++)if(comb[k]>v||(comb[k]===v&&k<i)){isMax=false;break;}
+    if(!isMax)continue;let s=0,c=0;for(let k=Math.max(0,i-A);k<=Math.min(N-1,i+A);k++){s+=comb[k];c++;}if(v<1.4*s/c)continue;
+    ons.push({t:i*hopS,w:v,lo:rise(LO.env,i),hi:rise(HI.env,i)});}
+  let rl=1e-9,rh=1e-9;ons.forEach(o=>{if(o.lo>rl)rl=o.lo;if(o.hi>rh)rh=o.hi;});ons.forEach(o=>{o.lo/=rl;o.hi/=rh;o.w=Math.min(o.w/cm,1);});
+  return ons;
+}
+function gridR(ons,tau,win){ // mean phase coherence over windows (tempo drift tolerant)
+  if(!ons.length)return 0;const T=ons[ons.length-1].t;let tot=0,tw=0;
+  for(let a=ons[0].t;a<T||a===ons[0].t;a+=win/2){let sx=0,sy=0,sw=0;for(const o of ons){if(o.t<a||o.t>=a+win)continue;const ang=6.283185*o.t/tau;sx+=o.w*Math.cos(ang);sy+=o.w*Math.sin(ang);sw+=o.w;}
+    if(sw>0){tot+=Math.hypot(sx,sy);tw+=sw;}if(a+win>=T)break;}
+  return tw?tot/tw:0;
+}
+function rhythmTatums(ons){ // candidate grid periods: local maxima of phase coherence, refined
+  const cands=[];for(let tau=0.07;tau<=0.8;tau*=1.004)cands.push([tau,gridR(ons,tau,8)]);
+  let Rmax=0;cands.forEach(c=>{if(c[1]>Rmax)Rmax=c[1];});
+  const peaks=[];for(let i=1;i<cands.length-1;i++){const [tau,R]=cands[i];if(R>=cands[i-1][1]&&R>=cands[i+1][1]&&R>=0.55*Rmax)peaks.push(tau);}
+  const out=peaks.map(pk=>{let best=pk,bR=gridR(ons,pk,8);for(let t=pk*0.99;t<=pk*1.01;t+=pk*0.0005){const R=gridR(ons,t,8);if(R>bR){bR=R;best=t;}}return {tau:best,R:bR};});
+  // coherence rule: the largest period that still explains the onsets nearly as well as the best grid
+  let rule=null;out.forEach(c=>{if(c.R>=0.9*Rmax&&(!rule||c.tau>rule.tau))rule=c;});
+  return {list:out,rule:rule||out.sort((a,b)=>b.R-a.R)[0],Rmax};
+}
+function quantizeOns(ons,tau){ // phase-locked loop so slow tempo drift does not break the grid
+  let ref=ons[0].t,kRef=0;const out=[];
+  for(const o of ons){const k=kRef+Math.round((o.t-ref)/tau);const err=o.t-(ref+(k-kRef)*tau);
+    if(Math.abs(err)<tau*0.35)out.push({k,lo:o.lo,hi:o.hi,w:o.w,err});
+    ref=ref+(k-kRef)*tau+0.35*err;kRef=k;}
+  return out;
+}
+function rhythmCycle(q){
+  if(q.length<6)return null;const K=q[q.length-1].k+1;const lo=new Float32Array(K),hi=new Float32Array(K);
+  q.forEach(o=>{lo[o.k]=Math.max(lo[o.k],o.lo);hi[o.k]=Math.max(hi[o.k],o.hi);});
+  const prior=n=>[3,4,6,7,8,9,10,12,13,14,16].includes(n)?1:n===2?0.97:0.9;
+  const sims=[];for(let n=2;n<=32&&n*2<=K;n++){let s=0,a=0,b=0;for(let k=0;k+n<K;k++){s+=lo[k]*lo[k+n]+hi[k]*hi[k+n];a+=lo[k]*lo[k]+hi[k]*hi[k];b+=lo[k+n]*lo[k+n]+hi[k+n]*hi[k+n];}
+    sims.push([n,(a&&b?s/Math.sqrt(a*b):0)*prior(n)]);}
+  if(!sims.length)return null;let mx=0;sims.forEach(x=>{if(x[1]>mx)mx=x[1];});
+  const n=(sims.find(x=>x[1]>=0.9*mx)||sims[0])[0];
+  const L=new Float32Array(n),H=new Float32Array(n),C=new Float32Array(n);
+  for(let k=0;k<K;k++){const p=k%n;L[p]+=lo[k];H[p]+=hi[k];C[p]++;}
+  for(let p=0;p<n;p++){if(C[p]){L[p]/=C[p];H[p]/=C[p];}}
+  const mL=Math.max(...L)||1,mH=Math.max(...H)||1;let pat="";
+  for(let p=0;p<n;p++){const l=L[p]/mL,h=H[p]/mH;let ch=".";if(l>=0.42&&l*1.15>=h*0.6)ch="D";else if(h>=0.5)ch="T";else if(h>=0.2)ch="K";pat+=ch;}
+  return {n,pat,sim:mx,cycles:Math.floor(K/n),L,H};
+}
+const STROKE_W={D:1,T:0.8,K:0.3,".":0};
+function patSim(a,b){let s=0,w=0;for(let i=0;i<a.length;i++){const x=a[i],y=b[i];if(x===y){s+=STROKE_W[x];w+=STROKE_W[x];continue;}
+    if(x==="K"&&y==="."){continue;} // ornaments around the skeleton are fine
+    const m=Math.max(STROKE_W[x],STROKE_W[y]);w+=m;if((x==="T"&&y==="K")||(x==="K"&&y==="T"))s+=0.3;else if(x==="."||y===".")s-=0.5*m;else s-=0.2*m;}
+  return w?s/w:0;}
+const expandPat=(p,f)=>[...p].map(c=>c+".".repeat(f-1)).join("");
+const rotPat=(p,r)=>p.slice(r)+p.slice(0,r);
+function matchLibrary(pat,tau){
+  const res=[];const variants=[pat];const n=pat.length;[2,4].forEach(r=>{if(n*r<=32)variants.push(pat.repeat(r));});
+  if(n%2===0){const h=n/2,a=pat.slice(0,h),b=pat.slice(h);const rank={D:3,T:2,K:1,".":0};let m="";for(let i=0;i<h;i++)m+=rank[a[i]]>=rank[b[i]]?a[i]:b[i];if(patSim(a,b)>0.55)variants.push(m);}
+  allIqaat().forEach(q=>{let best=null;const qs=q.steps.replace(/[^DTK.]/g,".");const m=qs.length;
+    variants.forEach(P=>{const n=P.length;[1,2,4].forEach(g=>[1,2,4].forEach(f=>{if(n*g!==m*f||(g>1&&f>1))return;
+      const Pe=expandPat(P,g),Qe=expandPat(qs,f);
+      for(let r=0;r<Pe.length;r+=g){const sc=patSim(rotPat(Pe,r),Qe);const qSlot=tau*f/g;const bpm=60/(qSlot*q.spb);
+        const fin=sc-0.06*Math.abs(Math.log2(bpm/q.bpm));if(!best||fin>best.fin)best={q,score:sc,fin,bpm:Math.round(bpm),rot:r/g,P,g,f};}}));});
+    if(best)res.push(best);});
+  return res.sort((a,b)=>b.fin-a.fin);
+}
+async function detectRhythm(buf){
+  const ons=await rhythmOnsets(buf);
+  if(ons.length<8)return {error:"لم ألتقط ضربات واضحة كافية. سجّل 10 ثوانٍ على الأقل من الإيقاع وحده وقرّب الجوال."};
+  const T=rhythmTatums(ons);let best=null;
+  for(const c of T.list){const qz=quantizeOns(ons,c.tau);const cyc=rhythmCycle(qz);if(!cyc||cyc.cycles<2)continue;
+    const matches=matchLibrary(cyc.pat,c.tau).slice(0,3);const resid=qz.reduce((a,o)=>a+Math.abs(o.err),0)/qz.length/c.tau;const kept=qz.length/ons.length;
+    const top=matches[0];const sc=(top&&top.score>=0.62?top.score:0)+0.4*c.R-0.8*resid+0.3*kept+(c===T.rule?0.05:0);
+    if(!best||sc>best.sc)best={sc,c,cyc,matches};}
+  if(!best)return {error:"التسجيل قصير أو غير منتظم؛ نحتاج دورتين كاملتين على الأقل من الإيقاع."};
+  const {cyc,matches}=best,tau=best.c.tau,R=best.c.R;
+  let pat=cyc.pat;const top=matches[0];
+  if(top&&top.score>=0.62)pat=rotPat(top.P,top.rot%top.P.length);
+  else{let r=0,bv=-1;for(let i=0;i<cyc.n;i++){const v=cyc.L[i]+(cyc.L[(i+cyc.n-1)%cyc.n]<0.3?0.2:0);if(v>bv){bv=v;r=i;}}pat=rotPat(cyc.pat,r);}
+  return {pat,n:pat.length,tau,R,cycles:cyc.cycles,onsets:ons.length,matches,bpmTatum:60/tau};
+}
+function customMeter(n,tau){let spb=1,bd=1e9;[1,2,3,4].forEach(s=>{if(n%s)return;const beat=s*tau;const d=Math.abs(Math.log2(beat/0.6));if(beat>=0.3&&beat<=1&&d<bd){bd=d;spb=s;}});
+  if(spb===1&&tau<0.33)return {spb:1,sig:n+"/8",bpm:Math.round(60/tau),unit:"ثُمن"};
+  return {spb,sig:(n/spb)+"/4",bpm:Math.round(60/(tau*spb)),unit:"ربع"};}
+
+function stepsHTML(pat,spb,groups){const w=el("div",{class:"steps"});let grp=null;const starts=new Set();if(groups){let a=0;groups.forEach(x=>{starts.add(a);a+=x;});}
+  [...pat].forEach((ch,i)=>{if(groups?starts.has(i):i%spb===0){grp=el("div",{class:"beatgrp"});w.append(grp);}grp.append(el("div",{class:"stp "+(ch==="."?"":ch)},el("i"),el("small",{text:i%spb===0&&!groups?String(i/spb+1):""})));});return w;}
+function edLoadPattern(pat,spb,sig,bpm){const sel=$("#edMeter");const v=pat.length+":"+spb+":"+sig;let opt=[...sel.options].find(o=>o.value===v);
+  if(!opt){opt=el("option",{value:v},sig+" ("+pat.length+" خانات)");sel.append(opt);}sel.value=v;edSetMeter(true);ED.steps=pat;renderEd();setBpm(bpm);}
+function playMatch(m){selectIqa(m.q.id);setBpm(m.bpm);if(!(RHY.on&&RHY.kind==="iqa"))playIqa();}
+function renderDetect(r){const box=$("#rhyResult"),st=$("#rhyStatus");box.innerHTML="";
+  if(r.error){box.hidden=true;st.className="status err";st.textContent=r.error;return;}
+  st.className="status";st.textContent="";box.hidden=false;const top=r.matches[0];const good=top&&top.score>=0.62;
+  if(good){box.append(el("p",{class:"small muted",text:"الأقرب في المكتبة"}),el("div",{class:"maqam-name",text:top.q.name}),
+      el("p",{class:"small",text:"على سرعة "+top.bpm+" نبضة/د · تطابق "+Math.round(top.score*100)+"% · "+top.q.sig}),
+      stepsHTML(top.q.steps,top.q.groups?1:top.q.spb,top.q.groups));
+    box.append(el("button",{class:"btn primary big",onclick:()=>playMatch(top)},"شغّل "+top.q.name+" على "+top.bpm));
+    const others=r.matches.slice(1).filter(m=>m.score>=0.4);
+    if(others.length){const l=el("div",{class:"list",style:"background:var(--surface-2)"});others.forEach(m=>l.append(el("button",{class:"row",onclick:()=>playMatch(m)},el("span",{class:"tx"},m.q.name,el("small",{text:m.bpm+" نبضة/د · تطابق "+Math.round(m.score*100)+"%"})))));
+      box.append(el("p",{class:"small muted",text:"احتمالات أخرى"}),l);}}
+  else box.append(el("p",{class:"small",text:"هذا الإيقاع ليس في المكتبة بشكل واضح"+(top?" (الأقرب «"+top.q.name+"» بتطابق "+Math.round(top.score*100)+"% فقط)":"")+". احفظه باسم من عندك."}));
+  const cm=customMeter(r.n,r.tau);
+  const same=good&&r.pat.length===top.q.steps.length;
+  box.append(el("p",{class:"small muted",text:"ما سمعته أنا: "+r.n+" خانات في الدورة، التقطت "+r.cycles+" دورة"+(good?".":"، الميزان "+cm.sig+" على "+cm.bpm+" نبضة/د.")}),same?stepsHTML(r.pat,top.q.groups?1:top.q.spb,top.q.groups):stepsHTML(r.pat,cm.spb));
+  const save=el("button",{class:"btn",onclick:()=>{if(good&&r.pat.length===top.q.steps.length)edLoadPattern(r.pat,top.q.spb,top.q.sig,top.bpm);else edLoadPattern(r.pat,cm.spb,cm.sig,cm.bpm);
+    $("#edName").focus();$("#edStatus").className="status";$("#edStatus").textContent="حمّلته في المحرر بالأسفل. اكتب اسماً واضغط «احفظ في قائمتي»، وصحّح أي خانة بالنقر عليها.";$("#editorCard").scrollIntoView({behavior:"smooth",block:"start"});}},"احفظ ما سمعته كإيقاع جديد");
+  box.append(el("div",{class:"btns"},save));
+  if(r.R<0.45)box.append(el("p",{class:"small muted",text:"الضربات غير منتظمة كثيراً في هذا التسجيل، فالنتيجة تقريبية. جرّب مقطعاً أنظف أو أطول."}));
+}
+async function detectFrom(buf){const st=$("#rhyStatus");st.className="status";st.textContent="جارٍ تحليل الإيقاع…";$("#rhyResult").hidden=true;
+  try{if(buf.duration<4){renderDetect({error:"التسجيل قصير. نحتاج 10 ثوانٍ على الأقل."});return;}renderDetect(await detectRhythm(buf));}
+  catch(err){renderDetect({error:"تعذّر تحليل التسجيل. جرّب ملف m4a أو mp3."});}}
+$("#rhyFile").addEventListener("change",async e=>{const f=e.target.files[0];e.target.value="";if(!f)return;
+  try{const buf=await decodeBlob(await f.arrayBuffer());await detectFrom(buf);}catch(err){renderDetect({error:"تعذّرت قراءة الملف. جرّب m4a أو mp3 أو فيديو قصيراً."});}});
+let rhyRec=null;
+$("#rhyMic").addEventListener("click",async()=>{if(rhyRec){if(rhyRec.state==="recording")rhyRec.stop();return;}
+  if(!micAvailable()||typeof MediaRecorder==="undefined"){renderDetect({error:micErrorText(null)});return;}
+  rhythmStop();aSess("play-and-record");let stream;try{stream=await navigator.mediaDevices.getUserMedia(MIC);}catch(e){aSess("playback");renderDetect({error:micErrorText(e)});return;}
+  const mime=pickMime();const chunks=[];const rec=mime?new MediaRecorder(stream,{mimeType:mime}):new MediaRecorder(stream);rhyRec=rec;
+  rec.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data);};const t0=Date.now();Awake.on("rhyrec");Haptic.tap();$("#rhyResult").hidden=true;$("#rhyStatus").textContent="";
+  const tick=setInterval(()=>{const s=Math.floor((Date.now()-t0)/1000);$("#rhyMicTxt").textContent="يستمع… "+s+" من 20 ث · اضغط للإيقاف";if(s>=20&&rec.state==="recording")rec.stop();},250);
+  rec.onstop=async()=>{clearInterval(tick);stream.getTracks().forEach(t=>t.stop());aSess("playback");Awake.off("rhyrec");rhyRec=null;Haptic.tap();$("#rhyMicTxt").textContent="استمع من الميكروفون";
+    try{const blob=new Blob(chunks,{type:rec.mimeType||mime||"audio/webm"});await detectFrom(await decodeBlob(await blob.arrayBuffer()));}catch(err){renderDetect({error:"تعذّرت قراءة التسجيل."});}};
+  rec.start(250);});
 
 /* ---------- iqa ear quiz ---------- */
 function playPatternOnce(q,cycles){const ctx=getCtx();const sd=stepDurOf(q,q.bpm);let t=ctx.currentTime+0.08;
-  for(let c=0;c<cycles;c++)[...q.steps].forEach(ch=>{if(ch==="D"||ch==="T")drumHit(ctx,bus.drumIn,ch,t);t+=sd;});}
+  for(let c=0;c<cycles;c++)[...q.steps].forEach((ch,i)=>{if(ch==="D"||ch==="T"||ch==="K")drumHit(ctx,bus.drumIn,ch,t,ch==="K"?0.75:i===0?1:0.86);t+=sd;});}
 
 /* ---------------- Training ---------------- */
 const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]];}return a;};
@@ -1730,7 +1909,7 @@ makeQuiz("exQ",{
   play(q){stopAll();const ctx=getCtx();const t=ctx.currentTime+0.05;[0,200,q.answer.key,500].forEach((c,k)=>playAbs(c,t+k*0.55,k===2?0.9:0.5,"oud"));playAbs(q.answer.key,t+2.6,1.4,"oud");}
 });
 makeQuiz("exR",{
-  make(){const ans=IQAAT[Math.random()*IQAAT.length|0];const others=shuffle(IQAAT.filter(q=>q!==ans)).slice(0,3);
+  make(){const pool=IQAAT.filter(q=>q.cat==="c"||q.cat==="g"||q.id===S.iqa);const ans=pool[Math.random()*pool.length|0];const others=shuffle(pool.filter(q=>q!==ans)).slice(0,3);
     return {answer:{key:ans.id,label:ans.name},options:shuffle([ans,...others]).map(q=>({key:q.id,label:q.name})),q:ans,why:ans.sig+": "+[...ans.steps].map(c=>SYL[c]).join(" ")};},
   play(x){rhythmStop();playPatternOnce(x.q,2);}
 });
@@ -1868,9 +2047,15 @@ async function analyze(data,sr,maqamId,mode,auto,onProg,grid,pre){
     for(let i=3;i<frames.length;i++){const mn=Math.min(rr[i-1],rr[i-2],rr[i-3]);if(rr[i]>gate&&rr[i]>mn*1.9&&(i-last)*hopS>=0.09){ons.push(frames[i].t-0.016);last=i;}}
     N.forEach(n=>{const t=n.start-0.016;if(!ons.some(o=>Math.abs(o-t)<0.07))ons.push(t);});ons.sort((a,b)=>a-b);}
   let timing=null;
-  if(grid&&ons.length>=4){const offs=[];ons.forEach(t=>{const k=Math.round((t-grid.offset)/grid.step);if(k<0)return;const d=t-(grid.offset+k*grid.step);if(Math.abs(d)<=grid.step*0.4)offs.push(d*1000);});
+  if(grid&&ons.length>=4){
+    // grid period: the eighth note (or the step when the pattern itself is in eighths); onsets are matched to it
+    const P=grid.spb&&grid.spb>=2?grid.step*grid.spb/2:grid.step;
+    // the recorder's start delay is unknown on phones, so the grid phase is estimated from the onsets themselves
+    let sx=0,sy=0;ons.forEach(t=>{const a=6.283185*(t-grid.offset)/P;sx+=Math.cos(a);sy+=Math.sin(a);});
+    const shift=Math.atan2(sy,sx)/6.283185*P,coh=Math.hypot(sx,sy)/ons.length,off0=grid.offset+shift;
+    const offs=[];ons.forEach(t=>{const k=Math.round((t-off0)/P);if(k<0)return;const d=t-(off0+k*P);if(Math.abs(d)<=P*0.45)offs.push(d*1000);});
     if(offs.length>=4){const mean=offs.reduce((a,b)=>a+b,0)/offs.length;const sd=Math.sqrt(offs.reduce((a,b)=>a+(b-mean)**2,0)/offs.length);
-      const rel=offs.map(o=>o-mean);timing={iqa:grid.name,bpm:grid.bpm,n:offs.length,mean,sd,within40:rel.filter(o=>Math.abs(o)<=40).length/offs.length};}}
+      const rel=offs.map(o=>o-mean);timing={iqa:grid.name,bpm:grid.bpm,n:offs.length,mean,sd,coh,within40:rel.filter(o=>Math.abs(o)<=40).length/offs.length};}}
   // phrases (split by silences of 0.3 s or more): where each starts and lands, local fit, loudness
   const phr=[];{let st=null,last=null;for(const f of frames){if(f.v){if(st==null)st=f.t;last=f.t;}else if(st!=null&&f.t-last>=0.3){phr.push([st,last]);st=null;}}if(st!=null)phr.push([st,last]);}
   const db=x=>20*Math.log10(Math.max(1e-6,x));
@@ -2514,7 +2699,7 @@ async function startRec(parentId){
   mediaRec.ondataavailable=e=>{if(e.data&&e.data.size)chunks.push(e.data);};
   let recCtxStart=null,grid=null;const withIqa=$("#recWithIqa").checked;
   mediaRec.onstart=()=>{recCtxStart=ctx.currentTime;if(withIqa){const q=iqaById(S.iqa);const sd=stepDurOf(q,S.bpm);rhythmStart("rec",iqaSeq(q,$("#iqaOrn").checked,false),sd,{delay:0.15});
-      grid={offset:(RHY.t0+audioLatency(ctx)+TM.calib/1000)-recCtxStart,step:sd,name:q.name,bpm:S.bpm};}};
+      grid={offset:(RHY.t0+audioLatency(ctx))-recCtxStart,step:sd,spb:q.spb,name:q.name,bpm:S.bpm};}};
   mediaRec.onstop=async()=>{stream.getTracks().forEach(t=>t.stop());stopRecUI();if(RHY.kind==="rec")rhythmStop();
     const type=mediaRec.mimeType||mime||"audio/webm";const blob=new Blob(chunks,{type});
     if(!window.claude){try{if(recUrl)URL.revokeObjectURL(recUrl);recUrl=URL.createObjectURL(blob);const a=$("#saveRec");a.href=recUrl;a.download="dozan-"+mid+"-"+new Date().toISOString().slice(0,16).replace(/[:T]/g,"-")+(type.includes("mp4")?".m4a":type.includes("ogg")?".ogg":".webm");$("#saveRow").hidden=false;}catch(e){}}
@@ -2989,7 +3174,7 @@ const rs=$("#recMaqam");rs.append(el("option",{value:"auto"},"اكتشف الم�
 window.addEventListener("resize",()=>{if(S.lastAnalysis&&!$("#p-result").hidden&&!$('[data-rp="plot"]').hidden)drawPlot(S.lastAnalysis);});
 window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{if(S.lastAnalysis){drawPlot(S.lastAnalysis);renderDevBars(S.lastAnalysis);}});
 
-const APP_VER="2026.10.10-14";
+const APP_VER="2026.10.14-1";
 $("#verTxt").textContent="الإصدار \u2066"+APP_VER+"\u2069";
 const hardReload=()=>{location.replace(location.pathname+"?v="+Date.now()+location.hash);};
 $("#updBtn").addEventListener("click",hardReload);$("#updNow").addEventListener("click",hardReload);
@@ -2998,7 +3183,7 @@ renderTr();renderA4();renderChips();renderMaqam();renderIqaChips();renderIqa();r
 renderExample().then(prev=>{if(prev){$("#recMaqam").value="auto";syncRecMaqam();}}).catch(()=>{});
 setLearn(store.get("learnPane","maqam"));navRender();
 initSample();
-window.__dozan={CAL,go,push,navBack,switchTab,setResPane,stageUpdate,stageOpen,stageClose,resultSpeech,Voice,Haptic,setA4,getC3:()=>C3,SONGS:()=>SONGS,openSong,compareWithOriginal,trainSong,runAnalysis,loadLib,playVoice,LIBCACHE:()=>LIBCACHE,openRec,analyze,MAQAMAT,S,phraseEvents,playOud,makeBus,C3,RHY,TM,IQAAT,onTap,drumHit,getCtx};
+window.__dozan={detectRhythm,IQAAT,rhythmOnsets,rhythmTatums,quantizeOns,rhythmCycle,matchLibrary,CAL,go,push,navBack,switchTab,setResPane,stageUpdate,stageOpen,stageClose,resultSpeech,Voice,Haptic,setA4,getC3:()=>C3,SONGS:()=>SONGS,openSong,compareWithOriginal,trainSong,runAnalysis,loadLib,playVoice,LIBCACHE:()=>LIBCACHE,openRec,analyze,MAQAMAT,S,phraseEvents,playOud,makeBus,C3,RHY,TM,IQAAT,onTap,drumHit,getCtx};
 })();
 </script>
 
