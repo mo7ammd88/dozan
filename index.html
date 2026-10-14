@@ -480,6 +480,28 @@ details.tip p{padding:0 16px 14px;font-size:15px;color:var(--muted);line-height:
 .flash{position:fixed;inset:0;z-index:65;pointer-events:none;background:var(--brass);opacity:0;transition:opacity .12s ease-out}
 .flash.on{opacity:.22;transition:none}.flash.on.acc{opacity:.4}
 
+/* solfege trainer */
+.sf-big{display:grid;justify-items:center;text-align:center;gap:0}
+.sf-name{font-size:84px;font-weight:700;line-height:1.05}
+.sf-acc{font-size:20px;font-weight:600;color:var(--brass);min-height:1.3em}
+.sf-ar{font-family:var(--f-display);font-size:18px;color:var(--muted);min-height:1.3em}
+.sf-dev{text-align:center;font-size:20px;font-weight:600;color:var(--muted);min-height:1.4em}
+.sf-dev.ok{color:var(--good)}.sf-dev.near{color:var(--warn)}.sf-dev.off{color:var(--bad)}
+.sf-ladder{display:grid;gap:4px;direction:rtl}
+.sfp{--fill:0%;position:relative;overflow:hidden;border:0;background:var(--surface-2);border-radius:12px;padding:8px 0 6px;display:grid;justify-items:center;gap:0;cursor:pointer;min-width:0}
+.sfp::before{content:"";position:absolute;left:0;right:0;bottom:0;height:var(--fill);background:var(--good-soft);transition:height .1s}
+.sfp>*{position:relative}
+.sfp b{font-size:16px;font-weight:700}
+.sfp i{font-style:normal;font-size:11px;color:var(--brass);min-height:1.2em;line-height:1.2}
+.sfp small{font-size:9.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.sfp.tgt{box-shadow:inset 0 0 0 2px var(--brass)}
+.sfp.done{background:var(--good-soft)}.sfp.done b::after{content:" ✓";font-size:11px;color:var(--good)}
+.sfp.on{background:var(--ink)}.sfp.on b,.sfp.on small{color:var(--bg)}
+.sfp.on.ok{background:var(--good)}.sfp.on.near{background:var(--warn)}.sfp.on.off{background:var(--bad)}
+.sfp.on.ok b,.sfp.on.near b,.sfp.on.off b,.sfp.on.ok small,.sfp.on.near small,.sfp.on.off small,.sfp.on i{color:#fff}
+.sf-res{text-align:center;font-weight:600;color:var(--good)}
+.sf-res:empty{display:none}
+
 /* sheets */
 .sheet{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.35);display:flex;align-items:flex-end;justify-content:center;animation:fadein .2s}
 .sheet-card{background:var(--bg);width:min(680px,100%);max-height:calc(100% - env(safe-area-inset-top,0px) - 24px);border-radius:14px 14px 0 0;overflow-y:auto;overscroll-behavior:contain;padding:0 16px calc(24px + env(safe-area-inset-bottom,0px));animation:sheetup .28s cubic-bezier(.2,.8,.2,1)}
@@ -551,6 +573,7 @@ details.tip p{padding:0 16px 14px;font-size:15px;color:var(--muted);line-height:
       </div>
       <div class="sec">
         <div class="list">
+          <button class="row" data-push="solfa"><span class="tx" style="color:var(--brass)">غنِّ أو اعزف نغماته بالميكروفون<small>دو ري مي… ويريك هل النغمة مضبوطة أو قبل مكانها أو بعده</small></span><svg class="chev"><use href="#i-chev"/></svg></button>
           <button class="row" data-push="maqinfo"><span class="tx">سير المقام ونصائح الأداء</span><svg class="chev"><use href="#i-chev"/></svg></button>
         </div>
       </div>
@@ -599,6 +622,7 @@ details.tip p{padding:0 16px 14px;font-size:15px;color:var(--muted);line-height:
     <div class="sec">
       <p class="sh big">الصوت والآلة</p>
       <div class="tiles">
+        <button class="tile k-voice wide" data-push="solfa"><span class="tg"><svg viewBox="0 0 24 24"><path d="M4 18h16M6 14v4M10 10v8M14 6v12M18 12v6"/></svg></span><span class="tt">دو ري مي على المقام</span><span class="ts" data-def="الميكروفون يسمّي كل نغمة ويريك هل هي قبل مكانها أو بعده">الميكروفون يسمّي كل نغمة ويريك هل هي قبل مكانها أو بعده</span><span class="bar"><i></i></span></button>
         <button class="tile k-voice" data-push="tuner"><span class="tg"><svg viewBox="0 0 24 24"><path d="M4 16a8 8 0 1 1 16 0"/><path d="m12 16 4-6"/></svg></span><span class="tt">مؤشر الطبقة</span><span class="ts" data-def="بُعدك عن الدرجة بالسنت">بُعدك عن الدرجة بالسنت</span><span class="bar"><i></i></span></button>
         <button class="tile k-voice" data-push="oud"><span class="tg"><svg viewBox="0 0 24 24"><ellipse cx="9" cy="15" rx="6" ry="6"/><path d="m13 11 7-7M17 4l3 3"/></svg></span><span class="tt">دوزان العود</span><span class="ts" data-def="اسمع كل وتر">اسمع كل وتر</span><span class="bar"><i></i></span></button>
       </div>
@@ -772,6 +796,23 @@ details.tip p{padding:0 16px 14px;font-size:15px;color:var(--muted);line-height:
       <p class="fb" id="exSFb"></p>
     </div>
     <p class="sf">الأسئلة من الأغاني ذات المقام الموثّق أو المقدّر فقط.</p>
+  </section>
+
+  <section class="page" id="p-solfa" data-title="دو ري مي" hidden>
+    <div class="chips maqpick" role="group" aria-label="المقام"></div>
+    <div class="card">
+      <div class="seg full" id="sfMode"><button data-m="free" aria-pressed="true">حر</button><button data-m="up" aria-pressed="false">اصعد السلم</button><button data-m="down" aria-pressed="false">انزل السلم</button></div>
+      <div class="sf-big"><p class="small muted" id="sfMaq"></p><div class="sf-name" id="sfName">—</div><div class="sf-acc" id="sfAcc"></div><div class="sf-ar" id="sfAr"></div></div>
+      <div class="sf-dev" id="sfDev">شغّل الميكروفون وابدأ</div>
+      <div class="meter"><div class="zone"></div><div class="center"></div><div class="needle" id="sfNeedle"></div></div>
+      <div class="meter-scale"><span>قبلها (أخفض)</span><span>مضبوطة</span><span>بعدها (أعلى)</span></div>
+      <div class="sf-ladder" id="sfLadder"></div>
+      <p class="small" id="sfGoal" style="text-align:center"></p>
+      <p class="sf-res" id="sfResult"></p>
+      <div class="btns" style="justify-content:center"><button class="btn primary" id="sfMic">شغّل الميكروفون</button><button class="btn" data-drone aria-pressed="false">قرار مستمر</button><button class="btn" id="sfPlay">اسمع السلم</button></div>
+      <p class="status" id="sfStatus"></p>
+    </div>
+    <p class="sf">الأسماء حسب دوزانك في الضبط. «نصف بيمول» يعني ربع تون أخفض من النغمة، مثل مي نصف بيمول (السيكاه). المس أي نغمة في السلم لتسمعها. مع «القرار المستمر» استخدم سماعات.</p>
   </section>
 
   <section class="page" id="p-tuner" data-title="مؤشر الطبقة" hidden>
@@ -1321,7 +1362,7 @@ function renderChips(){
   document.querySelectorAll(".maqpick").forEach(w=>{w.innerHTML="";MAQAMAT.forEach(m=>w.append(el("button",{class:"chip","aria-pressed":String(m.id===S.maqam),onclick:()=>selectMaqam(m.id)},m.name)));});
 }
 function selectMaqam(id){
-  S.maqam=id;store.set("maqam",id);stopAll();renderChips();renderMaqam();
+  S.maqam=id;store.set("maqam",id);stopAll();renderChips();renderMaqam();try{if(!$("#p-solfa").hidden)sfSetMode(SF.mode);}catch(e){}
   $("#exDMaqam").textContent=byId(id).name;
   if(S.drone){startDrone();}
 }
@@ -3135,6 +3176,58 @@ function metroBeatFx(b,acc){if(store.get("metFlash",false)){const f=$("#flash");
   if(store.get("metHaptic",false))Haptic.tap(true);
   if(store.get("metCount",false)&&Voice.ok&&60/S.bpm>0.45){const u=new SpeechSynthesisUtterance(COUNT[b%COUNT.length]);u.lang="ar-SA";u.rate=1.4;speechSynthesis.cancel();speechSynthesis.speak(u);}}
 
+/* ---------------- دو ري مي: live note names on the maqam scale ---------------- */
+const SOLFA=["دو","ري","مي","فا","صول","لا","سي"],NAT=[0,200,400,500,700,900,1100];
+const ACC={"-100":["بيمول","\u2066♭\u2069"],"-50":["نصف بيمول","\u2066♭½\u2069"],"0":["",""],"50":["نصف دييز","\u2066♯½\u2069"],"100":["دييز","\u2066♯\u2069"]};
+function tonicLetter(pc){let best=0,bk=1e9;for(let L=0;L<7;L++){let a=mod(pc-NAT[L]+600,1200)-600;a=Math.round(a/50)*50;if(Math.abs(a)>100)continue;const key=Math.abs(a)*2+(a>0?1:0);if(key<bk){bk=key;best=L;}}return best;}
+function spell(abs,letter){let a=mod(abs-NAT[letter]+600,1200)-600;a=Math.max(-100,Math.min(100,Math.round(a/50)*50));const ac=ACC[String(a)]||["",""];return {name:SOLFA[letter],acc:ac[0],sym:ac[1]};}
+const SF={on:false,stream:null,stop:null,mode:"free",target:0,hold:0,done:[],buf:[],t0:0,stats:[],last:-1};
+function sfLadder(){const m=byId(S.maqam);const tAbs=m.tonic+S.transpose*100;const tl=tonicLetter(mod(tAbs,1200));
+  const st=m.steps.slice();if(st[st.length-1]<1200)st.push(1200);
+  return st.map((c,j)=>{const sp=spell(tAbs+c,c>=1200?tl:(tl+j)%7);return {c,j,abs:tAbs+c,...sp,ar:noteName(m.tonic+c),octave:c>=1200};});}
+function sfRender(){const L=sfLadder();const box=$("#sfLadder");box.innerHTML="";box.style.gridTemplateColumns="repeat("+L.length+",1fr)";
+  L.forEach((n,k)=>{const b=el("button",{class:"sfp"+(SF.done[k]?" done":"")+(SF.mode!=="free"&&k===SF.target?" tgt":""),"data-k":String(k),onclick:()=>{const ctx=getCtx();playAbs(n.abs-S.transpose*100,ctx.currentTime+0.02,1.2,S.timbre==="voice"?"voice":"oud");}},
+    el("b",{text:n.name}),el("i",{text:n.sym||" "}),el("small",{text:n.octave?"جواب":n.ar}));box.append(b);});
+  $("#sfMaq").textContent="مقام "+byId(S.maqam).name;
+  $("#sfGoal").textContent=SF.mode==="free"?"غنِّ أو اعزف أي نغمة، ويظهر اسمها ومكانها على السلم.":(SF.target<0||SF.target>=L.length)?"اختر «اصعد» أو «انزل» من جديد لتعيد التمرين.":"الهدف: "+L[SF.target].name+(L[SF.target].acc?" "+L[SF.target].acc:"")+(L[SF.target].octave?" (جواب)":"")+"، ثبّتها حتى تمتلئ";}
+function sfSetMode(md){SF.mode=md;SF.done=[];SF.stats=[];SF.hold=0;const L=sfLadder();SF.target=md==="down"?L.length-1:0;SF.t0=0;$("#sfResult").textContent="";
+  document.querySelectorAll("#sfMode button").forEach(b=>b.setAttribute("aria-pressed",String(b.dataset.m===md)));sfRender();}
+function sfFrame(c,dt){
+  const ladder=$("#sfLadder");
+  if(c==null){SF.buf=[];SF.hold=0;$("#sfDev").className="sf-dev";ladder.querySelectorAll(".sfp.on").forEach(e=>e.classList.remove("on","ok","near","off"));return;}
+  SF.buf.push(c);if(SF.buf.length>5)SF.buf.shift();const cm=[...SF.buf].sort((a,b)=>a-b)[SF.buf.length>>1];
+  const m=byId(S.maqam);const tAbs=m.tonic+S.transpose*100;const r=nearestDeg(cm,S.maqam);if(!r.p)return;
+  const L=sfLadder();const rel=cm-tAbs;const oct=Math.round((rel-r.p.c)/1200);const cents=r.p.c+1200*oct;
+  let k=L.findIndex(n=>Math.abs(n.c-cents)<1);
+  const tl=tonicLetter(mod(tAbs,1200));const sp=spell(tAbs+r.p.c,(tl+r.p.i)%7);
+  const reg=k>=0?(L[k].octave?"جواب":""):(oct<0?"قرار":oct>0?"جواب":"");
+  $("#sfName").textContent=sp.name;$("#sfAcc").textContent=(sp.acc?sp.acc:"")+(reg?(sp.acc?" · ":"")+reg:"");{const nm=noteName(m.tonic+cents);$("#sfAr").textContent=(nm&&nm!=="—"?nm:r.name)+(r.p.alt?" (في النزول)":"");}
+  const dv=Math.round(r.dev),a=Math.abs(dv);const state=a<=10?"ok":a<=25?"near":"off";
+  $("#sfDev").textContent=a<=10?"مضبوطة ✓":(dv>0?"بعدها، أعلى ":"قبلها، أخفض ")+a+" سنت";$("#sfDev").className="sf-dev "+state;
+  $("#sfNeedle").style.left=(50+Math.max(-50,Math.min(50,dv)))+"%";
+  ladder.querySelectorAll(".sfp").forEach(e=>{const on=+e.dataset.k===k;e.classList.toggle("on",on);e.classList.toggle("ok",on&&state==="ok");e.classList.toggle("near",on&&state==="near");e.classList.toggle("off",on&&state==="off");});
+  if(SF.mode!=="free"&&SF.target>=0&&SF.target<L.length){
+    if(!SF.t0)SF.t0=performance.now();
+    if(k===SF.target){if(a<=15){SF.hold+=dt;(SF.stats[k]=SF.stats[k]||[]).push(dv);}else SF.hold=Math.max(0,SF.hold-dt);}else SF.hold=Math.max(0,SF.hold-dt*2);
+    const fill=Math.min(1,SF.hold/700);const tp=ladder.querySelector('.sfp[data-k="'+SF.target+'"]');if(tp)tp.style.setProperty("--fill",Math.round(fill*100)+"%");
+    if(SF.hold>=700){SF.done[SF.target]=true;SF.hold=0;Haptic.tap();SF.target+=SF.mode==="down"?-1:1;
+      if(SF.target<0||SF.target>=L.length){const secs=((performance.now()-SF.t0)/1000).toFixed(1);const avg=SF.stats.filter(Boolean).map(x=>x.reduce((p,q)=>p+q,0)/x.length);
+        const worst=avg.map((v,i)=>[i,v]).filter(x=>x[1]!=null).sort((p,q)=>Math.abs(q[1])-Math.abs(p[1]))[0];
+        $("#sfResult").textContent="أتممت السلم في "+secs+" ث."+(worst&&Math.abs(worst[1])>=6?" أبعد درجة عن الضبط: "+L[worst[0]].name+(L[worst[0]].acc?" "+L[worst[0]].acc:"")+" ("+(worst[1]>0?"أعلى":"أخفض")+" "+Math.abs(Math.round(worst[1]))+" سنت في المتوسط).":" كل الدرجات مضبوطة.");
+        Haptic.double();const best=store.get("sf.best."+S.maqam+"."+SF.mode,null);if(!best||+secs<best){store.set("sf.best."+S.maqam+"."+SF.mode,+secs);$("#sfResult").textContent+=" أفضل زمن لك ✓";}
+        SF.target=-1;}
+      sfRender();}}
+}
+async function sfStart(){if(SF.on){sfStop();return;}const st=$("#sfStatus");
+  if(!micAvailable()){st.textContent=micErrorText(null);st.className="status err";return;}getCtx();
+  aSess("play-and-record");let stream;try{stream=await openMic();}catch(e){aSess("playback");st.textContent=micErrorText(e);st.className="status err";return;}
+  SF.on=true;SF.stream=stream;SF.buf=[];SF.stop=livePitch(stream,sfFrame);Awake.on("solfa");$("#sfMic").textContent="أوقف الميكروفون";st.textContent=S.micLabel?"الميكروفون: "+S.micLabel:"";st.className="status";
+  if(SF.mode!=="free"&&SF.target<0)sfSetMode(SF.mode);}
+function sfStop(){if(!SF.on)return;SF.on=false;try{SF.stop&&SF.stop();}catch(e){}try{SF.stream.getTracks().forEach(t=>t.stop());}catch(e){}aSess("playback");Awake.off("solfa");$("#sfMic").textContent="شغّل الميكروفون";$("#sfDev").textContent="شغّل الميكروفون وابدأ";$("#sfDev").className="sf-dev";}
+$("#sfMic").addEventListener("click",sfStart);
+document.querySelectorAll("#sfMode button").forEach(b=>b.addEventListener("click",()=>sfSetMode(b.dataset.m)));
+$("#sfPlay").addEventListener("click",()=>{if(SF.on){$("#sfStatus").textContent="أوقف الميكروفون أولاً حتى لا يسمع صوت التطبيق.";return;}const L=sfLadder();const ctx=getCtx();let t=ctx.currentTime+0.05;L.forEach((n,k)=>{playAbs(n.abs-S.transpose*100,t,0.55,"oud");RHY.vis.push(setTimeout(()=>{document.querySelectorAll("#sfLadder .sfp").forEach(e=>e.classList.toggle("on",+e.dataset.k===k));$("#sfName").textContent=n.name;$("#sfAcc").textContent=n.acc+(n.octave?(n.acc?" · ":"")+"جواب":"");$("#sfAr").textContent=n.ar;},(t-ctx.currentTime)*1000));t+=0.6;});});
+
 /* navigation: 5 tabs, each with its own push stack; sheets */
 const TAB_OF={maqam:"learn",songs:"learn",path:"learn",train:"train",rhythm:"rhythm",rec:"rec",coach:"coach"};
 const NAV={tab:"learn",stack:{learn:[],train:[],rhythm:[],rec:[],coach:[]},scroll:{},hist:!window.claude&&location.protocol==="https:"};
@@ -3152,6 +3245,7 @@ function navRender(){
   if(TM.active&&key!=="p-timing")tmFinish(true);
   if(CAL.on&&key!=="p-timing")calibAbort();
   if(typeof tuner!=="undefined"&&tuner&&key!=="p-tuner")tuner.stop();
+  if(SF.on&&key!=="p-solfa")sfStop();if(key==="p-solfa")sfSetMode(SF.mode);
   if(key==="p-songpick"){$("#spQ").value="";renderSongPick();}
   syncRecIqa();
   if(key==="p-result"&&S.lastAnalysis&&!$('[data-rp="plot"]').hidden)setTimeout(()=>drawPlot(S.lastAnalysis),30);
@@ -3216,7 +3310,7 @@ const rs=$("#recMaqam");rs.append(el("option",{value:"auto"},"اكتشف الم�
 window.addEventListener("resize",()=>{if(S.lastAnalysis&&!$("#p-result").hidden&&!$('[data-rp="plot"]').hidden)drawPlot(S.lastAnalysis);});
 window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{if(S.lastAnalysis){drawPlot(S.lastAnalysis);renderDevBars(S.lastAnalysis);}});
 
-const APP_VER="2026.10.14-5";
+const APP_VER="2026.10.14-6";
 $("#verTxt").textContent="الإصدار \u2066"+APP_VER+"\u2069";
 const hardReload=()=>{location.replace(location.pathname+"?v="+Date.now()+location.hash);};
 $("#updBtn").addEventListener("click",hardReload);$("#updNow").addEventListener("click",hardReload);
@@ -3225,7 +3319,7 @@ renderTr();renderA4();renderChips();renderMaqam();renderIqaChips();renderIqa();r
 renderExample().then(prev=>{if(prev){$("#recMaqam").value="auto";syncRecMaqam();}}).catch(()=>{});
 setLearn(store.get("learnPane","maqam"));navRender();
 initSample();
-window.__dozan={detectRhythm,IQAAT,rhythmOnsets,rhythmTatums,quantizeOns,rhythmCycle,matchLibrary,CAL,go,push,navBack,switchTab,setResPane,stageUpdate,stageOpen,stageClose,resultSpeech,Voice,Haptic,setA4,getC3:()=>C3,SONGS:()=>SONGS,openSong,compareWithOriginal,trainSong,runAnalysis,loadLib,playVoice,LIBCACHE:()=>LIBCACHE,openRec,analyze,MAQAMAT,S,phraseEvents,playOud,makeBus,C3,RHY,TM,IQAAT,onTap,drumHit,getCtx};
+window.__dozan={sfFrame,sfLadder,sfSetMode,SF,detectRhythm,IQAAT,rhythmOnsets,rhythmTatums,quantizeOns,rhythmCycle,matchLibrary,CAL,go,push,navBack,switchTab,setResPane,stageUpdate,stageOpen,stageClose,resultSpeech,Voice,Haptic,setA4,getC3:()=>C3,SONGS:()=>SONGS,openSong,compareWithOriginal,trainSong,runAnalysis,loadLib,playVoice,LIBCACHE:()=>LIBCACHE,openRec,analyze,MAQAMAT,S,phraseEvents,playOud,makeBus,C3,RHY,TM,IQAAT,onTap,drumHit,getCtx};
 })();
 </script>
 
