@@ -335,6 +335,15 @@ details.more[open]>summary{margin-bottom:8px}
 .cmp td.n{font-variant-numeric:tabular-nums;direction:ltr;text-align:right;white-space:nowrap}
 .up{color:var(--good)} .down{color:var(--bad)} .same{color:var(--muted)}
 .verdict{font-weight:600;font-size:16px}
+.plain{display:grid;gap:12px}
+.plain .big{font-size:19px;font-weight:700;line-height:1.45}
+.plain .big.good{color:var(--good)} .plain .big.warn{color:var(--warn)} .plain .big.bad{color:var(--bad)}
+.plain h4{font-size:14px;color:var(--muted);font-weight:500;margin:0}
+.plain ol{margin:0;padding-inline-start:20px;display:grid;gap:10px}
+.plain li{line-height:1.55;font-size:16px}
+.plain li .btns{margin-top:6px}
+.plain .ok{line-height:1.55;font-size:15px}
+.plain .hint{font-size:13px;color:var(--muted);line-height:1.5}
 .cmpplot{width:100%;height:220px;display:block;border-radius:12px;background:var(--surface-2)}
 
 /* library */
@@ -946,7 +955,9 @@ details.tip p{padding:0 16px 14px;font-size:15px;color:var(--muted);line-height:
         <div class="seg full" id="resSeg" role="tablist"><button data-r="sum" aria-selected="true">الملخص</button><button data-r="fix" aria-selected="false">التصحيح</button><button data-r="plot" aria-selected="false">المنحنى</button><button data-r="ai" aria-selected="false">المدرب</button></div>
 
         <div class="pane" data-rp="sum">
-          <div class="card"><div class="metrics" id="metrics"></div></div>
+          <div class="card plain" id="plainCard"></div>
+          <details class="card more" id="metricsBox"><summary>التفاصيل بالأرقام</summary><div class="metrics" id="metrics"></div>
+            <p class="small muted">السنت وحدة صغيرة لقياس النغمة: نصف التون = 100 سنت، وربع التون = 50 سنت تقريباً. الفرق الأقل من 15 سنت لا تكاد تسمعه الأذن.</p></details>
           <div class="card" id="cmpCard" hidden>
             <h3 id="cmpTitle">مقارنة بمحاولتك السابقة</h3>
             <p class="verdict" id="cmpVerdict"></p>
@@ -2166,7 +2177,8 @@ function renderResults(R,isExample){
   const off=Math.round(R.tonicOffset);
   $("#sumTonic").textContent=R.auto?(Math.abs(off)<=20?"قرارك مطابق تقريباً لقرار التطبيق.":"غنّيت على قرار "+(off>0?"أعلى":"أخفض")+" من قرار التطبيق بـ "+Math.abs(off)+" سنت، وضُبط التحليل على قرارك."):"التحليل مضبوط على قرار التطبيق.";
   const M=$("#metrics");M.innerHTML="";
-  const met=(label,val,sub,cls)=>M.append(el("div",{class:"metric "+(cls||"")},el("span",{text:label}),el("b",{text:val}),el("small",{text:sub})));
+  const WORD={good:"ممتاز",warn:"مقبول",bad:"يحتاج تدريباً"};
+  const met=(label,val,sub,cls)=>M.append(el("div",{class:"metric "+(cls||"")},el("span",{text:label}),el("b",{text:val}),el("small",{text:(WORD[cls]?WORD[cls]+" · ":"")+sub})));
   met("دقة الدرجات",Math.round(R.within25*100)+"%","من الوقت ضمن ±25 سنت",R.within25>=.7?"good":R.within25>=.45?"warn":"bad");
   met("متوسط الانحراف",Math.round(R.mad)+" سنت","عن أقرب درجة",R.mad<=15?"good":R.mad<=28?"warn":"bad");
   met("ثبات النغمة",R.stab==null?"—":"±"+Math.round(R.stab)+" سنت","تذبذب داخل النغمة الطويلة",R.stab==null?"":R.stab<=15?"good":R.stab<=28?"warn":"bad");
@@ -2178,13 +2190,13 @@ function renderResults(R,isExample){
   if(R.timing){met("الالتزام بالإيقاع",Math.round(R.timing.within40*100)+"%","من الضربات ضمن ±40 مث · "+R.timing.iqa+" "+R.timing.bpm,R.timing.within40>=.7?"good":R.timing.within40>=.45?"warn":"bad");
     met("الثبات على النبض","±"+Math.round(R.timing.sd)+" مث","تشتت بدايات النغمات",R.timing.sd<=30?"good":R.timing.sd<=55?"warn":"bad");}
   else met("انتظام الإيقاع",R.ioiCv==null?"—":Math.round(Math.max(0,1-R.ioiCv)*100)+"%","انتظام المسافات بين النغمات");
-  drawPlot(R);renderDevBars(R);renderIssues(R);
+  drawPlot(R);renderDevBars(R);renderIssues(R);renderPlain(R);
   $("#aiOut").innerHTML="";
 }
 function renderAltMaqam(R,isExample){
   const box=$("#altMaqam");box.innerHTML="";
   if(R.alt){const w=R.alt.worst.map(d=>d.name+" "+(d.dev>0?"+":"")+d.dev+" سنت").join("، ");
-    box.append(el("p",{class:"notice",style:"width:100%"},"قراءة أخرى ممكنة: إن كنت تقصد «"+R.alt.name+"»"+(w?"، فالانحرافات الأكبر عنه: "+w+".":"، فأداؤك قريب منه أيضاً.")+" المقامات المتقاربة تختلف أحياناً بربع تون في درجة واحدة، فاختر المقام الذي قصدته ليكون التحليل دقيقاً."));}
+    box.append(el("p",{class:"notice",style:"width:100%"},"أداؤك قريب أيضاً من مقام «"+R.alt.name+"». إذا كنت تقصده فاختره من الأسفل، ليُحسب التحليل عليه."));}
   const c2=R.cands[1];const close=c2&&c2.rel>0.93;
   box.append(el("span",{class:"small muted",text:R.autoMaq?(close?"قريب أيضاً من «"+c2.name+"». ليس هذا مقامك؟ اختر:":"ليس هذا مقامك؟ اختر:"):"أعد التحليل على مقام آخر:"}));
   const ids=[...new Set(R.cands.map(c=>c.id).concat(MAQAMAT.map(m=>m.id)))].slice(0,8);
@@ -2208,14 +2220,46 @@ function issueAdvice(R,i){
   const fix=i.quarter?" تمرين: شغّل القرار المستمر، واسمع «"+i.name+"» بالعود، ثم غنِّها ببطء ثلاث مرات مع مؤشر الطبقة حتى يستقر المؤشر في الأخضر.":" تمرين: اسمع النغمة الصحيحة، ثم غنِّ من القرار صعوداً إليها ببطء.";
   return "غنّيتها "+dir+" "+amt+"."+near+fix;
 }
+const ORD=["الأولى (القرار)","الثانية","الثالثة","الرابعة","الخامسة","السادسة","السابعة","الثامنة (جواب القرار)"];
+function issueGroups(R){
+  const groups=[];(R.issues||[]).forEach((i,k)=>{i.n=k+1;const key=i.kind+"|"+i.name+"|"+(i.kind==="scoop"?"":Math.sign(i.dev));let g=groups.find(x=>x.key===key);if(!g){g={key,items:[],kind:i.kind,name:i.name};groups.push(g);}g.items.push(i);});
+  groups.forEach(g=>{g.avg=g.items.reduce((a,i)=>a+i.dev,0)/g.items.length;g.sev=g.items.reduce((a,i)=>a+(i.kind==="pitch"?Math.abs(i.dev):i.ms/8)*i.dur,0);});
+  return groups.sort((a,b)=>b.sev-a.sev);
+}
+function plainIssue(R,g){
+  const k=R.degs.findIndex(d=>d.name===g.name);const where="نغمة «"+g.name+"»"+(k>=0&&ORD[k]?"، الدرجة "+ORD[k]+" في المقام":"");
+  const n=g.items.length;const times=n>1?" (تكررت "+(n===2?"مرتين":n+" مرات")+")":"";const oud=R.mode==="oud";
+  if(g.kind==="scoop")return where+times+": "+(oud?"النغمة تهتز بعد ضرب الريشة. ثبّت إصبعك على مكانه قبل أن تضرب.":"تبدأها من تحت ثم تصعد إليها. ابدأها على مكانها مباشرة، وتخيّلها قبل أن تغني.");
+  const a=Math.abs(g.avg),up=g.avg>0;const amt=a<40?"قليلاً":a<65?"بربع تون تقريباً":"كثيراً";
+  return where+times+": خرجت "+(up?"أعلى":"أخفض")+" من الصحيح "+amt+". "+(oud?"حرّك إصبعك "+(up?"نحو رأس العود (جهة المفاتيح).":"نحو صدر العود (جهة الفتحة)."):(up?"انزل بصوتك عندها.":"ارفع صوتك عندها."));
+}
+function renderPlain(R){
+  const box=$("#plainCard");if(!box)return;box.innerHTML="";const oud=R.mode==="oud";const who=oud?"عزفك":"صوتك";
+  const pct=Math.round(R.within25*100);
+  const lvl=R.within25>=.8?["good","ممتاز: "+who+" على النغمات الصحيحة في أغلب الوقت."]:R.within25>=.65?["good","جيد: أغلب نغماتك صحيحة، ومواضع قليلة تحتاج ضبطاً."]:R.within25>=.45?["warn","متوسط: "+who+" يبتعد عن النغمة الصحيحة في جزء كبير من الوقت."]:["bad","يحتاج تدريباً: "+who+" بعيد عن نغمات المقام في أغلب الوقت."];
+  box.append(el("p",{class:"big "+lvl[0],text:lvl[1]}));
+  box.append(el("p",{class:"hint",text:"كنت على النغمة الصحيحة "+pct+"% من الوقت"+(R.within25>=.8?".":". الهدف 80% فأكثر.")}));
+  const groups=issueGroups(R).slice(0,3);
+  if(groups.length){box.append(el("h4",{text:groups.length===1?"أهم شيء تصلحه":"أهم "+(groups.length===2?"شيئين":"3 أشياء")+" تصلحها"}));
+    const ol=el("ol");groups.forEach(g=>{const li=el("li",{text:plainIssue(R,g)});const i=g.items[0];
+      li.append(el("div",{class:"btns"},el("button",{class:"btn small",onclick:()=>playSegment(i.t-0.1,i.t+Math.min(i.dur,1.8)+0.1).then(()=>playTargetNote(R,i))},"اسمع خطأك ثم الصحيح")));ol.append(li);});
+    box.append(ol);}
+  else box.append(el("p",{class:"ok",text:"لا توجد نغمات طويلة خاطئة بشكل واضح. ركّز على الثبات والانتقال بين النغمات."}));
+  const good=[];
+  if(R.stab!=null&&R.stab<=15)good.push(oud?"النغمة ثابتة بعد الضرب":"صوتك ثابت على النغمات الطويلة");
+  if(R.outside<=.08)good.push("لم تخرج عن نغمات المقام");
+  if(!oud&&R.scoop<=80)good.push("تدخل على النغمة مباشرة");
+  if(!oud&&R.vib&&R.vib.present)good.push("في صوتك اهتزاز طبيعي يعطيه طرباً");
+  if(R.timing&&R.timing.within40>=.7)good.push("ملتزم بالإيقاع");
+  if(good.length)box.append(el("p",{class:"ok"},el("b",{text:"أجدت: "}),good.slice(0,3).join("، ")+"."));
+  box.append(el("p",{class:"hint",text:"كل المواضع في «التصحيح»، والشرح الكامل وخطة التمرين في «المدرب»."}));
+}
 function renderIssues(R){
   const box=$("#issues");box.innerHTML="";
   if(!R.issues.length){$("#issuesLead").textContent="لم نجد نغمات طويلة بعيدة عن درجات المقام بأكثر من 25 سنت. ركّز على الثبات والانتقالات.";return;}
   const _oud=R.mode==="oud";
   // group repeated mistakes on the same note in the same direction
-  const groups=[];R.issues.forEach((i,k)=>{i.n=k+1;const key=i.kind+"|"+i.name+"|"+(i.kind==="scoop"?"":Math.sign(i.dev));let g=groups.find(x=>x.key===key);if(!g){g={key,items:[],kind:i.kind,name:i.name};groups.push(g);}g.items.push(i);});
-  groups.forEach(g=>{g.avg=g.items.reduce((a,i)=>a+i.dev,0)/g.items.length;g.sev=g.items.reduce((a,i)=>a+(i.kind==="pitch"?Math.abs(i.dev):i.ms/8)*i.dur,0);});
-  groups.sort((a,b)=>b.sev-a.sev);
+  const groups=issueGroups(R);
   $("#issuesLead").textContent=R.issues.length+" موضعاً في "+groups.length+(groups.length===1?" مشكلة":" مشكلات")+"، الأهم أولاً. اضغط وقت أي موضع لتسمع تسجيلك ثم النغمة الصحيحة. الأرقام نفسها على المنحنى.";
   groups.forEach(g=>{
     const rep=Object.assign({},g.items[0],{dev:g.avg,ms:g.items.reduce((a,i)=>a+(i.ms||0),0)/g.items.length});
@@ -3052,13 +3096,13 @@ function reportPrompt(R,note){
   "درجات المقام بالسنت من القرار: "+m.steps.join("، ")+(m.desc?" (وفي النزول: "+Object.entries(m.desc).map(([i,c])=>"الدرجة "+(+i+1)+" = "+c).join("، ")+")":"")+". الأجناس: "+m.ajnas.map(j=>j[0]).join(" + ")+". الغماز: "+noteName(m.tonic+m.steps[m.gh])+".\n"+
   (S.lastIsExample?"تنبيه: هذا تسجيل تجريبي مولّد آلياً وليس أداء المتدرب؛ قل ذلك في أول سطر.\n":"")+
   "الصورة المرفقة (إن وجدت) هي منحنى الطبقة لهذا التسجيل.\n\n"+
-  "اكتب بالعربية بصيغة Markdown، بين 350 و700 كلمة، بهذه الأقسام:\n"+
+  "اكتب بالعربية بصيغة Markdown، بين 250 و450 كلمة، بلغة بسيطة يفهمها هاوٍ غير متخصص: جمل قصيرة، واشرح أي مصطلح فني بكلمات بسيطة عند أول ذكر له، ولا تكتب رقماً بالسنت أو الهرتز دون أن تقول معناه بالكلام (مثل: أعلى قليلاً، ربع تون تقريباً). سمِّ الدرجة باسمها وترتيبها في المقام (مثل: السيكاه، الدرجة الثالثة). بهذه الأقسام:\n"+
   "## الخلاصة\nتقييم من 10 وجملة حكم واحدة صريحة، ثم أهم شيئين يجب العمل عليهما.\n"+
   "## ما أجدته\nنقاط محددة بالأرقام.\n"+
   "## قراءة الجمل والسير\nجملة جملة باختصار من phrases: أين بدأت وأين قفلت، هل أبرزت الغماز، هل ظهر تحويل مقامي، هل كانت القفلة الأخيرة على القرار وثابتة.\n"+
   "## النشاز وتعديله\nاجمع pitch_problem_spots حسب الدرجة، واذكر الأوقات، وميّز الخطأ من التلوين المقبول، واشرح السبب المرجّح والعلاج المحدد.\n"+
   (prev?"## مقارنة بمحاولتك السابقة\nبالأرقام من previous_attempt_same_maqam و student.degree_trends_cents: ماذا تحسن وماذا لم يتحسن، وهل تحقق هدف المدرب السابق إن وُجد.\n":"")+
-  "## خطة التدريب\n3 إلى 5 تمارين مرقمة لهذا الأسبوع، كل تمرين: الخطوات، الأداة وإعداداتها (مثل: القرار المستمر على "+m.name+"، المترونوم 70)، المدة اليومية، وعلامة نجاح رقمية.\n"+
+  "## خطة التدريب\nتمرينان أو ثلاثة مرقمة لهذا الأسبوع، كل تمرين: الخطوات، الأداة وإعداداتها (مثل: القرار المستمر على "+m.name+"، المترونوم 70)، المدة اليومية، وعلامة نجاح رقمية.\n"+
   "## هدف التسجيل القادم\nسطر واحد أو اثنان بأرقام قابلة للقياس.\n\n"+
   (note?"ملاحظة المتدرب: "+note+"\n\n":"")+
   "ملف المتدرب وتاريخه:\n"+JSON.stringify(studentProfile())+"\n\nالقياسات:\n"+JSON.stringify(analysisSummary(R));
@@ -3385,7 +3429,7 @@ const rs=$("#recMaqam");rs.append(el("option",{value:"auto"},"اكتشف الم�
 window.addEventListener("resize",()=>{if(S.lastAnalysis&&!$("#p-result").hidden&&!$('[data-rp="plot"]').hidden)drawPlot(S.lastAnalysis);});
 window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{if(S.lastAnalysis){drawPlot(S.lastAnalysis);renderDevBars(S.lastAnalysis);}});
 
-const APP_VER="2026.10.16-2";
+const APP_VER="2026.10.16-3";
 $("#verTxt").textContent="الإصدار \u2066"+APP_VER+"\u2069";
 const hardReload=()=>{location.replace(location.pathname+"?v="+Date.now()+location.hash);};
 $("#updBtn").addEventListener("click",hardReload);$("#updNow").addEventListener("click",hardReload);
