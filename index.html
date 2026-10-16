@@ -1018,8 +1018,9 @@ details.tip p{padding:0 16px 14px;font-size:15px;color:var(--muted);line-height:
           <label class="row static"><span class="tx">نموذج التقرير</span><select id="coachModel"><option value="sonnet">Sonnet 5.5 · متوازن</option><option value="opus">Opus 5.5 · أعمق وأغلى</option><option value="haiku">Haiku 5.5 · الأرخص</option></select></label>
           <label class="row static"><span class="tx">عمق التقرير<small>التفكير الأعمق يُحسب من التكلفة</small></span><select id="reportEffort"><option value="low">مختصر</option><option value="medium">متوسط</option><option value="high">عميق</option></select></label>
           <label class="row static"><span class="tx">نموذج المحادثة</span><select id="chatModel"><option value="haiku">Haiku 5.5 · الأرخص</option><option value="sonnet">Sonnet 5.5 · متوازن</option><option value="opus">Opus 5.5 · أغلى</option></select></label>
-          <div class="row static"><span class="tx">حد الإنفاق الشهري بالدولار<small>يتوقف المدرب عند بلوغه حتى تغيّره</small></span><input id="budgetIn" class="field mono" type="number" inputmode="decimal" min="0" step="0.5" style="width:76px;flex:none;text-align:center;padding:6px"></div>
-          <div class="row static"><span class="tx">إنفاق هذا الشهر<small id="spendNote"></small></span><b class="mono" id="spendNow"></b></div>
+          <div class="row static"><span class="tx">حد الإنفاق بالدولار<small>يتوقف المدرب عند بلوغه. صفّر العداد بعد كل شحن للرصيد</small></span><input id="budgetIn" class="field mono" type="number" inputmode="decimal" min="0" step="0.5" style="width:76px;flex:none;text-align:center;padding:6px"></div>
+          <div class="row static"><span class="tx">الإنفاق منذ آخر تصفير<small id="spendNote"></small></span><b class="mono" id="spendNow"></b></div>
+          <div class="row static"><span class="tx">بدء العدّ من جديد<small id="resetNote"></small></span><button class="btn small" id="spendReset">صفّر العداد</button></div>
         </div>
         <p class="sf">التكلفة تقريبية ومحسوبة في هذا الجهاز فقط. الرقم الدقيق في صفحة Usage في console.anthropic.com.</p>
         <div id="keyRow" hidden style="display:grid;gap:7px;margin-top:8px">
@@ -2637,7 +2638,7 @@ async function researchSong(x){
     if(dt.maqam){x.maqamText=dt.maqam;x.maqam=maqFromText(dt.maqam);x.status=r.cites.length&&dt.maqam_confidence!=="low"?"v":"e";}
     x.sources=r.cites.slice(0,8);x.researched=Date.now();
     await saveSong(x);renderSongs();openSong(x.id);
-    $("#songDStatus").textContent="تم من "+r.searches+" بحث و"+r.cites.length+" مصدر. التكلفة تقريباً $"+r.cost.toFixed(3)+" · هذا الشهر $"+r.month.toFixed(2)+(x.status==="e"?" · ثقة المقام منخفضة، تحقق منه بمقطع من الأصل.":"");
+    $("#songDStatus").textContent="تم من "+r.searches+" بحث و"+r.cites.length+" مصدر. التكلفة تقريباً $"+r.cost.toFixed(3)+" · منذ آخر تصفير $"+r.month.toFixed(2)+(x.status==="e"?" · ثقة المقام منخفضة، تحقق منه بمقطع من الأصل.":"");
   }catch(e){st.textContent=(sampleErr(e)||"تعذّر البحث.")+(e&&e.message?" ["+e.message+"]":"");st.className="status err";}
   finally{const b=$("#songResearch");if(b)b.disabled=false;}
 }
@@ -2933,10 +2934,16 @@ const reportEffort=()=>store.get("reportEffort","medium");
 const monthKey=()=>new Date().toISOString().slice(0,7);
 const monthSpend=()=>(store.get("spend",{})[monthKey()]||0);
 const budget=()=>{const b=+store.get("budget",5);return isFinite(b)&&b>0?b:0;};
-function addSpend(cost){if(!(cost>0))return monthSpend();const mk=monthKey();const sp=store.get("spend",{});sp[mk]=(sp[mk]||0)+cost;store.set("spend",sp);renderSpend();return sp[mk];}
-function checkBudget(){const b=budget();if(b&&monthSpend()>=b)throw {code:"budget",message:"$"+monthSpend().toFixed(2)+" من $"+b.toFixed(2)};}
-function renderSpend(){const n=document.getElementById("spendNow");if(!n)return;const sp=store.get("spend",{});const d=new Date();d.setUTCDate(1);d.setUTCMonth(d.getUTCMonth()-1);const prev=sp[d.toISOString().slice(0,7)];
-  n.textContent="$"+monthSpend().toFixed(monthSpend()<1?3:2);const b=budget();document.getElementById("spendNote").textContent=(b?"من حد \u2066$"+b.toFixed(2)+"\u2069":"بلا حد")+(prev!=null?" · الشهر الماضي \u2066$"+prev.toFixed(2)+"\u2069":"");}
+/* spending period: counts from the last reset (e.g. after topping up credit); the cap applies to it. Monthly totals are kept separately for history. */
+const period=()=>{let p=store.get("period",null);if(!p||typeof p.spent!=="number"){const d=new Date();d.setDate(1);d.setHours(0,0,0,0);p={start:d.getTime(),spent:monthSpend()};store.set("period",p);}return p;};
+const periodSpend=()=>period().spent;
+function addSpend(cost){if(!(cost>0))return periodSpend();const mk=monthKey();const sp=store.get("spend",{});sp[mk]=(sp[mk]||0)+cost;store.set("spend",sp);const p=period();p.spent+=cost;store.set("period",p);renderSpend();return p.spent;}
+function checkBudget(){const b=budget();if(b&&periodSpend()>=b)throw {code:"budget",message:"\u2066$"+periodSpend().toFixed(2)+"\u2069 من \u2066$"+b.toFixed(2)+"\u2069"};}
+const money=v=>v>0&&v<0.001?"<$0.001":"$"+v.toFixed(v<1?3:2);const usd=v=>"\u2066"+money(v)+"\u2069";
+function renderSpend(){const n=document.getElementById("spendNow");if(!n)return;const p=period(),b=budget();
+  n.textContent=money(p.spent);
+  document.getElementById("spendNote").textContent=(b?"من حد "+usd(b)+" · المتبقي "+usd(Math.max(0,b-p.spent)):"بلا حد")+" · هذا الشهر "+usd(monthSpend());
+  document.getElementById("resetNote").textContent="آخر تصفير "+new Date(p.start).toLocaleDateString("ar-SA-u-ca-gregory-nu-latn",{day:"numeric",month:"long"});}
 /* one place that talks to the API: remembers which auth header works so we don't send every request twice */
 async function apiFetch(key,body,signal){
   const base={"content-type":"application/json","anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"};
@@ -3037,7 +3044,7 @@ $("#saveKey").addEventListener("click",async()=>{const v=cleanKey($("#apiKey").v
   const st=$("#keyState");st.textContent="جارٍ اختبار المفتاح…";
   try{await ask("ردّ بكلمة واحدة: جاهز",{role:"chat",maxTokens:1024,effort:"low"});st.textContent="المفتاح يعمل ومحفوظ في هذا الجهاز ("+v.slice(0,10)+"…"+v.slice(-4)+").";}
   catch(e){st.textContent="المفتاح محفوظ لكن الاختبار فشل: "+(sampleErr(e)||"")+(e&&e.message?" ["+e.message+"]":"")+" · طول المفتاح "+v.length+" حرفاً، يبدأ بـ "+v.slice(0,10)+"…";}});
-function sampleErr(e){const c=e&&e.code;return c==="not_granted"?"لم يُسمح للصفحة باستخدام Claude.":c==="rate_limited"?"طلبات كثيرة الآن. حاول بعد قليل.":c==="session_expired"?"انتهت الجلسة. سجّل الدخول مجدداً.":c==="bad_key"?"مفتاح API غير صحيح أو لا يملك صلاحية. راجعه في «الضبط».":c==="no_key"?"أضف مفتاح API من «الضبط».":c==="budget"?"بلغت حد الإنفاق الشهري الذي حددته في «الضبط». ارفعه إن أردت المتابعة.":c==="cancelled"?"":c==="empty_completion"?"وصل رد المدرب فارغاً. حاول مرة أخرى.":"تعذّر الاتصال بالمدرب. حاول مرة أخرى.";}
+function sampleErr(e){const c=e&&e.code;return c==="not_granted"?"لم يُسمح للصفحة باستخدام Claude.":c==="rate_limited"?"طلبات كثيرة الآن. حاول بعد قليل.":c==="session_expired"?"انتهت الجلسة. سجّل الدخول مجدداً.":c==="bad_key"?"مفتاح API غير صحيح أو لا يملك صلاحية. راجعه في «الضبط».":c==="no_key"?"أضف مفتاح API من «الضبط».":c==="budget"?"بلغت حد الإنفاق الذي حددته. إذا شحنت رصيدك صفّر العداد من «الضبط»، أو ارفع الحد.":c==="cancelled"?"":c==="empty_completion"?"وصل رد المدرب فارغاً. حاول مرة أخرى.":"تعذّر الاتصال بالمدرب. حاول مرة أخرى.";}
 const sampleErrFull=e=>{const b=sampleErr(e);return b&&e&&e.message&&!sample?b+" ["+e.message+"]":b;};
 function reportPrompt(R,note){
   const m=R.maqam;const prev=S.baseline&&!S.lastIsExample;
@@ -3067,7 +3074,7 @@ $("#aiBtn").addEventListener("click",async()=>{
     const r=await ask(prompt,{system:COACH_KB,images:img?[img]:null,maxTokens:10000,effort:reportEffort(),signal:aiCtl.signal,onRetry:retryNote(out),onThinking:()=>{if(out.querySelector(".thinking"))out.innerHTML='<p class="thinking">المدرب يدرس تسجيلك ('+coachModel().name+'، قد يأخذ 30 إلى 90 ثانية)</p>';},onText:({text})=>{out.innerHTML=md(text);}});
     S.reportThread={prompt,report:r.text,turns:[]};$("#aiFollow").hidden=false;afterAiReply(out,r.text);
     if(r.truncated)out.append(el("p",{class:"small muted",text:"انقطع الرد قبل نهايته."}));
-    if(r.cost!=null)out.append(el("p",{class:"small muted",text:(r.model?r.model+" · ":"")+"تكلفة هذا التحليل تقريباً $"+r.cost.toFixed(3)+" · هذا الشهر $"+r.month.toFixed(2)}));
+    if(r.cost!=null)out.append(el("p",{class:"small muted",text:(r.model?r.model+" · ":"")+"تكلفة هذا التحليل تقريباً $"+r.cost.toFixed(3)+" · منذ آخر تصفير $"+r.month.toFixed(2)}));
     if(S.currentRec&&!S.lastIsExample){S.currentRec.report=r.text;S.currentRec.reportT=Date.now();const gm=r.text.split(/##\s*هدف التسجيل القادم/)[1];if(gm)S.currentRec.goal=gm.replace(/##[\s\S]*/,"").trim().slice(0,300);await updateRec(S.currentRec);}
   }catch(e){if(e&&e.text)out.innerHTML=md(e.text);const msg=sampleErrFull(e);if(msg)out.append(el("p",{class:"status err",text:msg}));}
   finally{$("#aiBtn").disabled=false;$("#aiStop").hidden=true;}
@@ -3091,6 +3098,7 @@ $("#keepAwake").checked=store.get("keepAwake",true);$("#keepAwake").addEventList
 $("#coachModel").value=store.get("coachModel","sonnet");$("#coachModel").addEventListener("change",e=>store.set("coachModel",e.target.value));
 $("#chatModel").value=store.get("chatModel","haiku");$("#chatModel").addEventListener("change",e=>store.set("chatModel",e.target.value));
 $("#reportEffort").value=reportEffort();$("#reportEffort").addEventListener("change",e=>store.set("reportEffort",e.target.value));
+$("#spendReset").addEventListener("click",()=>{if(!confirm("تصفير عداد الإنفاق؟ يبدأ العدّ من الآن، ويبقى سجل الأشهر محفوظاً."))return;store.set("period",{start:Date.now(),spent:0});renderSpend();});
 $("#budgetIn").value=store.get("budget",5);$("#budgetIn").addEventListener("change",e=>{const v=Math.max(0,+e.target.value||0);store.set("budget",v);e.target.value=v;renderSpend();});renderSpend();
 (function(){const p=store.get("profile",{});$("#pLevel").value=p.level||"";$("#pFocus").value=p.focus||"";$("#pStyle").value=p.style||"";$("#pGoals").value=p.goals||"";
   $("#pSave").addEventListener("click",()=>{store.set("profile",{level:$("#pLevel").value,focus:$("#pFocus").value,style:$("#pStyle").value.trim(),goals:$("#pGoals").value.trim()});$("#profSaved").textContent="حُفظ ✓";setTimeout(()=>$("#profSaved").textContent="",2500);});})();
@@ -3377,7 +3385,7 @@ const rs=$("#recMaqam");rs.append(el("option",{value:"auto"},"اكتشف الم�
 window.addEventListener("resize",()=>{if(S.lastAnalysis&&!$("#p-result").hidden&&!$('[data-rp="plot"]').hidden)drawPlot(S.lastAnalysis);});
 window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{if(S.lastAnalysis){drawPlot(S.lastAnalysis);renderDevBars(S.lastAnalysis);}});
 
-const APP_VER="2026.10.16-1";
+const APP_VER="2026.10.16-2";
 $("#verTxt").textContent="الإصدار \u2066"+APP_VER+"\u2069";
 const hardReload=()=>{location.replace(location.pathname+"?v="+Date.now()+location.hash);};
 $("#updBtn").addEventListener("click",hardReload);$("#updNow").addEventListener("click",hardReload);
