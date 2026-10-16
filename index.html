@@ -692,7 +692,7 @@ details.tip p{padding:0 16px 14px;font-size:15px;color:var(--muted);line-height:
     <div id="v-rec" class="sec">
       <div class="list">
         <label class="row static"><span class="tx">المقام</span><select id="recMaqam"></select></label>
-        <label class="row static"><span class="tx">الأداء</span><select id="recMode"><option value="auto">اكتشف تلقائياً</option><option value="voice">غناء</option><option value="oud">عزف عود</option></select></label>
+        <label class="row static"><span class="tx">الأداء</span><select id="recMode"><option value="auto" selected>اكتشف تلقائياً</option><option value="voice">غناء</option><option value="oud">عزف عود</option></select></label>
         <div class="row static"><span class="tx">الأغنية</span><button class="link" id="recSongBtn" data-push="songpick">بدون</button><button class="link" id="recSongX" hidden aria-label="إلغاء الأغنية" style="color:var(--muted)">✕</button></div>
         <label class="row static"><span class="tx">شغّل الإيقاع وقِس التزامي</span><input type="checkbox" class="sw" id="recWithIqa"></label>
         <label class="row static" id="recIqaRow" hidden><span class="tx">الإيقاع</span><select class="iqaPick" aria-label="الإيقاع"></select></label>
@@ -2150,8 +2150,24 @@ async function analyze(data,sr,maqamId,mode,auto,onProg,grid,pre){
   // instrument: a plucked oud note decays quickly after a sharp attack; a sung note is sustained
   let instrument=null;{const dec=[],att=[];N.filter(n=>n.dur>=0.3).forEach(n=>{const r=n.fr.map(f=>f.rms);const L=r.length;const head=r.slice(0,Math.max(2,Math.floor(L*0.3)));const pk=Math.max(...head);const pi=r.indexOf(pk);
       const tail=r.slice(Math.floor(L*0.65));const tv=tail.reduce((a,b)=>a+b,0)/Math.max(1,tail.length);dec.push(pk>0?tv/pk:1);att.push(pi);});
-    if(dec.length>=3){dec.sort((a,b)=>a-b);const md=dec[dec.length>>1];const vibShare=vib.length?vibOk.length/vib.length:0;
-      const oudScore=(md<0.42?1:md<0.55?0.5:0)+(vibShare<0.2?0.3:-0.3);instrument={guess:oudScore>=0.8?"oud":"voice",decay:+md.toFixed(2),vibShare:+vibShare.toFixed(2)};}}
+    const med=a=>{const b=[...a].sort((x,y)=>x-y);return b[b.length>>1];};
+    // energy right after each pluck: an oud note loses most of its energy within ~150 ms, a voice holds it
+    const rr=frames.map(f=>f.rms),pl=[];
+    ons.forEach((t,k)=>{const nxt=ons[k+1];if(nxt!=null&&nxt-t<0.2)return;const i0=Math.max(0,Math.round(t/hopS));if(i0+16>=frames.length)return;
+      let pk=0;for(let i=i0;i<=i0+4;i++)pk=Math.max(pk,rr[i]);let lt=0,n=0;for(let i=i0+10;i<=i0+16;i++){if(!frames[i].v)return;lt+=rr[i];n++;}if(pk>0&&n)pl.push(lt/n/pk);});
+    const voicedS=Math.max(0.5,voiced.length*hopS),rate=ons.length/voicedS;
+    let score=0,w=0;const vs0=vib.length>=3?vibOk.length/vib.length:null;
+    // ريشة tremolo: many re-plucks a second with no vocal vibrato; the notes sound sustained, so decay measures don't apply
+    if(rate>4&&ons.length>=8&&(vs0==null||vs0<0.15)){score=1.2;w=1;}
+    else{
+    if(dec.length>=3){const md=med(dec);score+=md<0.42?1:md<0.55?0.5:-0.6;w++;}
+    if(pl.length>=4){const pm=med(pl);score+=pm<0.5?1.2:pm<0.68?0.5:-0.8;w++;}
+    if(ons.length>=5){score+=rate>2.4?0.6:rate<1.3?-0.6:0;w++;}
+    if(vib.length>=3){const vs=vibOk.length/vib.length;score+=vs<0.2?0.3:vs>0.45?-0.6:0;w++;}}
+    const hint=store.get("instHint",null);
+    if(w){if(Math.abs(score)<0.5&&hint)score+=hint==="oud"?0.6:-0.6;
+      instrument={guess:score>=0.5?"oud":"voice",decay:dec.length?+med(dec).toFixed(2):null,pluckDecay:pl.length?+med(pl).toFixed(2):null,pluckRate:+rate.toFixed(1),vibShare:vib.length?+(vibOk.length/vib.length).toFixed(2):null,score:+score.toFixed(2)};}
+    else if(hint)instrument={guess:hint,score:0,fromHint:true};}
   if(modeIn==="auto"&&instrument)mode=instrument.guess;
   // pitch problems worth fixing: notes held long enough and clearly off, plus slow scoops into a note
   let issues=N.filter(n=>n.dur>=0.15&&Math.abs(n.dev)>25).map(n=>({kind:"pitch",t:n.start,dur:n.dur,name:n.name,dev:n.dev,rel:n.deg.c+n.oct*1200,abs:tonicAbs+n.deg.c+n.oct*1200,degC:n.deg.c,oct:n.oct,quarter:isQuarter(m.tonic+n.deg.c)}));
@@ -2174,7 +2190,7 @@ function renderResults(R,isExample){
   const fg=$("#ringFg");fg.style.strokeDashoffset=String(264*(1-R.score/100));$("#ringTxt").textContent=R.score;
   $("#sumTitle").textContent=(R.mode==="oud"?"عزف عود":"غناء")+(R.modeAuto?" (اكتُشف)":"")+" في مقام "+R.maqam.name+(R.autoMaq?" (اكتُشف تلقائياً)":"")+" · "+(R.score>=80?"أداء متمكّن":R.score>=60?"أداء جيد يحتاج ضبطاً":R.score>=40?"بداية تحتاج تدريباً منتظماً":"يحتاج عملاً أساسياً على الضبط");
   $("#sumLine").textContent="المدة "+R.dur.toFixed(1)+" ث · "+R.notes.length+" نغمة"+(R.issues.length?" · "+R.issues.length+" موضع يحتاج تعديلاً":" · لا مواضع نشاز واضحة");
-  renderAltMaqam(R,isExample);
+  renderAltMaqam(R,isExample);renderModeFix(R);
   const off=Math.round(R.tonicOffset);
   $("#sumTonic").textContent=R.auto?(Math.abs(off)<=20?"قرارك مطابق تقريباً لقرار التطبيق.":"غنّيت على قرار "+(off>0?"أعلى":"أخفض")+" من قرار التطبيق بـ "+Math.abs(off)+" سنت، وضُبط التحليل على قرارك."):"التحليل مضبوط على قرار التطبيق.";
   const M=$("#metrics");M.innerHTML="";
@@ -2193,6 +2209,16 @@ function renderResults(R,isExample){
   else met("انتظام الإيقاع",R.ioiCv==null?"—":Math.round(Math.max(0,1-R.ioiCv)*100)+"%","انتظام المسافات بين النغمات");
   drawPlot(R);renderDevBars(R);renderIssues(R);renderPlain(R);
   $("#aiOut").innerHTML="";
+}
+function renderModeFix(R){
+  let b=$("#modeFix");if(!b){b=el("div",{id:"modeFix",class:"row",style:"gap:8px;align-items:center;flex-wrap:wrap"});$("#sumLine").after(b);}
+  b.innerHTML="";b.append(el("span",{class:"small muted",text:R.modeAuto?"اكتُشف أنه "+(R.mode==="oud"?"عزف عود":"غناء")+". خطأ؟":"التحليل على أنه "+(R.mode==="oud"?"عزف عود":"غناء")+"."}));
+  const other=R.mode==="oud"?"voice":"oud";
+  b.append(el("button",{class:"btn small",onclick:()=>{store.set("instHint",other);reanalyzeMode(other);}},other==="oud"?"حلّله كعزف عود":"حلّله كغناء"));
+}
+async function reanalyzeMode(md){
+  if(!S.lastAudio||!S.lastAnalysis)return;
+  await runAnalysis(S.lastAudio.data,S.lastAudio.sr,S.lastIsExample,S.lastGrid,{maqamId:S.lastAnalysis.maqam.id,mode:md,existing:S.currentRec,updateMetrics:true});
 }
 function renderAltMaqam(R,isExample){
   const box=$("#altMaqam");box.innerHTML="";
@@ -2508,7 +2534,7 @@ function renderCompare(rec,base){
 $("#cmpPlayPrev").addEventListener("click",async()=>{const b=S.baseline;if(!b||!b.blob)return;try{const a=await decodeBlob(await b.blob.arrayBuffer());const ctx=getCtx();const src=ctx.createBufferSource();src.buffer=a;src.connect(bus.master);src.start();RHY.vis.push(setTimeout(()=>{try{src.stop();}catch(e){}},30000));}catch(e){}});
 $("#cmpOpenPrev").addEventListener("click",()=>{if(S.baseline)openRec(S.baseline.id);});
 
-$("#retryBtn").addEventListener("click",()=>{const rec=S.currentRec;if(!rec)return;$("#recMaqam").value=rec.maqamId;$("#recMode").value=rec.mode;$("#recWithIqa").checked=!!rec.grid;syncRecMaqam();
+$("#retryBtn").addEventListener("click",()=>{const rec=S.currentRec;if(!rec)return;$("#recMaqam").value=rec.maqamId;$("#recMode").value=store.get("recMode","auto");$("#recWithIqa").checked=!!rec.grid;syncRecMaqam();
   go("rec");startRec(rec.id);});
 let delArm=0;$("#delRecBtn").addEventListener("click",async()=>{const rec=S.currentRec;if(!rec)return;
   if(Date.now()-delArm>4000){delArm=Date.now();$("#delRecBtn").textContent="اضغط مرة ثانية للحذف";setTimeout(()=>{$("#delRecBtn").textContent="احذف";},4000);return;}
@@ -2649,7 +2675,7 @@ function editSong(x){
 }
 function trainSong(x){
   S.activeSong=x;$("#activeSong").hidden=false;$("#activeSongTxt").textContent="تتدرّب على: "+x.title+" · "+x.artist+(x.maqam?" ("+maqName(x.maqam)+")":"");
-  $("#recMaqam").value=x.maqam||"auto";syncRecMaqam();$("#recMode").value="voice";go("rec");renderSongRow();
+  $("#recMaqam").value=x.maqam||"auto";syncRecMaqam();$("#recMode").value=store.get("recMode","auto");go("rec");renderSongRow();
   setStatus("غنِّ مقطعاً من «"+x.title+"» من حفظك (20 إلى 60 ثانية)، ثم «أوقف وحلّل». يُحفظ التسجيل تحت هذه الأغنية.");
 }
 $("#activeSongX").addEventListener("click",()=>{S.activeSong=null;$("#activeSong").hidden=true;renderSongRow();});
@@ -3269,7 +3295,7 @@ function doAction(a){
   else if(k==="ex"){go("train");push({degree:"exd",quarter:"exq",maqam:"exm"}[v]||"exm");}
   else if(k==="tune"){go("train");push("tuner");}
   else if(k==="oud"){go("train");push("oud");}
-  else if(k==="rec"){if(v){$("#recMaqam").value=v;selectMaqam(v);}$("#recMode").value=w==="oud"?"oud":"voice";$("#recWithIqa").checked=w==="iqa";go("rec");}
+  else if(k==="rec"){if(v){$("#recMaqam").value=v;selectMaqam(v);}$("#recMode").value=w==="oud"||w==="voice"?w:store.get("recMode","auto");$("#recWithIqa").checked=w==="iqa";go("rec");}
   else if(k==="r"){go("rhythm");if(v==="timing")push("timing");else if(v==="quiz")push("exr");else if(iqaById(v))selectIqa(v);}
   else if(k==="coach")go("coach");
 }
@@ -3489,17 +3515,17 @@ $("#playPhrase").addEventListener("click",()=>playPhrase(byId(S.maqam),S.timbre)
 function setDrone(on){S.drone=on;document.querySelectorAll("#droneBtn,[data-drone]").forEach(b=>b.setAttribute("aria-pressed",String(on)));if(on)startDrone();else stopDrone();}
 $("#stopBtn").addEventListener("click",()=>{stopAll();if(S.drone)setDrone(false);});
 document.querySelectorAll("#droneBtn,[data-drone]").forEach(b=>b.addEventListener("click",()=>setDrone(!S.drone)));
-const rs=$("#recMaqam");rs.append(el("option",{value:"auto"},"اكتشف المقام تلقائياً"));MAQAMAT.forEach(m=>rs.append(el("option",{value:m.id},m.name)));rs.value="auto";syncRecMaqam();loadLib().then(loadSongs);
+const rs=$("#recMaqam");rs.append(el("option",{value:"auto"},"اكتشف المقام تلقائياً"));MAQAMAT.forEach(m=>rs.append(el("option",{value:m.id},m.name)));rs.value="auto";syncRecMaqam();$("#recMode").value=store.get("recMode","auto");$("#recMode").addEventListener("change",e=>store.set("recMode",e.target.value));loadLib().then(loadSongs);
 window.addEventListener("resize",()=>{if(S.lastAnalysis&&!$("#p-result").hidden&&!$('[data-rp="plot"]').hidden)drawPlot(S.lastAnalysis);});
 window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{if(S.lastAnalysis){drawPlot(S.lastAnalysis);renderDevBars(S.lastAnalysis);}});
 
-const APP_VER="2026.10.16-5";
+const APP_VER="2026.10.16-6";
 $("#verTxt").textContent="الإصدار \u2066"+APP_VER+"\u2069";
 const hardReload=()=>{location.replace(location.pathname+"?v="+Date.now()+location.hash);};
 $("#updBtn").addEventListener("click",hardReload);$("#updNow").addEventListener("click",hardReload);
 if(!window.claude&&location.protocol==="https:"){fetch(location.pathname+"?check="+Date.now(),{cache:"no-store"}).then(r=>r.text()).then(t=>{const m=t.match(/APP_VER="([^"]+)"/);if(m&&m[1]!==APP_VER)$("#updBanner").hidden=false;}).catch(()=>{});}
 renderTr();renderA4();renderChips();renderMaqam();renderIqaChips();renderIqa();renderDots();edSetMeter(false);ED.steps="D..D..T.";renderEd();setTmMode("pulse");if(TM.calib)$("#calibTxt").textContent="المعايرة الحالية: "+Math.round(TM.calib)+" مث.";renderStrings();renderPath();renderSuggest();$("#exDMaqam").textContent=byId(S.maqam).name;
-renderExample().then(prev=>{if(prev){$("#recMaqam").value="auto";syncRecMaqam();}}).catch(()=>{});
+renderExample().then(prev=>{if(prev){$("#recMaqam").value="auto";syncRecMaqam();}$("#recMode").value=store.get("recMode","auto");}).catch(()=>{});
 setLearn(store.get("learnPane","maqam"));navRender();
 initSample();
 window.__dozan={liveMic,tol,sfFrame,sfLadder,sfSetMode,SF,detectRhythm,IQAAT,rhythmOnsets,rhythmTatums,quantizeOns,rhythmCycle,matchLibrary,CAL,go,push,navBack,switchTab,setResPane,stageUpdate,stageOpen,stageClose,resultSpeech,Voice,Haptic,setA4,getC3:()=>C3,SONGS:()=>SONGS,openSong,compareWithOriginal,trainSong,runAnalysis,loadLib,playVoice,LIBCACHE:()=>LIBCACHE,openRec,analyze,MAQAMAT,S,phraseEvents,playOud,makeBus,C3,RHY,TM,IQAAT,onTap,drumHit,getCtx};
