@@ -985,7 +985,7 @@ details.tip p{padding:0 16px 14px;font-size:15px;color:var(--muted);line-height:
               <div class="composer"><textarea id="aiQ" rows="1" placeholder="اسأل عن أي نقطة في التقرير…"></textarea><button class="btn primary" id="aiAsk">اسأل</button></div>
             </div>
           </div>
-          <div class="list"><label class="row static" id="autoAiRow" hidden><span class="tx">حلّل تلقائياً بعد كل تسجيل</span><input type="checkbox" class="sw" id="autoAi"></label></div>
+          <div class="list"><label class="row static" id="autoAiRow" hidden><span class="tx">حلّل تلقائياً بعد كل تسجيل<small>كل تقرير يُخصم من رصيدك؛ التسجيلات الأقصر من 15 ثانية لا تُحلّل تلقائياً</small></span><input type="checkbox" class="sw" id="autoAi"></label></div>
         </div>
       </div>
     </div>
@@ -1015,9 +1015,13 @@ details.tip p{padding:0 16px 14px;font-size:15px;color:var(--muted);line-height:
       <div class="sec">
         <p class="sh">المدرب الذكي</p>
         <div class="list">
-          <label class="row static"><span class="tx">النموذج</span><select id="coachModel"><option value="sonnet">Sonnet 5.5 · سريع</option><option value="opus">Opus 5.5 · أعمق</option></select></label>
+          <label class="row static"><span class="tx">نموذج التقرير</span><select id="coachModel"><option value="sonnet">Sonnet 5.5 · متوازن</option><option value="opus">Opus 5.5 · أعمق وأغلى</option><option value="haiku">Haiku 5.5 · الأرخص</option></select></label>
+          <label class="row static"><span class="tx">عمق التقرير<small>التفكير الأعمق يُحسب من التكلفة</small></span><select id="reportEffort"><option value="low">مختصر</option><option value="medium">متوسط</option><option value="high">عميق</option></select></label>
+          <label class="row static"><span class="tx">نموذج المحادثة</span><select id="chatModel"><option value="haiku">Haiku 5.5 · الأرخص</option><option value="sonnet">Sonnet 5.5 · متوازن</option><option value="opus">Opus 5.5 · أغلى</option></select></label>
+          <div class="row static"><span class="tx">حد الإنفاق الشهري بالدولار<small>يتوقف المدرب عند بلوغه حتى تغيّره</small></span><input id="budgetIn" class="field mono" type="number" inputmode="decimal" min="0" step="0.5" style="width:76px;flex:none;text-align:center;padding:6px"></div>
+          <div class="row static"><span class="tx">إنفاق هذا الشهر<small id="spendNote"></small></span><b class="mono" id="spendNow"></b></div>
         </div>
-        <p class="sf">تقرير Sonnet بنحو 4 إلى 8 سنت، وOpus بنحو 15 إلى 30 سنت.</p>
+        <p class="sf">التكلفة تقريبية ومحسوبة في هذا الجهاز فقط. الرقم الدقيق في صفحة Usage في console.anthropic.com.</p>
         <div id="keyRow" hidden style="display:grid;gap:7px;margin-top:8px">
           <div class="list"><div class="row static" style="gap:8px"><input id="apiKey" type="password" autocomplete="off" spellcheck="false" placeholder="مفتاح Anthropic API: sk-ant-…" class="field" style="background:transparent;padding-inline:0"><button class="btn small" id="saveKey">حفظ</button></div></div>
           <p class="sf" id="keyState"></p>
@@ -2602,22 +2606,22 @@ $("#spQ").addEventListener("input",renderSongPick);
 /* ----- research with cited web sources (needs the viewer's API key) ----- */
 async function apiResearch(prompt,maxUses){
   const key=apiKey();if(!key)throw {code:"no_key"};
-  const base={"content-type":"application/json","anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true","authorization":"Bearer "+key};
-  let messages=[{role:"user",content:prompt}],content=[],usage={in:0,out:0,search:0};
+  checkBudget();
+  const M=MODELS.sonnet;
+  let messages=[{role:"user",content:prompt}],content=[],usage={cost:0,search:0};
   for(let round=0;round<3;round++){
-    const res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",headers:base,body:JSON.stringify({model:"claude-sonnet-5-5",max_tokens:16000,output_config:{effort:"medium"},messages,tools:[{type:"web_search_20250305",name:"web_search",max_uses:maxUses||5}]})});
+    const res=await apiFetch(key,JSON.stringify({model:M.id,max_tokens:6000,output_config:{effort:"low"},messages,tools:[{type:"web_search_20250305",name:"web_search",max_uses:maxUses||3}]}));
     if(!res.ok){let msg="";try{msg=(await res.json()).error.message;}catch(e){}throw {code:res.status===401||res.status===403?"bad_key":res.status===429?"rate_limited":"upstream_error",message:"HTTP "+res.status+(msg?": "+msg:"")};}
     const j=await res.json();content=content.concat(j.content||[]);
-    if(j.usage){usage.in+=(j.usage.input_tokens||0)+(j.usage.cache_read_input_tokens||0);usage.out+=j.usage.output_tokens||0;usage.search+=(j.usage.server_tool_use&&j.usage.server_tool_use.web_search_requests)||0;}
+    if(j.usage){usage.cost+=usageCost(j.usage,M);usage.search+=(j.usage.server_tool_use&&j.usage.server_tool_use.web_search_requests)||0;}
     if(j.stop_reason==="pause_turn"){messages=[{role:"user",content:prompt},{role:"assistant",content:j.content}];continue;}
     break;
   }
   const text=content.filter(b=>b.type==="text").map(b=>b.text).join("");
   const cites=[];content.forEach(b=>{(b.citations||[]).forEach(c=>{if(c.url&&!cites.some(x=>x.url===c.url))cites.push({title:c.title||c.url,url:c.url});});});
-  const cost=usage.in*2/1e6+usage.out*10/1e6+usage.search*0.01;
-  const mk=new Date().toISOString().slice(0,7);const sp=store.get("spend",{});sp[mk]=(sp[mk]||0)+cost;store.set("spend",sp);
+  const cost=usage.cost+usage.search*0.01;const month=addSpend(cost);
   let data=null;const m=text.match(/\{[\s\S]*\}|\[[\s\S]*\]/);if(m){try{data=JSON.parse(m[0]);}catch(e){}}
-  return {data,text,cites,cost,month:sp[mk],searches:usage.search};
+  return {data,text,cites,cost,month,searches:usage.search};
 }
 const RESEARCH_RULES="قواعد صارمة: اعتمد فقط على ما تجده في المصادر عبر البحث، ولا تكمل من ذاكرتك. أي معلومة لم تجدها في مصدر اتركها فارغة. لا تكتب أي جزء من كلمات الأغنية إطلاقاً. فضّل المصادر الموسوعية والمقالات المتخصصة في الموسيقى العربية والمنتديات المتخصصة مثل سماعي. أسماء المقامات بالعربية.";
 async function researchSong(x){
@@ -2625,7 +2629,7 @@ async function researchSong(x){
   if(!apiKey()){st.textContent=sample?"البحث في المصادر متاح في دوزان المباشر بمفتاحك، لأنه يحتاج البحث في الإنترنت.":"أضف مفتاح API من «الضبط» لتفعيل البحث في المصادر.";st.className="status err";return;}
   st.className="status";st.textContent="يبحث في المصادر عن «"+x.title+"»… (قد يستغرق 20 إلى 60 ثانية)";$("#songResearch").disabled=true;
   const prompt="ابحث في الإنترنت عن البيانات الموسيقية لأغنية «"+x.title+"» للفنان "+x.artist+".\n"+RESEARCH_RULES+"\nأعد JSON واحداً فقط بهذا الشكل بلا أي نص آخر:\n{\"found\":true,\"title\":\"\",\"composer\":\"\",\"lyricist\":\"\",\"year\":\"\",\"form\":\"\",\"maqam\":\"المقام الرئيسي\",\"maqam_confidence\":\"high|medium|low\",\"modulations\":[\"مقامات تنتقل إليها\"],\"iqa\":\"الإيقاع الرئيسي\",\"tempo_note\":\"\",\"tonic\":\"قرار المقام إن ذُكر\",\"notes\":\"معلومة موسيقية قصيرة مفيدة للتدريب\"}\nإذا لم تجد الأغنية أصلاً فأعد {\"found\":false}.";
-  try{const r=await apiResearch(prompt,5);const dt=r.data;
+  try{const r=await apiResearch(prompt,3);const dt=r.data;
     if(!dt||dt.found===false){st.textContent="لم أجد مصادر كافية عن هذه الأغنية. يمكنك تعبئتها يدوياً أو اكتشاف مقامها من مقطع."+" (التكلفة $"+r.cost.toFixed(3)+")";return;}
     const set=(k,v)=>{if(v&&String(v).trim())x[k]=String(v).trim();};
     set("composer",dt.composer);set("lyricist",dt.lyricist);set("year",dt.year);set("form",dt.form);set("iqa",dt.iqa);set("tempo",dt.tempo_note);set("notes",dt.notes);set("tonicName",dt.tonic);
@@ -2643,7 +2647,7 @@ $("#songComplete").addEventListener("click",async()=>{
   const have=SONGS.filter(x=>x.artist===a).map(x=>x.title);
   st.className="status";st.textContent="يبحث عن أغاني "+a+" الرسمية في المصادر… (حتى دقيقة)";$("#songComplete").disabled=true;
   const prompt="ابحث في الإنترنت عن قائمة الأغاني الرسمية المنشورة للفنان "+a+" (من ويكيبيديا أو مواقع الأرشيف الموسيقي الموثوقة).\n"+RESEARCH_RULES+"\nلدينا هذه الأغاني مسبقاً فلا تكررها: "+have.join("، ")+"\nأعد JSON فقط: {\"songs\":[{\"title\":\"\",\"composer\":\"\",\"lyricist\":\"\",\"year\":\"\"}]} بحد أقصى 40 أغنية جديدة موجودة فعلاً في المصادر.";
-  try{const r=await apiResearch(prompt,6);const arr=r.data&&Array.isArray(r.data.songs)?r.data.songs:[];let added=0;
+  try{const r=await apiResearch(prompt,4);const arr=r.data&&Array.isArray(r.data.songs)?r.data.songs:[];let added=0;
     for(const s0 of arr){if(!s0||!s0.title)continue;const id=songKey(s0.title,a);if(SONGS.some(x=>x.id===id))continue;
       await saveSong({id,title:String(s0.title).trim(),artist:a,composer:s0.composer||"",lyricist:s0.lyricist||"",year:s0.year?String(s0.year):"",form:"",maqam:"",maqamText:"",mods:[],iqa:"",tempo:"",status:"u",sources:r.cites.slice(0,4),notes:"",custom:true});added++;}
     renderSongs();st.textContent="أُضيفت "+added+" أغنية لـ"+a+" من "+r.cites.length+" مصدر. التكلفة تقريباً $"+r.cost.toFixed(3)+". مقاماتها غير معروفة بعد: افتح أي أغنية واضغط «ابحث عن بياناتها».";}
@@ -2784,7 +2788,7 @@ async function runAnalysis(data,sr,isExample,grid,opts){
   if(isNew){setStatus("اكتمل التحليل وحُفظ التسجيل.");
     const h=store.get("history",[]);h.push({d:Date.now(),m:R.maqam.id,s:R.score,acc:Math.round(R.within25*100)});store.set("history",h.slice(-50));renderPath();
     showResult();if(store.get("speakResult",false))setTimeout(()=>Voice.say(resultSpeech(R)),300);
-    if(!sample&&apiKey()&&store.get("autoAi",true))setTimeout(()=>{$("#aiBtn").click();},400);}
+    if(!sample&&apiKey()&&store.get("autoAi",false)&&data.length/sr>=15)setTimeout(()=>{$("#aiBtn").click();},400);}
   else if(!opts.updateMetrics)setStatus("");
 }
 async function handleArrayBuffer(ab,grid,opts){
@@ -2922,8 +2926,27 @@ function analysisSummary(R){
   };
 }
 const COACH_KB=(document.getElementById("coachKB")||{textContent:""}).textContent;
-const MODELS={sonnet:{id:"claude-sonnet-5-5",name:"Sonnet 5.5",inP:2,outP:10,effort:"high",tier:"default"},opus:{id:"claude-opus-5-5",name:"Opus 5.5",inP:4,outP:20,effort:"high",tier:"complex"}};
+const MODELS={haiku:{id:"claude-haiku-5-5",name:"Haiku 5.5",inP:0.1,outP:0.5,tier:"default"},sonnet:{id:"claude-sonnet-5-5",name:"Sonnet 5.5",inP:2,outP:10,tier:"default"},opus:{id:"claude-opus-5-5",name:"Opus 5.5",inP:4,outP:20,tier:"complex"}};
 const coachModel=()=>MODELS[store.get("coachModel","sonnet")]||MODELS.sonnet;
+const chatModel=()=>MODELS[store.get("chatModel","haiku")]||MODELS.haiku;
+const reportEffort=()=>store.get("reportEffort","medium");
+const monthKey=()=>new Date().toISOString().slice(0,7);
+const monthSpend=()=>(store.get("spend",{})[monthKey()]||0);
+const budget=()=>{const b=+store.get("budget",5);return isFinite(b)&&b>0?b:0;};
+function addSpend(cost){if(!(cost>0))return monthSpend();const mk=monthKey();const sp=store.get("spend",{});sp[mk]=(sp[mk]||0)+cost;store.set("spend",sp);renderSpend();return sp[mk];}
+function checkBudget(){const b=budget();if(b&&monthSpend()>=b)throw {code:"budget",message:"$"+monthSpend().toFixed(2)+" من $"+b.toFixed(2)};}
+function renderSpend(){const n=document.getElementById("spendNow");if(!n)return;const sp=store.get("spend",{});const d=new Date();d.setUTCDate(1);d.setUTCMonth(d.getUTCMonth()-1);const prev=sp[d.toISOString().slice(0,7)];
+  n.textContent="$"+monthSpend().toFixed(monthSpend()<1?3:2);const b=budget();document.getElementById("spendNote").textContent=(b?"من حد \u2066$"+b.toFixed(2)+"\u2069":"بلا حد")+(prev!=null?" · الشهر الماضي \u2066$"+prev.toFixed(2)+"\u2069":"");}
+/* one place that talks to the API: remembers which auth header works so we don't send every request twice */
+async function apiFetch(key,body,signal){
+  const base={"content-type":"application/json","anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"};
+  const hdr=h=>Object.assign(h==="x"?{"x-api-key":key}:{"authorization":"Bearer "+key},base);
+  const first=store.get("authHdr",/^sk-ant-api/.test(key)?"x":"bearer");
+  let res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",signal,headers:hdr(first),body});
+  if(res.status===401){const other=first==="x"?"bearer":"x";const r2=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",signal,headers:hdr(other),body});if(r2.status!==401){store.set("authHdr",other);res=r2;}}
+  return res;
+}
+const usageCost=(u,M)=>((u.input_tokens||0)+1.25*(u.cache_creation_input_tokens||0)+0.1*(u.cache_read_input_tokens||0))*M.inP/1e6+(u.output_tokens||0)*M.outP/1e6;
 function studentProfile(){
   const p=store.get("profile",{});const recs=[...LIBCACHE].sort((a,b)=>a.t-b.t);const avg=a=>a.reduce((x,y)=>x+y,0)/Math.max(1,a.length);
   const byMaq={};recs.forEach(r=>{(byMaq[r.maqamName]=byMaq[r.maqamName]||[]).push(r);});
@@ -2947,37 +2970,38 @@ let wasHidden=false;
 document.addEventListener("visibilitychange",()=>{if(document.hidden)wasHidden=true;});
 const untilVisible=()=>document.hidden?new Promise(r=>{const f=()=>{if(!document.hidden){document.removeEventListener("visibilitychange",f);r();}};document.addEventListener("visibilitychange",f);}):Promise.resolve();
 async function streamOnce(key,bodyObj,{signal,onThinking,onDelta}){
-  const body=JSON.stringify(bodyObj);let text="",stop=null,inTok=0,outTok=0;
-  const base={"content-type":"application/json","anthropic-version":"2023-06-01","anthropic-dangerous-direct-browser-access":"true"};
+  const body=JSON.stringify(bodyObj);let text="",stop=null,inTok=0,outTok=0,thinkChars=0;
+  const estOut=()=>outTok||Math.ceil((text.length+thinkChars)/2);
   try{
-    let res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",signal,headers:Object.assign({"authorization":"Bearer "+key},base),body});
-    if(res.status===401)res=await fetch("https://api.anthropic.com/v1/messages",{method:"POST",signal,headers:Object.assign({"x-api-key":key},base),body});
+    const res=await apiFetch(key,body,signal);
     if(!res.ok){let msg="";try{const j=await res.json();msg=(j.error&&j.error.message)||"";}catch(e){}throw {code:res.status===401||res.status===403?"bad_key":res.status===429?"rate_limited":"upstream_error",retry:res.status>=500,message:"HTTP "+res.status+(msg?": "+msg:"")};}
     const rd=res.body.getReader(),dec=new TextDecoder();let pend="";
     for(;;){const {done,value}=await rd.read();if(done)break;pend+=dec.decode(value,{stream:true});const lines=pend.split("\n");pend=lines.pop();
       for(const ln of lines){if(!ln.startsWith("data:"))continue;let j;try{j=JSON.parse(ln.slice(5));}catch(e){continue;}
         if(j.type==="content_block_start"&&j.content_block&&j.content_block.type==="thinking"&&onThinking)onThinking();
+        if(j.type==="content_block_delta"&&j.delta&&j.delta.type==="thinking_delta")thinkChars+=(j.delta.thinking||"").length;
         if(j.type==="content_block_delta"&&j.delta&&j.delta.type==="text_delta"){text+=j.delta.text;onDelta(j.delta.text);}
         else if(j.type==="message_start"&&j.message&&j.message.usage){const u=j.message.usage;inTok=(u.input_tokens||0)+1.25*(u.cache_creation_input_tokens||0)+0.1*(u.cache_read_input_tokens||0);}
         else if(j.type==="message_delta"){if(j.delta)stop=j.delta.stop_reason;if(j.usage&&j.usage.output_tokens)outTok=j.usage.output_tokens;}
         else if(j.type==="error")throw {code:"upstream_error",retry:true,message:j.error&&j.error.message};}}
     if(!stop)throw {code:"upstream_error",retry:true,message:"انقطع البث قبل نهايته"};
-  }catch(e){const part={text,inTok,outTok};if(e&&e.name==="AbortError")throw Object.assign({code:"cancelled"},{part});if(e&&e.code)throw Object.assign(e,{part});throw {code:"upstream_error",retry:true,net:true,message:"شبكة: "+((e&&e.message)||"تعذّر الوصول إلى api.anthropic.com"),part};}
+  }catch(e){const part={text,inTok,outTok:estOut()};if(e&&e.name==="AbortError")throw Object.assign({code:"cancelled"},{part});if(e&&e.code)throw Object.assign(e,{part});throw {code:"upstream_error",retry:true,net:true,message:"شبكة: "+((e&&e.message)||"تعذّر الوصول إلى api.anthropic.com"),part};}
   return {text,stop,inTok,outTok};
 }
-async function ask(input,{onText,signal,onThinking,maxTokens,system,images,effort,onRetry}={}){
-  const M=coachModel();
+async function ask(input,{onText,signal,onThinking,maxTokens,system,images,effort,onRetry,role}={}){
+  const M=role==="chat"?chatModel():coachModel();
   if(sample){let inp=input;if(system){inp=typeof input==="string"?system+"\n\n"+input:[{role:"user",content:system},...input];}return await sample(inp,{signal,cache:false,onText,modelTier:M.tier});}
   const key=apiKey();if(!key)throw {code:"no_key"};
+  checkBudget();
   const msgs=[];(typeof input==="string"?[{role:"user",content:input}]:input).forEach(t=>{const l=msgs[msgs.length-1];if(l&&l.role===t.role)l.content+="\n\n"+t.content;else msgs.push({role:t.role,content:t.content});});
   if(images&&images.length){const l=msgs[msgs.length-1];l.content=[...images.map(b=>({type:"image",source:{type:"base64",media_type:"image/png",data:b}})),{type:"text",text:l.content}];}
-  let text="",stop=null,inTok=0,outTok=0;const MAXTRY=3;
+  let text="",stop=null,inTok=0,outTok=0;const MAXTRY=2;
   wasHidden=document.hidden;Awake.on("coach");
   try{
     for(let attempt=0;;attempt++){
       const cont=text.trim().length>0;
       const m2=cont?[...msgs,{role:"assistant",content:text.replace(/\s+$/,"")},{role:"user",content:"انقطع ردك السابق عند هذا الموضع بسبب الشبكة. أكمل من الكلمة التي توقفت عندها تماماً، بلا مقدمة ولا تكرار لأي جزء سبق."}]:msgs;
-      const bodyObj={model:M.id,max_tokens:maxTokens||20000,stream:true,output_config:{effort:effort||M.effort},messages:m2};
+      const bodyObj={model:M.id,max_tokens:maxTokens||8000,stream:true,output_config:{effort:effort||"medium"},cache_control:{type:"ephemeral"},messages:m2};
       if(system)bodyObj.system=[{type:"text",text:system,cache_control:{type:"ephemeral"}}];
       const prefix=cont?text.replace(/\s+$/,"")+(/^[\s\S]*\n$/.test(text)?"\n":" "):"";let added="";
       try{
@@ -2991,17 +3015,16 @@ async function ask(input,{onText,signal,onThinking,maxTokens,system,images,effor
         if(signal&&signal.aborted)throw {code:"cancelled",text};
       }
     }
-  }finally{Awake.off("coach");}
+  }finally{Awake.off("coach");var cost=inTok*M.inP/1e6+outTok*M.outP/1e6;var month=addSpend(cost);}
   if(!text)throw {code:"empty_completion",message:"وصل الرد بلا نص (stop_reason: "+(stop||"؟")+")"};
-  const cost=inTok*M.inP/1e6+outTok*M.outP/1e6;const mk=new Date().toISOString().slice(0,7);const sp=store.get("spend",{});sp[mk]=(sp[mk]||0)+cost;store.set("spend",sp);
-  return {text,truncated:stop==="max_tokens",cost,month:sp[mk],model:M.name};
+  return {text,truncated:stop==="max_tokens",cost,month,model:M.name};
 }
 function updateAiAvail(){
   const ok=aiReady();$("#aiBtn").disabled=!ok;$("#chatSend").disabled=!ok;
   const msg=ok?"":inClaude?"المدرب الذكي غير متاح في هذا العرض. اضغط «انسخ القياسات لـ Claude» والصقها في محادثة.":"لتشغيل المدرب هنا أضف مفتاح Anthropic API من «الضبط»، أو اضغط «انسخ القياسات لـ Claude» والصقها في محادثة Claude.";
   $("#aiAvail").textContent=msg;$("#aiAvail").hidden=!msg;$("#aiUnavailable").textContent=msg.replace("اضغط «انسخ القياسات لـ Claude» والصقها في محادثة.","");$("#aiUnavailable").hidden=!msg;
-  $("#keyState").textContent=apiKey()?"المفتاح محفوظ في هذا الجهاز.":"";
-  $("#autoAiRow").hidden=!(apiKey()&&!sample);$("#autoAi").checked=store.get("autoAi",true);
+  $("#keyState").textContent=apiKey()?"المفتاح محفوظ في هذا الجهاز.":"";renderSpend();
+  $("#autoAiRow").hidden=!(apiKey()&&!sample);$("#autoAi").checked=store.get("autoAi",false);
 }
 async function initSample(){
   try{sample=inClaude?await window.claude.use("sample"):null;}catch(e){sample=null;}
@@ -3010,11 +3033,11 @@ async function initSample(){
 }
 $("#autoAi").addEventListener("change",e=>store.set("autoAi",e.target.checked));
 function cleanKey(v){return String(v||"").replace(/\u2014/g,"--").replace(/[\u2013\u2212]/g,"-").replace(/[\s\u200B-\u200F\u202A-\u202E\u2066-\u2069\uFEFF"'“”‘’]/g,"");}
-$("#saveKey").addEventListener("click",async()=>{const v=cleanKey($("#apiKey").value);if(!v)return;store.set("apikey",v);$("#apiKey").value="";updateAiAvail();
+$("#saveKey").addEventListener("click",async()=>{const v=cleanKey($("#apiKey").value);if(!v)return;store.set("apikey",v);store.del?store.del("authHdr"):store.set("authHdr",/^sk-ant-api/.test(v)?"x":"bearer");$("#apiKey").value="";updateAiAvail();
   const st=$("#keyState");st.textContent="جارٍ اختبار المفتاح…";
-  try{await ask("ردّ بكلمة واحدة: جاهز");st.textContent="المفتاح يعمل ومحفوظ في هذا الجهاز ("+v.slice(0,10)+"…"+v.slice(-4)+").";}
+  try{await ask("ردّ بكلمة واحدة: جاهز",{role:"chat",maxTokens:1024,effort:"low"});st.textContent="المفتاح يعمل ومحفوظ في هذا الجهاز ("+v.slice(0,10)+"…"+v.slice(-4)+").";}
   catch(e){st.textContent="المفتاح محفوظ لكن الاختبار فشل: "+(sampleErr(e)||"")+(e&&e.message?" ["+e.message+"]":"")+" · طول المفتاح "+v.length+" حرفاً، يبدأ بـ "+v.slice(0,10)+"…";}});
-function sampleErr(e){const c=e&&e.code;return c==="not_granted"?"لم يُسمح للصفحة باستخدام Claude.":c==="rate_limited"?"طلبات كثيرة الآن. حاول بعد قليل.":c==="session_expired"?"انتهت الجلسة. سجّل الدخول مجدداً.":c==="bad_key"?"مفتاح API غير صحيح أو لا يملك صلاحية. راجعه في «الضبط».":c==="no_key"?"أضف مفتاح API من «الضبط».":c==="cancelled"?"":c==="empty_completion"?"وصل رد المدرب فارغاً. حاول مرة أخرى.":"تعذّر الاتصال بالمدرب. حاول مرة أخرى.";}
+function sampleErr(e){const c=e&&e.code;return c==="not_granted"?"لم يُسمح للصفحة باستخدام Claude.":c==="rate_limited"?"طلبات كثيرة الآن. حاول بعد قليل.":c==="session_expired"?"انتهت الجلسة. سجّل الدخول مجدداً.":c==="bad_key"?"مفتاح API غير صحيح أو لا يملك صلاحية. راجعه في «الضبط».":c==="no_key"?"أضف مفتاح API من «الضبط».":c==="budget"?"بلغت حد الإنفاق الشهري الذي حددته في «الضبط». ارفعه إن أردت المتابعة.":c==="cancelled"?"":c==="empty_completion"?"وصل رد المدرب فارغاً. حاول مرة أخرى.":"تعذّر الاتصال بالمدرب. حاول مرة أخرى.";}
 const sampleErrFull=e=>{const b=sampleErr(e);return b&&e&&e.message&&!sample?b+" ["+e.message+"]":b;};
 function reportPrompt(R,note){
   const m=R.maqam;const prev=S.baseline&&!S.lastIsExample;
@@ -3041,7 +3064,7 @@ $("#aiBtn").addEventListener("click",async()=>{
   aiCtl=new AbortController();$("#aiBtn").disabled=true;$("#aiStop").hidden=false;
   try{
     const img=plotImageB64();$("#aiFollow").hidden=true;$("#aiThread").innerHTML="";
-    const r=await ask(prompt,{system:COACH_KB,images:img?[img]:null,signal:aiCtl.signal,onRetry:retryNote(out),onThinking:()=>{if(out.querySelector(".thinking"))out.innerHTML='<p class="thinking">المدرب يدرس تسجيلك ('+coachModel().name+'، قد يأخذ 30 إلى 90 ثانية)</p>';},onText:({text})=>{out.innerHTML=md(text);}});
+    const r=await ask(prompt,{system:COACH_KB,images:img?[img]:null,maxTokens:10000,effort:reportEffort(),signal:aiCtl.signal,onRetry:retryNote(out),onThinking:()=>{if(out.querySelector(".thinking"))out.innerHTML='<p class="thinking">المدرب يدرس تسجيلك ('+coachModel().name+'، قد يأخذ 30 إلى 90 ثانية)</p>';},onText:({text})=>{out.innerHTML=md(text);}});
     S.reportThread={prompt,report:r.text,turns:[]};$("#aiFollow").hidden=false;afterAiReply(out,r.text);
     if(r.truncated)out.append(el("p",{class:"small muted",text:"انقطع الرد قبل نهايته."}));
     if(r.cost!=null)out.append(el("p",{class:"small muted",text:(r.model?r.model+" · ":"")+"تكلفة هذا التحليل تقريباً $"+r.cost.toFixed(3)+" · هذا الشهر $"+r.month.toFixed(2)}));
@@ -3055,7 +3078,7 @@ async function askReport(){
   const th=$("#aiThread");th.append(el("div",{class:"msg u",text:q}));const a=el("div",{class:"msg a"});a.innerHTML='<span class="thinking">يفكّر</span>';th.append(a);a.scrollIntoView({block:"nearest"});
   const turns=[{role:"user",content:T.prompt},{role:"assistant",content:T.report},...T.turns,{role:"user",content:q+"\n(أجب عن سؤالي بدقة وإيجاز، حتى 250 كلمة، مستنداً إلى قياسات التسجيل أعلاه.)"}];
   $("#aiAsk").disabled=true;
-  try{const r=await ask(turns,{system:COACH_KB,maxTokens:12000,effort:"medium",onRetry:retryNote(a),onText:({text})=>{a.innerHTML=md(text);}});T.turns.push({role:"user",content:q},{role:"assistant",content:r.text});afterAiReply(a,r.text);
+  try{const r=await ask(turns,{system:COACH_KB,role:"chat",maxTokens:4000,effort:"low",onRetry:retryNote(a),onText:({text})=>{a.innerHTML=md(text);}});T.turns.push({role:"user",content:q},{role:"assistant",content:r.text});afterAiReply(a,r.text);
     if(S.currentRec&&!S.lastIsExample){S.currentRec.reportChat=(S.currentRec.reportChat||[]).concat([{q,a:r.text}]).slice(-10);updateRec(S.currentRec);}
     if(r.cost!=null)a.append(el("p",{class:"small muted",text:"$"+r.cost.toFixed(3)}));}
   catch(e){a.innerHTML=e&&e.text?md(e.text):"";const msg=sampleErrFull(e);if(msg)a.append(el("p",{class:"status err",text:msg}));}
@@ -3066,6 +3089,9 @@ $("#aiQ").addEventListener("keydown",e=>{if(e.key==="Enter"&&!e.shiftKey){e.prev
 // model + profile settings
 $("#keepAwake").checked=store.get("keepAwake",true);$("#keepAwake").addEventListener("change",e=>{store.set("keepAwake",e.target.checked);Awake.sync();});Awake.sync();
 $("#coachModel").value=store.get("coachModel","sonnet");$("#coachModel").addEventListener("change",e=>store.set("coachModel",e.target.value));
+$("#chatModel").value=store.get("chatModel","haiku");$("#chatModel").addEventListener("change",e=>store.set("chatModel",e.target.value));
+$("#reportEffort").value=reportEffort();$("#reportEffort").addEventListener("change",e=>store.set("reportEffort",e.target.value));
+$("#budgetIn").value=store.get("budget",5);$("#budgetIn").addEventListener("change",e=>{const v=Math.max(0,+e.target.value||0);store.set("budget",v);e.target.value=v;renderSpend();});renderSpend();
 (function(){const p=store.get("profile",{});$("#pLevel").value=p.level||"";$("#pFocus").value=p.focus||"";$("#pStyle").value=p.style||"";$("#pGoals").value=p.goals||"";
   $("#pSave").addEventListener("click",()=>{store.set("profile",{level:$("#pLevel").value,focus:$("#pFocus").value,style:$("#pStyle").value.trim(),goals:$("#pGoals").value.trim()});$("#profSaved").textContent="حُفظ ✓";setTimeout(()=>$("#profSaved").textContent="",2500);});})();
 $("#copyBtn").addEventListener("click",()=>{const R=S.lastAnalysis;if(!R)return;const txt=COACH_KB+"\n\n"+reportPrompt(R,$("#aiNote").value.trim());const ta=$("#copyArea");
@@ -3084,9 +3110,9 @@ async function sendChat(){
   const ctxTxt=COACH_ROLE+(S.activeSong?"\nالمتدرب يتدرّب الآن على أغنية «"+S.activeSong.title+"» لـ"+S.activeSong.artist+" (بياناتها الموثّقة إن وجدت: "+JSON.stringify({composer:S.activeSong.composer,maqam:S.activeSong.maqamText,iqa:S.activeSong.iqa,mods:S.activeSong.mods})+"). لا تكتب كلمات الأغنية.":"")+"\n\nسياق التطبيق: المقام المختار حالياً "+byId(S.maqam).name+" (الدرجات بالسنت من القرار: "+byId(S.maqam).steps.join("، ")+"). أدوات التطبيق المتاحة للمتدرب: مستكشف المقامات بصوت العود والصوت البشري، قرار مستمر، تمارين (تعرّف على المقام، أي درجة، أذن الربع تون)، مؤشر طبقة مباشر، تسجيل وتحليل بالسنت، مكتبة إيقاعات (مقسوم، بلدي، سعيدي، ملفوف، أيوب، خليجي، عدني، جورجينا، فالس، مصمودي كبير، دور هندي، سماعي ثقيل، وإيقاعات يضيفها المتدرب بنفسه) ومترونوم وتمارين نقر تقيس الدقة بالملّي ثانية وتمرين الصمت. "+(S.lastTiming?"آخر نتيجة تمرين زمن: "+JSON.stringify(S.lastTiming)+". ":"")+""+(S.lastAnalysis?"آخر تحليل لتسجيله: "+JSON.stringify(analysisSummary(S.lastAnalysis)):"لا يوجد تحليل تسجيل بعد.")+"\nأجب بإيجاز (حتى 200 كلمة) ما لم يطلب التفصيل، وبنقاط عند الحاجة.";
   const turns=[{role:"user",content:ctxTxt+"\nملف المتدرب: "+JSON.stringify(studentProfile())},...chatTurns.slice(-12)];
   $("#chatSend").disabled=true;
-  try{const r=await ask(turns,{system:COACH_KB,maxTokens:12000,effort:"medium",onRetry:retryNote(a),onText:({text})=>{a.innerHTML=md(text);}});chatTurns.push({role:"assistant",content:r.text});afterAiReply(a,r.text);}
+  try{const r=await ask(turns,{system:COACH_KB,role:"chat",maxTokens:4000,effort:"low",onRetry:retryNote(a),onText:({text})=>{a.innerHTML=md(text);}});chatTurns.push({role:"assistant",content:r.text});afterAiReply(a,r.text);}
   catch(e){a.innerHTML=e&&e.text?md(e.text):"";const msg=sampleErrFull(e);if(msg)a.append(el("p",{class:"status err",text:msg}));chatTurns.pop();
-    if(e&&e.code!=="cancelled")a.append(el("button",{class:"btn small",onclick:()=>{a.previousElementSibling&&a.previousElementSibling.remove();a.remove();$("#chatIn").value=q;sendChat();}},"أعد السؤال"));}
+    if(e&&e.code!=="cancelled"&&e.code!=="budget")a.append(el("button",{class:"btn small",onclick:()=>{a.previousElementSibling&&a.previousElementSibling.remove();a.remove();$("#chatIn").value=q;sendChat();}},"أعد السؤال"));}
   finally{$("#chatSend").disabled=false;}
 }
 $("#chatSend").addEventListener("click",sendChat);
@@ -3351,7 +3377,7 @@ const rs=$("#recMaqam");rs.append(el("option",{value:"auto"},"اكتشف الم�
 window.addEventListener("resize",()=>{if(S.lastAnalysis&&!$("#p-result").hidden&&!$('[data-rp="plot"]').hidden)drawPlot(S.lastAnalysis);});
 window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{if(S.lastAnalysis){drawPlot(S.lastAnalysis);renderDevBars(S.lastAnalysis);}});
 
-const APP_VER="2026.10.14-8";
+const APP_VER="2026.10.16-1";
 $("#verTxt").textContent="الإصدار \u2066"+APP_VER+"\u2069";
 const hardReload=()=>{location.replace(location.pathname+"?v="+Date.now()+location.hash);};
 $("#updBtn").addEventListener("click",hardReload);$("#updNow").addEventListener("click",hardReload);
