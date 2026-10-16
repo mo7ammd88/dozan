@@ -292,6 +292,7 @@ details.more[open]>summary{margin-bottom:8px}
 .devbars{display:grid;gap:9px}
 .devrow{display:grid;grid-template-columns:96px 1fr 64px;gap:10px;align-items:center;font-size:14px}
 .devrow .nm{font-family:var(--f-display);font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.devrow .nm b{display:block;font-weight:600;unicode-bidi:plaintext;text-align:right}.devrow .nm small{display:block;font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis}
 .track{position:relative;height:18px;background:var(--surface-2);border-radius:9px;direction:ltr}
 .track .mid{position:absolute;left:50%;top:-3px;bottom:-3px;width:2px;background:var(--muted)}
 .track .ok{position:absolute;left:37.5%;width:25%;top:0;bottom:0;background:var(--good-soft)}
@@ -2220,6 +2221,15 @@ function issueAdvice(R,i){
   const fix=i.quarter?" تمرين: شغّل القرار المستمر، واسمع «"+i.name+"» بالعود، ثم غنِّها ببطء ثلاث مرات مع مؤشر الطبقة حتى يستقر المؤشر في الأخضر.":" تمرين: اسمع النغمة الصحيحة، ثم غنِّ من القرار صعوداً إليها ببطء.";
   return "غنّيتها "+dir+" "+amt+"."+near+fix;
 }
+/* note names in do-re-mi and where to find them on the oud (standard Arabic tuning: C2 F2 A2 D3 G3 C4, relative to the user's A4) */
+const OUD_STR=[["السادس","دو",-1200],["الخامس","فا",-700],["الرابع","لا",-300],["الثالث","ري",200],["الثاني","صول",700],["الأول","دو",1200]];
+const FINGER={0:"مطلقاً بلا إصبع",50:"بالسبابة قريبة جداً من الرأس",100:"بالسبابة مرخية نحو الرأس",150:"بالسبابة مرخية قليلاً نحو الرأس",200:"بالسبابة",250:"بالوسطى مرخية نحو الرأس",300:"بالوسطى",350:"بالبنصر مرخياً قليلاً نحو الرأس",400:"بالبنصر",450:"بالخنصر مرخياً نحو الرأس",500:"بالخنصر"};
+function degOf(R,degC){return R.degs.find(d=>d.target===degC)||null;}
+function solfOf(R,abs,degC){const d=degOf(R,degC);const step=d&&d.i!=null?d.i:0;const letter=(tonicLetter(mod(R.tonicAbs,1200))+step)%7;const sp=spell(abs,letter);return {full:sp.name+(sp.acc?" "+sp.acc:""),short:sp.name+(sp.sym||"")};}
+function oudPos(abs){let a=Math.round(abs/50)*50,note="";
+  if(a>1700){a-=1200;note=" (أخفض من صوتك بأوكتاف)";}else if(a<-1200){a+=1200;note=" (أعلى من صوتك بأوكتاف)";}
+  let best=null;OUD_STR.forEach(st=>{const off=a-st[2];if(off>=0&&off<=500&&(!best||off<best.off))best={st,off};});
+  if(!best)return "";return "الوتر "+best.st[0]+" («"+best.st[1]+"» مطلق) "+FINGER[best.off]+note;}
 const ORD=["الأولى (القرار)","الثانية","الثالثة","الرابعة","الخامسة","السادسة","السابعة","الثامنة (جواب القرار)"];
 function issueGroups(R){
   const groups=[];(R.issues||[]).forEach((i,k)=>{i.n=k+1;const key=i.kind+"|"+i.name+"|"+(i.kind==="scoop"?"":Math.sign(i.dev));let g=groups.find(x=>x.key===key);if(!g){g={key,items:[],kind:i.kind,name:i.name};groups.push(g);}g.items.push(i);});
@@ -2227,11 +2237,13 @@ function issueGroups(R){
   return groups.sort((a,b)=>b.sev-a.sev);
 }
 function plainIssue(R,g){
-  const k=R.degs.findIndex(d=>d.name===g.name);const where="نغمة «"+g.name+"»"+(k>=0&&ORD[k]?"، الدرجة "+ORD[k]+" في المقام":"");
+  const i0=g.items[0];const k=R.degs.findIndex(d=>d.target===i0.degC);const sf=solfOf(R,i0.abs,i0.degC);
+  const where="نغمة «"+sf.full+"» ("+g.name+(k>=0&&ORD[k]?"، الدرجة "+ORD[k]+" في المقام":"")+")";
   const n=g.items.length;const times=n>1?" (تكررت "+(n===2?"مرتين":n+" مرات")+")":"";const oud=R.mode==="oud";
   if(g.kind==="scoop")return where+times+": "+(oud?"النغمة تهتز بعد ضرب الريشة. ثبّت إصبعك على مكانه قبل أن تضرب.":"تبدأها من تحت ثم تصعد إليها. ابدأها على مكانها مباشرة، وتخيّلها قبل أن تغني.");
   const a=Math.abs(g.avg),up=g.avg>0;const amt=a<40?"قليلاً":a<65?"بربع تون تقريباً":"كثيراً";
-  return where+times+": خرجت "+(up?"أعلى":"أخفض")+" من الصحيح "+amt+". "+(oud?"حرّك إصبعك "+(up?"نحو رأس العود (جهة المفاتيح).":"نحو صدر العود (جهة الفتحة)."):(up?"انزل بصوتك عندها.":"ارفع صوتك عندها."));
+  const op=oudPos(i0.abs);
+  return where+times+": خرجت "+(up?"أعلى":"أخفض")+" من الصحيح "+amt+". "+(oud?"حرّك إصبعك "+(up?"نحو رأس العود (جهة المفاتيح).":"نحو صدر العود (جهة الفتحة)."):(up?"انزل بصوتك عندها.":"ارفع صوتك عندها."))+(op?" مكانها على العود: "+op+".":"");
 }
 function renderPlain(R){
   const box=$("#plainCard");if(!box)return;box.innerHTML="";const oud=R.mode==="oud";const who=oud?"عزفك":"صوتك";
@@ -2265,9 +2277,9 @@ function renderIssues(R){
     const rep=Object.assign({},g.items[0],{dev:g.avg,ms:g.items.reduce((a,i)=>a+(i.ms||0),0)/g.items.length});
     const sev=g.kind==="pitch"&&Math.abs(g.avg)>45;
     const card=el("div",{class:"issue"},
-      el("div",{class:"h"},el("span",{class:"num"+(sev?"":" w"),text:g.items.length>1?"×"+g.items.length:"#"+g.items[0].n}),el("b",{text:g.name}),
+      el("div",{class:"h"},el("span",{class:"num"+(sev?"":" w"),text:g.items.length>1?"×"+g.items.length:"#"+g.items[0].n}),el("b",{text:solfOf(R,g.items[0].abs,g.items[0].degC).full+" · "+g.name}),
         el("span",{class:"dv",text:g.kind==="scoop"?"دخول بطيء":(g.avg>0?"+":"")+Math.round(g.avg)+" سنت "+(g.avg>0?"أعلى":"أخفض")+(g.items.length>1?" (متوسط)":"")})),
-      el("p",{text:issueAdvice(R,rep)}));
+      el("p",{text:issueAdvice(R,rep)+(oudPos(rep.abs)?" مكانها على العود: "+oudPos(rep.abs)+".":"")}));
     const row=el("div",{class:"row"});
     g.items.forEach(i=>{const mm=Math.floor(i.t/60),ss=Math.floor(i.t%60);
       row.append(el("button",{title:"تسجيلك ثم الصحيح",onclick:()=>{playSegment(i.t-0.1,i.t+Math.min(i.dur,1.8)+0.1).then(()=>playTargetNote(R,i));}},"#"+i.n+" · "+mm+":"+String(ss).padStart(2,"0")+(g.kind==="pitch"&&g.items.length>1?" ("+(i.dev>0?"+":"")+Math.round(i.dev)+")":"")));});
@@ -2311,7 +2323,8 @@ function renderDevBars(R){
   const box=$("#devbars");box.innerHTML="";const good=cssVar("--good"),warn=cssVar("--warn"),bad=cssVar("--bad");
   R.degs.forEach(d=>{
     const row=el("div",{class:"devrow"});
-    row.append(el("span",{class:"nm",title:d.role||"",text:d.name+(d.alt?" ↓":"")}));
+    const sfd=solfOf(R,R.tonicAbs+d.target,d.target);
+    row.append(el("span",{class:"nm",title:d.name+(d.role?" · "+d.role:"")},el("b",{text:sfd.short+(d.alt?" ↓":"")}),el("small",{text:d.name})));
     const tr=el("div",{class:"track"},el("div",{class:"ok"}),el("div",{class:"mid"}));
     let v="لم تُؤدَّ";
     if(d.dev!=null){const c=Math.max(-80,Math.min(80,d.dev));const p=50+c/80*50;const a=Math.abs(d.dev);
@@ -2942,7 +2955,7 @@ function analysisSummary(R){
     maqam:R.maqam.name,performance:R.mode==="oud"?"عزف عود منفرد (ليس غناء)":"غناء بالصوت البشري",instrument_detection:R.modeAuto?{auto:true,detected:R.mode,note_decay_ratio:R.instrument&&R.instrument.decay}:{auto:false},duration_s:+R.dur.toFixed(1),
     is_generated_example:!!S.lastIsExample,
     maqam_detection:R.autoMaq?{auto_detected:true,candidates:R.cands.map(c=>({name:c.name,relative_fit:+c.rel.toFixed(2)})),alternative_reading:R.alt||null}:{auto_detected:false,chosen_by_user:true},
-    pitch_problem_spots:(R.issues||[]).map((i,k)=>({n:k+1,time_s:+i.t.toFixed(1),note:i.name,kind:i.kind==="scoop"?"دخول بطيء على النغمة":"نشاز",deviation_cents:Math.round(i.dev),duration_ms:Math.round(i.dur*1000),scoop_ms:i.ms?Math.round(i.ms):undefined})),
+    pitch_problem_spots:(R.issues||[]).map((i,k)=>({n:k+1,time_s:+i.t.toFixed(1),note:i.name,solfege:solfOf(R,i.abs,i.degC).full,oud_position:oudPos(i.abs),kind:i.kind==="scoop"?"دخول بطيء على النغمة":"نشاز",deviation_cents:Math.round(i.dev),duration_ms:Math.round(i.dur*1000),scoop_ms:i.ms?Math.round(i.ms):undefined})),
     song:S.activeSong&&!S.lastIsExample?{title:S.activeSong.title,artist:S.activeSong.artist,documented_maqam:S.activeSong.maqamText||null,iqa:S.activeSong.iqa||null,modulations:S.activeSong.mods||[]}:null,
     comparison_with_original_singer:S.lastOrigCmp||null,
     previous_attempt_same_maqam:S.baseline&&S.currentRec&&!S.lastIsExample?{date:new Date(S.baseline.t).toISOString().slice(0,10),metrics:S.baseline.m,degrees:S.baseline.degs}:null,
@@ -2954,7 +2967,7 @@ function analysisSummary(R){
     pct_time_outside_maqam_over_60_cents:Math.round(R.outside*100),
     note_stability_median_sd_cents:R.stab==null?null:Math.round(R.stab),
     range:{low:noteName(R.maqam.tonic+R.rangeLow),high:noteName(R.maqam.tonic+R.rangeHigh),semitones:Math.round((R.rangeHigh-R.rangeLow)/100)},
-    degrees:R.degs.map(d=>({name:d.name,role:d.role||null,quarter_tone:d.quarter,target_cents_from_tonic:d.target,times_sung:d.notes,share_pct:Math.round(d.share*100),mean_deviation_cents:d.dev==null?null:Math.round(d.dev),consistency_sd_cents:d.spread==null?null:Math.round(d.spread)})),
+    degrees:R.degs.map(d=>({name:d.name,solfege:solfOf(R,R.tonicAbs+d.target,d.target).full,oud_position:oudPos(R.tonicAbs+d.target),role:d.role||null,quarter_tone:d.quarter,target_cents_from_tonic:d.target,times_sung:d.notes,share_pct:Math.round(d.share*100),mean_deviation_cents:d.dev==null?null:Math.round(d.dev),consistency_sd_cents:d.spread==null?null:Math.round(d.spread)})),
     notes_count:R.notes.length,avg_note_ms:Math.round(R.avgNoteMs),
     onset_time_to_reach_pitch_ms:Math.round(R.scoop),
     vibrato:R.mode==="voice"?{present:R.vib.present,rate_hz:R.vib.rate&&+R.vib.rate.toFixed(1),width_cents:R.vib.ext&&Math.round(R.vib.ext)}:null,
@@ -3013,7 +3026,7 @@ function studentProfile(){
 function plotImageB64(){try{const cv=$("#plot");if(!cv||!cv.width||$("#results").hidden)return null;const maxW=1100;const sc=Math.min(1,maxW/cv.width);
   const o=document.createElement("canvas");o.width=Math.round(cv.width*sc);o.height=Math.round(cv.height*sc);const g=o.getContext("2d");g.fillStyle=cssVar("--surface-2")||"#fff";g.fillRect(0,0,o.width,o.height);g.drawImage(cv,0,0,o.width,o.height);
   return o.toDataURL("image/png").split(",")[1];}catch(e){return null;}}
-const COACH_ROLE="أنت «دوزان»، مدرّب محترف ومتعمق في الموسيقى العربية: المقامات والأجناس وسير المقام، والعزف على العود (الريشة، الدوزان، مواضع الأصابع بلا دساتين)، والغناء الشرقي (الضبط، العُرَب، النفس، التطريب). تكتب بالعربية الفصحى المبسطة، مباشراً وعملياً بلا مجاملة ولا مبالغة، وتعطي أرقاماً ومعايير قابلة للقياس عندما تفيد. إذا لم تكن متأكداً من معلومة تاريخية أو نسبة لحن لمؤلف فقل ذلك صراحة بدل التخمين.";
+const COACH_ROLE="أنت «دوزان»، مدرّب محترف ومتعمق في الموسيقى العربية: المقامات والأجناس وسير المقام، والعزف على العود (الريشة، الدوزان، مواضع الأصابع بلا دساتين)، والغناء الشرقي (الضبط، العُرَب، النفس، التطريب). تكتب بالعربية الفصحى المبسطة، مباشراً وعملياً بلا مجاملة ولا مبالغة، وتعطي أرقاماً ومعايير قابلة للقياس عندما تفيد. عند ذكر النغمات استخدم دو ري مي مع الاسم العربي بين قوسين، واذكر مكانها على العود (الوتر والإصبع) بالعود المدوزن دوزان «دو فا لا ري صول دو». إذا لم تكن متأكداً من معلومة تاريخية أو نسبة لحن لمؤلف فقل ذلك صراحة بدل التخمين.";
 const inClaude=!!window.claude;
 const apiKey=()=>store.get("apikey","");
 const aiReady=()=>!!sample||!!apiKey();
@@ -3096,7 +3109,7 @@ function reportPrompt(R,note){
   "درجات المقام بالسنت من القرار: "+m.steps.join("، ")+(m.desc?" (وفي النزول: "+Object.entries(m.desc).map(([i,c])=>"الدرجة "+(+i+1)+" = "+c).join("، ")+")":"")+". الأجناس: "+m.ajnas.map(j=>j[0]).join(" + ")+". الغماز: "+noteName(m.tonic+m.steps[m.gh])+".\n"+
   (S.lastIsExample?"تنبيه: هذا تسجيل تجريبي مولّد آلياً وليس أداء المتدرب؛ قل ذلك في أول سطر.\n":"")+
   "الصورة المرفقة (إن وجدت) هي منحنى الطبقة لهذا التسجيل.\n\n"+
-  "اكتب بالعربية بصيغة Markdown، بين 250 و450 كلمة، بلغة بسيطة يفهمها هاوٍ غير متخصص: جمل قصيرة، واشرح أي مصطلح فني بكلمات بسيطة عند أول ذكر له، ولا تكتب رقماً بالسنت أو الهرتز دون أن تقول معناه بالكلام (مثل: أعلى قليلاً، ربع تون تقريباً). سمِّ الدرجة باسمها وترتيبها في المقام (مثل: السيكاه، الدرجة الثالثة). بهذه الأقسام:\n"+
+  "اكتب بالعربية بصيغة Markdown، بين 250 و450 كلمة، بلغة بسيطة يفهمها هاوٍ غير متخصص: جمل قصيرة، واشرح أي مصطلح فني بكلمات بسيطة عند أول ذكر له، ولا تكتب رقماً بالسنت أو الهرتز دون أن تقول معناه بالكلام (مثل: أعلى قليلاً، ربع تون تقريباً). سمِّ كل نغمة بدو ري مي من حقل solfege أولاً ثم اسمها العربي وترتيبها في المقام (مثل: «مي نصف بيمول» (سيكاه، الدرجة الثانية))، وعند شرح أي تصحيح أو تمرين اذكر مكان النغمة على العود من حقل oud_position (الوتر والإصبع). بهذه الأقسام:\n"+
   "## الخلاصة\nتقييم من 10 وجملة حكم واحدة صريحة، ثم أهم شيئين يجب العمل عليهما.\n"+
   "## ما أجدته\nنقاط محددة بالأرقام.\n"+
   "## قراءة الجمل والسير\nجملة جملة باختصار من phrases: أين بدأت وأين قفلت، هل أبرزت الغماز، هل ظهر تحويل مقامي، هل كانت القفلة الأخيرة على القرار وثابتة.\n"+
@@ -3429,7 +3442,7 @@ const rs=$("#recMaqam");rs.append(el("option",{value:"auto"},"اكتشف الم�
 window.addEventListener("resize",()=>{if(S.lastAnalysis&&!$("#p-result").hidden&&!$('[data-rp="plot"]').hidden)drawPlot(S.lastAnalysis);});
 window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{if(S.lastAnalysis){drawPlot(S.lastAnalysis);renderDevBars(S.lastAnalysis);}});
 
-const APP_VER="2026.10.16-3";
+const APP_VER="2026.10.16-4";
 $("#verTxt").textContent="الإصدار \u2066"+APP_VER+"\u2069";
 const hardReload=()=>{location.replace(location.pathname+"?v="+Date.now()+location.hash);};
 $("#updBtn").addEventListener("click",hardReload);$("#updNow").addEventListener("click",hardReload);
