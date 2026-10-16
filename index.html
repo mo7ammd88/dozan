@@ -2631,12 +2631,12 @@ function openSong(id){
   if(recs.length){ph.append(el("h3",{text:"تدريبك على هذه الأغنية"}));const pts=recs.map(r=>r.m.score);ph.append(el("p",{class:"small",text:recs.length+" محاولة · التقييم: "+pts.join(" ← ")+(pts.length>1?" ("+(pts[pts.length-1]-pts[0]>=0?"+":"")+(pts[pts.length-1]-pts[0])+")":"")}));
     const rr=el("div",{class:"songmaq"});recs.slice(-6).reverse().forEach(r=>rr.append(el("button",{onclick:()=>{go("rec");openRec(r.id);}},fmtDate(r.t)+" · "+r.m.score)));ph.append(rr);}
   ph.append(el("h3",{text:"قارن أداءك بالأصل"}));
-  ph.append(el("p",{class:"small muted",id:"origInfo",text:"ارفع مقطعاً من التسجيل الأصلي (10 إلى 30 ثانية)، ثم سجّل نفس المقطع بصوتك من «تدرّب عليها». نطابق اللحنين لحظة بلحظة."}));
+  ph.append(el("p",{class:"small muted",id:"origInfo",text:"ارفع التسجيل الأصلي: مقطع قصير، أو الأغنية كاملة وتختار من أين نبدأ. ثم سجّل نفس المقطع بصوتك من «تدرّب عليها»، ونطابق اللحنين لحظة بلحظة."}));
   const cb=el("div",{class:"btns"});cb.append(el("label",{class:"btn",for:"songClipIn"},"ارفع مقطع الأصل"));
   cb.append(el("button",{class:"btn primary",id:"cmpOrigBtn",onclick:()=>compareWithOriginal(x)},"قارن آخر محاولة بالأصل"));ph.append(cb);
   ph.append(el("div",{id:"origCmp"}));
   d.append(ph);
-  DB.get(id,"clips").then(c=>{if(c){$("#origInfo").textContent="مقطع الأصل محفوظ ("+c.dur+" ث، رُفع "+fmtDate(c.t)+"). سجّل نفس المقطع ثم اضغط «قارن».";}}).catch(()=>{});
+  DB.get(id,"clips").then(c=>{if(c){$("#origInfo").textContent="مقطع الأصل محفوظ ("+c.dur+" ث"+(c.from?" من "+fmtT(c.from):"")+"، رُفع "+fmtDate(c.t)+"). سجّل نفس المقطع ثم اضغط «قارن».";}}).catch(()=>{});
   $("#cmpOrigBtn").disabled=!recs.length;
   if(curKey()!=="p-song"){if(NAV.tab!=="learn")go("songs");push("song");}
 }
@@ -2715,18 +2715,69 @@ $("#songComplete").addEventListener("click",async()=>{
 
 /* ----- original clip: detect maqam + keep the clip for comparisons ----- */
 const songClipIn=el("input",{type:"file",id:"songClipIn",accept:"audio/*,video/*",hidden:""});document.body.append(songClipIn);
+/* reading a clip: short files are decoded directly; long files, or formats the browser can't decode in one go,
+   get a small picker (preview player + start time) and 30 s are read from there. Long files are read by playing them
+   through the audio graph, so a whole 7-minute song never has to be decoded into memory at once (that fails on iPhone). */
+const CLIP_LEN=30;
+function parseT(v){v=String(v||"").trim().replace(/[٠-٩]/g,d=>"٠١٢٣٤٥٦٧٨٩".indexOf(d));if(!v)return 0;const m=v.match(/^(\d+)(?:\s*[:.،,]\s*(\d{1,2}))?$/);if(!m)return null;return m[2]!=null?(+m[1])*60+(+m[2]):+m[1];}
+function fileDesc(f){return (f.name||"ملف")+" · "+(f.size/1048576).toFixed(1)+" م.ب"+(f.type?" · "+f.type:"");}
+function wavBlob(d,sr){const b=new ArrayBuffer(44+d.length*2),v=new DataView(b);const w=(o,t)=>{for(let i=0;i<t.length;i++)v.setUint8(o+i,t.charCodeAt(i));};
+  w(0,"RIFF");v.setUint32(4,36+d.length*2,true);w(8,"WAVE");w(12,"fmt ");v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,"data");v.setUint32(40,d.length*2,true);
+  for(let i=0;i<d.length;i++){const x=Math.max(-1,Math.min(1,d[i]));v.setInt16(44+i*2,x<0?x*0x8000:x*0x7fff,true);}return new Blob([b],{type:"audio/wav"});}
+function captureMedia(m,start,len,onProg){return new Promise((res,rej)=>{const ctx=getCtx();
+  if(!m._src){m._src=ctx.createMediaElementSource(m);m._src.connect(ctx.destination);}
+  const sp=ctx.createScriptProcessor(4096,2,1);const chunks=[];let got=0,ended=false;const need=Math.floor(len*ctx.sampleRate);
+  m._src.connect(sp);sp.connect(ctx.destination);Awake.on("clip");
+  const stop=err=>{if(ended)return;ended=true;clearTimeout(guard);sp.onaudioprocess=null;try{m._src.disconnect(sp);}catch(e){}try{sp.disconnect();}catch(e){}try{m.pause();}catch(e){}Awake.off("clip");
+    if(!got)return rej(err||new Error("لم يصل صوت"));const out=new Float32Array(got);let o=0;chunks.forEach(c=>{out.set(c,o);o+=c.length;});res({data:out,sr:ctx.sampleRate});};
+  sp.onaudioprocess=ev=>{if(ended||m.paused||m.seeking||m.currentTime<start-0.05)return;const ib=ev.inputBuffer,n=ib.length,ch=ib.numberOfChannels;const c=new Float32Array(n);
+    for(let k=0;k<ch;k++){const d=ib.getChannelData(k);for(let i=0;i<n;i++)c[i]+=d[i]/ch;}chunks.push(c);got+=n;onProg&&onProg(Math.min(1,got/need));if(got>=need)stop();};
+  m.onended=()=>stop();
+  const guard=setTimeout(()=>stop(new Error("انتهت المهلة")),(len+25)*1000);
+  try{m.currentTime=start;}catch(e){}
+  const p=m.play();if(p&&p.catch)p.catch(e=>stop(e));});}
+function clipPicker(st,f,dec,why){
+  let box=$("#clipPick");if(box)box.remove();box=el("div",{id:"clipPick",class:"notice",style:"display:grid;gap:10px;width:100%"});st.after(box);
+  const url=URL.createObjectURL(f);const isV=/^video\//.test(f.type);
+  const m=el(isV?"video":"audio",{controls:"",playsinline:"",preload:"metadata",src:url,style:isV?"width:100%;max-height:180px;border-radius:10px":"width:100%"});
+  const inp=el("input",{class:"field mono",inputmode:"numeric",value:"0:00","aria-label":"البداية",style:"width:80px;text-align:center;background:var(--surface);border-radius:10px;padding:8px"});
+  const here=el("button",{class:"btn small",onclick:()=>{inp.value=fmtT(m.currentTime||0);}},"من موضع المشغّل");
+  const go=el("button",{class:"btn primary"},"حلّل "+CLIP_LEN+" ثانية من هنا");
+  const msg=el("p",{class:"small"});
+  box.append(el("p",{text:why}),m,el("div",{class:"row",style:"gap:8px;align-items:center;flex-wrap:wrap"},el("span",{text:"البداية"}),inp,here),go,msg);
+  m.addEventListener("error",()=>{msg.textContent="هذا الملف لا يعمل في المتصفح ("+fileDesc(f)+"). جرّب ملفاً آخر بصيغة mp3 أو m4a.";go.disabled=true;});
+  return new Promise(resolve=>{go.onclick=()=>{const t=parseT(inp.value);if(t==null){msg.textContent="اكتب الوقت هكذا: 1:20";return;}
+    go.disabled=true;
+    if(dec){const a=Math.floor(t*dec.sr);if(a>=dec.data.length-dec.sr*3){msg.textContent="البداية بعد نهاية الملف.";go.disabled=false;return;}m.pause();resolve({data:dec.data.slice(a,a+CLIP_LEN*dec.sr),sr:dec.sr,start:t,done:()=>{box.remove();URL.revokeObjectURL(url);}});return;}
+    msg.textContent="يقرأ المقطع… أبقِ الشاشة مفتوحة (حوالي "+CLIP_LEN+" ثانية)";
+    captureMedia(m,t,CLIP_LEN,p=>{msg.textContent="يقرأ المقطع… "+Math.round(p*100)+"%";})
+      .then(r=>resolve(Object.assign(r,{start:t,done:()=>{box.remove();URL.revokeObjectURL(url);}})))
+      .catch(err=>{go.disabled=false;msg.textContent="تعذّر تشغيل الملف هنا ("+((err&&err.message)||err)+"). جرّب مقطعاً أقصر بصيغة m4a أو mp3.";});};});
+}
+async function readClip(f,st){
+  let dec=null,err=null;
+  if(f.size<=6*1048576){try{const a=await decodeBlob(await f.arrayBuffer());dec={data:mono(a),sr:a.sampleRate};}catch(e){err=e;}}
+  if(dec&&dec.data.length<=dec.sr*45)return {data:dec.data,sr:dec.sr,start:0,done:()=>{}};
+  st.className="status";st.textContent="";
+  return await clipPicker(st,f,dec,dec?"المقطع طويل ("+fmtT(dec.data.length/dec.sr)+"). استمع واختر من أين يبدأ الغناء، ونحلل "+CLIP_LEN+" ثانية من هناك.":"الملف كبير أو لا يُقرأ مباشرة ("+fileDesc(f)+"). شغّله واختر من أين يبدأ الغناء، ونقرأ "+CLIP_LEN+" ثانية من هناك أثناء تشغيله.");
+}
 songClipIn.addEventListener("change",async e=>{const f=e.target.files[0];e.target.value="";const x=SONGS.find(y=>y.id===S.curSongId);if(!f||!x)return;
-  const st=$("#songDStatus");st.className="status";st.textContent="يحلّل مقطع الأصل…";
-  try{const audio=await decodeBlob(await f.arrayBuffer());let data=mono(audio);const sr=audio.sampleRate;if(data.length>sr*40)data=data.subarray(0,sr*40);
+  const st=$("#songDStatus");st.className="status";st.textContent="يقرأ الملف…";let stage="قراءة الملف";
+  try{const clip=await readClip(f,st);stage="تحليل المقطع";st.className="status";st.textContent="يحلّل مقطع الأصل…";
+    let data=clip.data;const sr=clip.sr;if(data.length>sr*40)data=data.subarray(0,sr*40);
+    let pk=0;for(let i=0;i<data.length;i+=7){const v=Math.abs(data[i]);if(v>pk)pk=v;}
+    if(pk<1e-4){clip.done();st.textContent="وصل المقطع صامتاً. إن كان الآيفون على الوضع الصامت فعّل «أصوات التطبيق في الوضع الصامت» من «الضبط» وأعد المحاولة.";st.className="status err";return;}
+    clip.done();
     const R=await analyze(data,sr,"auto","voice",true,p=>{st.textContent="يحلّل مقطع الأصل… "+Math.round(p*100)+"%";},null);
     if(R.error){st.textContent="لم نلتقط لحناً واضحاً في المقطع. اختر مقطعاً يغنّي فيه المطرب بوضوح.";st.className="status err";return;}
     const contour=R.frames.filter(f=>f.v).map(f=>[+f.t.toFixed(3),Math.round(f.c)]);
-    await DB.put({id:x.id,t:Date.now(),dur:+R.dur.toFixed(1),blob:f,contour,maqam:R.maqam.id,tonicAbs:R.tonicAbs},"clips");
+    stage="حفظ المقطع";
+    await DB.put({id:x.id,t:Date.now(),dur:+R.dur.toFixed(1),blob:wavBlob(data,sr),from:clip.start||0,file:f.name||"",contour,maqam:R.maqam.id,tonicAbs:R.tonicAbs},"clips");
     const c2=R.cands[1];const sure=!c2||c2.rel<0.9;
     if(x.status!=="v"){x.maqam=R.maqam.id;x.maqamText=R.maqam.name;x.status="e";x.tonicName=noteName(Math.round(R.tonicAbs/50)*50)+" (في التسجيل)";await saveSong(x);}
     renderSongs();openSong(x.id);
     $("#songDStatus").textContent="المقام المكتشف من المقطع: "+R.maqam.name+(sure?"":" (قريب أيضاً من "+c2.name+")")+(x.status==="v"?" · البيانات الموثّقة: "+(x.maqamText||maqName(x.maqam))+(R.maqam.id===x.maqam?" ✓ متطابق":" · المقطع قد يكون من جزء ينتقل فيه المقام"):"")+". حُفظ المقطع للمقارنة.";
-  }catch(err){st.textContent="تعذّرت قراءة الملف.";st.className="status err";}});
+  }catch(err){st.textContent="تعذّر "+stage+": "+((err&&(err.message||err.name))||"خطأ غير معروف")+" · "+fileDesc(f)+(stage==="قراءة الملف"?" · جرّب m4a أو mp3.":"");st.className="status err";}});
 
 /* ----- compare your latest attempt with the original (key-invariant DTW on pitch contours) ----- */
 function resampleContour(pts,fps){if(!pts.length)return [];const out=[];const T=pts[pts.length-1][0];let j=0;
@@ -2851,7 +2902,7 @@ async function runAnalysis(data,sr,isExample,grid,opts){
 }
 async function handleArrayBuffer(ab,grid,opts){
   try{const audio=await decodeBlob(ab);await runAnalysis(mono(audio),audio.sampleRate,false,grid,opts||{});}
-  catch(e){setStatus("تعذّرت قراءة الملف. جرّب تسجيلاً بصيغة m4a أو mp3 أو wav.",true);}
+  catch(e){setStatus("تعذّرت قراءة الملف"+(e&&(e.message||e.name)?" ("+(e.message||e.name)+")":"")+". جرّب تسجيلاً أقصر من دقيقتين بصيغة m4a أو mp3 أو wav.",true);}
 }
 $("#fileIn").addEventListener("change",async e=>{const f=e.target.files[0];if(!f)return;setStatus("جارٍ قراءة "+f.name+"…");const ab=await f.arrayBuffer();e.target.value="";await handleArrayBuffer(ab,null,{blob:f,mime:f.type});});
 function pickMime(){if(typeof MediaRecorder==="undefined"||!MediaRecorder.isTypeSupported)return "";return ["audio/mp4","audio/webm;codecs=opus","audio/webm","audio/ogg"].find(t=>{try{return MediaRecorder.isTypeSupported(t);}catch(e){return false;}})||"";}
@@ -3442,7 +3493,7 @@ const rs=$("#recMaqam");rs.append(el("option",{value:"auto"},"اكتشف الم�
 window.addEventListener("resize",()=>{if(S.lastAnalysis&&!$("#p-result").hidden&&!$('[data-rp="plot"]').hidden)drawPlot(S.lastAnalysis);});
 window.matchMedia&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener&&window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change",()=>{if(S.lastAnalysis){drawPlot(S.lastAnalysis);renderDevBars(S.lastAnalysis);}});
 
-const APP_VER="2026.10.16-4";
+const APP_VER="2026.10.16-5";
 $("#verTxt").textContent="الإصدار \u2066"+APP_VER+"\u2069";
 const hardReload=()=>{location.replace(location.pathname+"?v="+Date.now()+location.hash);};
 $("#updBtn").addEventListener("click",hardReload);$("#updNow").addEventListener("click",hardReload);
