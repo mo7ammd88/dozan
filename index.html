@@ -961,6 +961,7 @@ details.tip p{padding:0 16px 14px;font-size:15px;color:var(--muted);line-height:
   <section class="page" id="p-solfa" data-title="دو ري مي" hidden>
     <div class="chips maqpick" role="group" aria-label="المقام"></div>
     <div class="card">
+      <div class="seg full qararSeg"><button data-q="do" aria-pressed="true">القرار دو</button><button data-q="re" aria-pressed="false">القرار ري</button></div>
       <div class="seg full" id="sfMode"><button data-m="free" aria-pressed="true">حر</button><button data-m="up" aria-pressed="false">اصعد السلم</button><button data-m="down" aria-pressed="false">انزل السلم</button></div>
       <div class="seg full tolSeg"><button data-tol="easy">سهلة ±25</button><button data-tol="mid">متوسطة ±15</button><button data-tol="pro">دقيقة ±8</button></div>
       <div class="sf-big"><p class="small muted" id="sfMaq"></p><div class="sf-name" id="sfName">—</div><div class="sf-acc" id="sfAcc"></div><div class="sf-ar" id="sfAr"></div></div>
@@ -1161,6 +1162,7 @@ details.tip p{padding:0 16px 14px;font-size:15px;color:var(--muted);line-height:
       <div class="sec">
         <p class="sh">الصوت</p>
         <div class="list">
+          <div class="row static"><span class="tx">قرار المقامات<small>كل السلالم تبدأ منه</small></span><div class="seg qararSeg"><button data-q="do" aria-pressed="true">دو</button><button data-q="re" aria-pressed="false">ري</button></div></div>
           <div class="row static"><span class="tx">طبقة القرار<small>نقل بالأنصاف</small></span><div class="stepper"><button id="trDown" aria-label="أخفض">−</button><output id="trOut">0</output><button id="trUp" aria-label="أعلى">+</button></div></div>
           <div class="row static"><span class="tx">الصوت البشري</span><div class="seg" id="voiceSeg"><button data-v="m" aria-pressed="true">رجالي</button><button data-v="f" aria-pressed="false">نسائي</button></div></div>
         </div>
@@ -1339,7 +1341,7 @@ const store={get(k,d){try{const v=localStorage.getItem("dozan."+k);return v==nul
 
 /* ---------------- Music data ---------------- */
 let A4=+(store.get("a4",440))||440;let C3=A4*Math.pow(2,-21/12);
-const NAMES={"-500":"يكاه","-300":"عشيران","-200":"عجم عشيران","-150":"عراق","-100":"كوشت","0":"راست","100":"زيركلاه","200":"دوكاه","300":"كرد","350":"سيكاه","400":"بوسليك","500":"جهاركاه","600":"حجاز","700":"نوى","800":"حصار","900":"حسيني","1000":"عجم","1050":"أوج","1100":"ماهور","1200":"كردان","1300":"شهناز","1400":"محيّر","1550":"بزرك","1700":"ماهوران"};
+const NAMES={"-500":"يكاه","-300":"عشيران","-200":"عجم عشيران","-150":"عراق","-100":"كوشت","0":"راست","50":"نيم زيركلاه","100":"زيركلاه","150":"تيك زيركلاه","200":"دوكاه","300":"كرد","350":"سيكاه","400":"بوسليك","450":"تيك بوسليك","500":"جهاركاه","550":"تيك جهاركاه","600":"حجاز","650":"تيك حجاز","700":"نوى","750":"نيم حصار","800":"حصار","850":"تيك حصار","900":"حسيني","950":"نيم عجم","1000":"عجم","1050":"أوج","1100":"ماهور","1200":"كردان","1300":"شهناز","1400":"محيّر","1550":"بزرك","1700":"ماهوران"};
 function noteName(abs){const r=Math.round(abs/50)*50;if(NAMES[r]!=null)return NAMES[r];if(r>=1200)return "جواب "+noteName(r-1200);if(r<-500)return "قرار "+noteName(r+1200);return "—";}
 function toneFrac(c){const q=Math.round(c/50),w=Math.floor(q/4),f=["","¼","½","¾"][q%4];return w?(w+(f?" "+f:"")):f||"0";}
 function intervalWord(c){const m={50:"ربع تون",100:"نصف تون",150:"¾ تون",200:"تون",250:"تون وربع",300:"تون ونصف",350:"تون و¾",400:"تونان"};return m[Math.round(c/50)*50]||"";}
@@ -1499,9 +1501,13 @@ const CORE_FAM={rast:"rast",bayati:"bayati",sikah:"sikah",hijaz:"hijaz",saba:"ot
 MAQAMAT.forEach(m=>{m.core=true;m.fam=CORE_FAM[m.id]||"other";});
 MAQ_MORE.forEach(m=>{m.gen=true;m.det=false;if(!m.phrase){const top=m.steps.length-1,g=m.gh,p=[[0,1]];for(let i=1;i<=g;i++)p.push([i,i===g?1.5:.5]);if(g+1<=top)p.push([g+1,.5],[g,.5]);for(let i=g-1;i>=0;i--)p.push([i,i===0?2:.5]);m.phrase=p;}MAQAMAT.push(m);});
 const byId=id=>MAQAMAT.find(m=>m.id===id);
+MAQAMAT.forEach(m=>{m.tonic0=m.tonic;});
 
 /* ---------------- State ---------------- */
 const S={maqam:store.get("maqam","bayati"),timbre:"oud",transpose:store.get("tr",0),voice:store.get("voice","m"),drone:false,lastAnalysis:null};
+S.qarar=store.get("qarar","do")==="re"?"re":"do";
+function applyQarar(){const t=S.qarar==="re"?200:0;MAQAMAT.forEach(m=>{m.tonic=t;});}
+applyQarar();
 if(!byId(S.maqam))S.maqam="bayati";
 
 /* ---------------- Audio engine ---------------- */
@@ -1663,6 +1669,7 @@ function renderMaqam(){
   // prose
   const p=$("#mqProse");p.innerHTML="";
   const add=(h,t)=>{p.append(el("h3",{text:h}));p.append(el("p",{text:t}));};
+  if(m.tonic!==m.tonic0)add("القرار","المقام هنا على "+noteName(m.tonic)+" ("+solfAbs(m.tonic).full+"). أسماء النغمات في الشرح أدناه مكتوبة على قراره الأصلي «"+noteName(m.tonic0)+"»، فانقلها بنفس المسافة.");
   add("سير المقام",m.sayr);add("ملاحظة على الأجناس",m.descJins);add("للمطرب",m.sing);add("لعازف العود",m.oud);
   const sg=(typeof songsOnMaqam==="function")?songsOnMaqam(m.id):[];
   if(sg.length){p.append(el("h3",{text:"أغانٍ في مكتبتك على هذا المقام"}));const w=el("div",{class:"songmaq"});sg.slice(0,14).forEach(x=>w.append(el("button",{onclick:()=>{openSong(x.id);go("songs");}},x.title+" · "+x.artist)));p.append(w);}
@@ -3428,7 +3435,7 @@ const sampleErrFull=e=>{const b=sampleErr(e);return b&&e&&e.message&&!sample?b+"
 function reportPrompt(R,note){
   const m=R.maqam;const prev=S.baseline&&!S.lastIsExample;
   return "مهمتك: تقرير تدريبي على تسجيل "+(R.mode==="oud"?"عزف على العود (ليس غناء)":"غناء")+" في مقام "+m.name+(R.autoMaq?" (اكتُشف المقام تلقائياً)":"")+".\n"+
-  "درجات المقام بالسنت من القرار: "+m.steps.join("، ")+(m.desc?" (وفي النزول: "+Object.entries(m.desc).map(([i,c])=>"الدرجة "+(+i+1)+" = "+c).join("، ")+")":"")+". الأجناس: "+m.ajnas.map(j=>j[0]).join(" + ")+". الغماز: "+noteName(m.tonic+m.steps[m.gh])+".\n"+
+  "درجات المقام بالسنت من القرار: "+m.steps.join("، ")+(m.desc?" (وفي النزول: "+Object.entries(m.desc).map(([i,c])=>"الدرجة "+(+i+1)+" = "+c).join("، ")+")":"")+". الأجناس: "+m.ajnas.map(j=>j[0]).join(" + ")+". القرار في التطبيق: "+noteName(m.tonic)+(m.tonic!==m.tonic0?" (منقول من قراره الأصلي "+noteName(m.tonic0)+")":"")+". الغماز: "+noteName(m.tonic+m.steps[m.gh])+".\n"+
   (S.lastIsExample?"تنبيه: هذا تسجيل تجريبي مولّد آلياً وليس أداء المتدرب؛ قل ذلك في أول سطر.\n":"")+
   "الصورة المرفقة (إن وجدت) هي منحنى الطبقة لهذا التسجيل.\n\n"+
   "اكتب بالعربية بصيغة Markdown، بين 250 و450 كلمة، بلغة بسيطة يفهمها هاوٍ غير متخصص: جمل قصيرة، واشرح أي مصطلح فني بكلمات بسيطة عند أول ذكر له، ولا تكتب رقماً بالسنت أو الهرتز دون أن تقول معناه بالكلام (مثل: أعلى قليلاً، ربع تون تقريباً). سمِّ كل نغمة بدو ري مي من حقل solfege أولاً ثم اسمها العربي وترتيبها في المقام (مثل: «مي نصف بيمول» (سيكاه، الدرجة الثانية))، وعند شرح أي تصحيح أو تمرين اذكر مكان النغمة على العود من حقل oud_position (الوتر والإصبع). بهذه الأقسام:\n"+
@@ -3754,6 +3761,9 @@ $("#trUp").addEventListener("click",()=>{if(S.transpose<7){S.transpose++;store.s
 $("#trDown").addEventListener("click",()=>{if(S.transpose>-7){S.transpose--;store.set("tr",S.transpose);renderTr();if(S.drone)startDrone();}});
 document.querySelectorAll("#voiceSeg button").forEach(b=>b.addEventListener("click",()=>{S.voice=b.dataset.v;store.set("voice",S.voice);document.querySelectorAll("#voiceSeg button").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));}));
 document.querySelectorAll("#voiceSeg button").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.v===S.voice)));
+function setQarar(q){S.qarar=q==="re"?"re":"do";store.set("qarar",S.qarar);applyQarar();document.querySelectorAll(".qararSeg button").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.q===S.qarar)));try{selectMaqam(S.maqam);}catch(e){}try{renderNeck();}catch(e){}try{if(!$("#p-solfa").hidden)sfRender();}catch(e){}}
+document.querySelectorAll(".qararSeg button").forEach(b=>b.addEventListener("click",()=>setQarar(b.dataset.q)));
+document.querySelectorAll(".qararSeg button").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.q===S.qarar)));
 document.querySelectorAll("#timbreSeg button").forEach(b=>b.addEventListener("click",()=>{S.timbre=b.dataset.t;document.querySelectorAll("#timbreSeg button").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));}));
 $("#playUp").addEventListener("click",()=>playScale(false));
 $("#playDown").addEventListener("click",()=>playScale(true));
