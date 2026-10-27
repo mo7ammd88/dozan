@@ -562,7 +562,7 @@ details.tip p{padding:0 16px 14px;font-size:15px;color:var(--muted);line-height:
 .sfp>*{position:relative}
 .sfp b{font-size:16px;font-weight:700}
 .sfp i{font-style:normal;font-size:11px;color:var(--brass);min-height:1.2em;line-height:1.2}
-.sfp small{font-size:9.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.sfp small{font-size:9.5px;color:var(--muted);white-space:normal;text-align:center;line-height:1.15;max-width:100%;padding-inline:2px}
 .sfp.tgt{box-shadow:inset 0 0 0 2px var(--brass)}
 .sfp.done{background:var(--good-soft)}.sfp.done b::after{content:" ✓";font-size:11px;color:var(--good)}
 .sfp.on{background:var(--ink)}.sfp.on b,.sfp.on small{color:var(--bg)}
@@ -4114,7 +4114,7 @@ fillRecMaqam();syncRecMaqam();
 {const mc=$("#maqCount");if(mc)mc.textContent=String(MAQAMAT.length);}
 
 window.__dozan2={makeSegmenter,tqAlign,tqGen,jinsMap,tsCandidates,tsScore,buildScale,TQ,TS,LD,NECK,maqPcs};
-const APP_VER="2026.10.16-7";
+const APP_VER="2026.10.27-1";
 $("#verTxt").textContent="الإصدار \u2066"+APP_VER+"\u2069";
 const hardReload=()=>{location.replace(location.pathname+"?v="+Date.now()+location.hash);};
 $("#updBtn").addEventListener("click",hardReload);$("#updNow").addEventListener("click",hardReload);
